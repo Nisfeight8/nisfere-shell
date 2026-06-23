@@ -100,7 +100,7 @@ Item {
                     text: "Available & Saved Devices"
                 }
                 Repeater {
-                    model: Bluetooth.devices
+                    model: Bluetooth.devices.values
 
                     delegate: GlassCard {
                         Layout.fillWidth: true

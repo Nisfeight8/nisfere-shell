@@ -93,23 +93,10 @@ QtObject {
         updateStatus();
     }
     function updateStatus() {
-        if (!root.hasBattery || !root.displayDev || !root.displayDev.ready) {
-            root.percentage = 0;
-            root.isCharging = false;
-            root.timeText = "No battery available";
-            root.iconText = "󰚥";
-            root.stateName = "AC Power";
-            return;
-        }
-
-        // 1. Percentage
-        root.percentage = Math.round(root.displayDev.percentage);
-
-        // 2. Charging Status
+        root.percentage = Math.round(root.displayDev.percentage * 100);
         let st = root.displayDev.state;
         root.isCharging = (st === UPowerDeviceState.Charging || st === UPowerDeviceState.FullyCharged || st === UPowerDeviceState.PendingCharge);
 
-        // 3. State Text
         if (st === UPowerDeviceState.Charging)
             root.stateName = "Charging";
         else if (st === UPowerDeviceState.Discharging)

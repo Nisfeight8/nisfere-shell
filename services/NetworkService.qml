@@ -85,8 +85,43 @@ QtObject {
     // ==========================================
     // 3. WI-FI SUB-SERVICE
     // ==========================================
+    // ==========================================
+    // 3. WI-FI SUB-SERVICE
+    // ==========================================
     property QtObject _wifiService: QtObject {
         id: wifiService
+
+        property QtObject pendingNetwork: null
+        signal errorOccurred(string ssid, string errorMessage)        // ΝΕΟ: Ακούμε τα signals του δικτύου που βρίσκεται σε διαδικασία σύνδεσης
+        property Connections _pendingNetworkConnections: Connections {
+            target: wifiService.pendingNetwork
+            ignoreUnknownSignals: true
+
+            function onConnectionFailed(reason) {
+                console.log("Connection failed with reason code:", reason);
+
+                if (wifiService.pendingNetwork) {
+                    // 1. Κρατάμε το όνομα σε μια τοπική μεταβλητή ΠΡΙΝ το κάνουμε null
+                    let failedSsid = wifiService.pendingNetwork.name;
+
+                    // 2. Καθαρίζουμε το δίκτυο
+                    wifiService.pendingNetwork.forget();
+                    wifiService.pendingNetwork = null;
+                    
+                    // 3. Ενημερώνουμε το state
+                    wifiService.statusName = "Disconnected";
+
+                    // 4. Εκπέμπουμε το signal με το σωστό όνομα που αποθηκεύσαμε παραπάνω
+                    wifiService.errorOccurred(failedSsid, "Wrong Password");
+                }
+            }
+
+            function onConnectedChanged() {
+                if (wifiService.pendingNetwork && wifiService.pendingNetwork.connected) {
+                    wifiService.pendingNetwork = null;
+                }
+            }
+        }
 
         property Connections _wifiConnections: Connections {
             function onConnectedChanged() {
@@ -99,6 +134,14 @@ QtObject {
             ignoreUnknownSignals: true
             target: wifiService.device
         }
+        property Connections _wifiNetworks: Connections {
+            target: wifiService.device.networks
+
+            function onValuesChanged() {
+                wifiService.updateStatus();
+            }
+        }
+
         property bool available: !!device
         property bool connected: device ? device.connected : false
         property QtObject device: null
@@ -111,6 +154,9 @@ QtObject {
             for (let net of device.networks.values) {
                 if (net.name === ssid) {
                     console.log("An attempt is being made to connect to:", ssid);
+
+                    pendingNetwork = net;
+
                     if (password !== "") {
                         net.connectWithPsk(password);
                     } else {
@@ -122,6 +168,7 @@ QtObject {
             }
             console.log("The network", ssid, "not found in the list!");
         }
+
         function disconnect() {
             if (device) {
                 console.log("Disconnect from the current Wi-Fi...");
@@ -129,6 +176,7 @@ QtObject {
                 updateStatus();
             }
         }
+
         function forgetNetwork(ssid) {
             if (!device || !device.networks || !device.networks.values)
                 return;
@@ -142,10 +190,12 @@ QtObject {
                 }
             }
         }
+
         function toggle() {
             Networking.wifiEnabled = !Networking.wifiEnabled;
             updateStatus();
         }
+
         function updateStatus() {
             if (!device) {
                 statusName = "There is no hardware";

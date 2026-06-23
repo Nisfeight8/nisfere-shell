@@ -7,21 +7,19 @@ import Quickshell.Io
 QtObject {
     id: root
 
-    property FileView _currentFile: FileView {
-        path: root.backlightPath !== "" ? root.backlightPath + "/actual_brightness" : ""
+    property string backlightPath: ""
+    property real currentBrightness: 0
+    property real maxBrightness: 100
+    property bool isAvailable: backlightPath !== ""
+    property real percentage: maxBrightness > 0 ? (currentBrightness / maxBrightness) : 0
 
-        onTextChanged: {
-            let val = parseInt(text.trim());
-            if (!isNaN(val))
-                root.currentBrightness = val;
-        }
-    }
     property Process _detect_device: Process {
         id: backlightProcess
 
         stdout: StdioCollector {
             onStreamFinished: {
-                let devName = text.trim();
+                let devices = text.trim().split('\n');
+                let devName = devices[0];
 
                 if (devName !== "") {
                     root.backlightPath = "/sys/class/backlight/" + devName;
@@ -36,39 +34,44 @@ QtObject {
             exec(["ls", "/sys/class/backlight"]);
         }
     }
+
     property FileView _maxFile: FileView {
         path: root.backlightPath !== "" ? root.backlightPath + "/max_brightness" : ""
 
         onTextChanged: {
-            let val = parseInt(text.trim());
+            let val = parseInt(text().trim());
             if (!isNaN(val))
                 root.maxBrightness = val;
         }
     }
-    property Timer _updateTimer: Timer {
-        interval: 1000
-        repeat: true
-        running: root.isAvailable
 
-        onTriggered: root._currentFile.reload()
+    property FileView _currentFile: FileView {
+        path: root.backlightPath !== "" ? root.backlightPath + "/brightness" : ""
+        watchChanges: true
+
+        onFileChanged: reload()
+
+        onTextChanged: {
+            let val = parseInt(text().trim());
+            if (!isNaN(val)) {
+                root.currentBrightness = val;
+            }
+        }
     }
-    property string backlightPath: ""
-    property real currentBrightness: 0
-    property bool isAvailable: backlightPath !== ""
-    property real maxBrightness: 100
-    property real percentage: maxBrightness > 0 ? (currentBrightness / maxBrightness) : 0
 
     function setPercentage(val) {
         if (!isAvailable)
             return;
 
-        let percentInt = Math.round(val * 100);
+        val = Math.max(0.0, Math.min(1.0, val));
 
-        if (percentInt < 5)
-            percentInt = 5;
+        let absTarget = Math.round(root.maxBrightness * val);
 
-        Quickshell.execDetached(["brightnessctl", "s", percentInt + "%"]);
+        let minBrightness = Math.round(root.maxBrightness * 0.05);
+        if (absTarget < minBrightness) {
+            absTarget = minBrightness;
+        }
 
-        root.currentBrightness = root.maxBrightness * val;
+        Quickshell.execDetached(["brightnessctl", "s", absTarget.toString()]);
     }
 }

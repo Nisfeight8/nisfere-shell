@@ -10,5 +10,5 @@ SliderRow {
     value: AudioService.sourceVolume
 
     onToggleMuteClicked: AudioService.toggleSourceMute()
-    onValueMoved: newValue => AudioService.setSourceVolume(newValue)
+    onLiveValueMoved: newValue => AudioService.setSourceVolume(newValue)
 }

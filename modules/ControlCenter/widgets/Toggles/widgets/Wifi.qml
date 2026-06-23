@@ -4,6 +4,7 @@ import qs.core
 import qs.services
 
 ControlButton {
+    hasMore: true
     iconText: NetworkService.wifiEnabled ? "󰖩" : "󰖪"
     isActive: NetworkService.isWifiConnected
     subtitle: NetworkService.wifiName
@@ -11,4 +12,5 @@ ControlButton {
     visible: NetworkService.hasWifi
 
     onClicked: NetworkService.toggleWifi()
+    onMoreClicked: pageStack.currentIndex = 1
 }

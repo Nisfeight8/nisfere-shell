@@ -5,14 +5,26 @@ import qs.core
 RowLayout {
     id: root
 
+    // --- Configuration Properties ---
     property string activeIcon: "󰃠"
+    property string mutedIcon: "󰝟"
     property bool isMuteable: false
     property bool isMuted: false
-    property string mutedIcon: "󰝟"
+
+    // The incoming value from your backend service
     property real value: 0.0
 
+    // Dynamic Text: Defaults to percentage, but parent can override it!
+    property string valueText: (root.isMuteable && root.isMuted) ? "Mute" : Math.round(internalSlider.value * 100) + "%"
+
+    // --- Signals ---
     signal toggleMuteClicked
-    signal valueMoved(real newValue)
+
+    // Fires constantly while dragging (Use for Volume)
+    signal liveValueMoved(real newValue)
+
+    // Fires ONLY when the mouse is released (Use for Brightness)
+    signal finalValueChanged(real newValue)
 
     Layout.fillWidth: true
     spacing: 12
@@ -35,25 +47,40 @@ RowLayout {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
             enabled: root.isMuteable
+            hoverEnabled: root.isMuteable
 
             onClicked: root.toggleMuteClicked()
         }
     }
+
     ControlSlider {
         id: internalSlider
 
         Layout.fillWidth: true
         isMuted: root.isMuteable && root.isMuted
+
+        // Two-way visual binding
         value: root.value
 
-        onMoved: root.valueMoved(internalSlider.value)
+        // 1. Emit live changes
+        onMoved: {
+            root.liveValueMoved(internalSlider.value);
+        }
+
+        // 2. Emit the final value when the user lets go
+        onPressedChanged: {
+            if (!pressed) {
+                root.finalValueChanged(internalSlider.value);
+            }
+        }
     }
+
     Text {
         Layout.preferredWidth: 35
         color: Theme.foreground
         font.pixelSize: 12
         horizontalAlignment: Text.AlignRight
         opacity: 0.7
-        text: (root.isMuteable && root.isMuted) ? "Mute" : Math.round(internalSlider.value * 100) + "%"
+        text: root.valueText
     }
 }

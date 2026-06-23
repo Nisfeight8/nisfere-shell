@@ -7,6 +7,6 @@ SliderRow {
     activeIcon: "󰃠"
     value: BrightnessService.percentage
     visible: BrightnessService.isAvailable
-
-    onValueMoved: newValue => BrightnessService.setPercentage(newValue)
+    isMuteable: false
+    onFinalValueChanged: newValue => BrightnessService.setPercentage(newValue)
 }
