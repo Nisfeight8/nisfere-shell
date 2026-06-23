@@ -6,6 +6,13 @@ import Quickshell.Bluetooth
 QtObject {
     id: root
 
+    property string connectedDeviceName: ""
+    property int connectedDevicesCount: 0
+    property bool hasBluetooth: false
+    property bool isEnabled: false
+    property bool isScanning: false
+    property string statusName: "Searching..."
+
     property Connections _adapterConnections: Connections {
         function onDiscoveringChanged() {
             root.updateStatus();
@@ -36,16 +43,15 @@ QtObject {
         ignoreUnknownSignals: true
         target: Bluetooth.devices
     }
-    property string connectedDeviceName: ""
-    property int connectedDevicesCount: 0
-    property bool hasBluetooth: false
-    property bool isEnabled: false
-    property bool isScanning: false
-    property string statusName: "Searching..."
 
     function toggle() {
         if (Bluetooth.defaultAdapter) {
             Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled;
+        }
+    }
+    function toggleScan() {
+        if (Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled) {
+            Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering;
         }
     }
     function updateStatus() {

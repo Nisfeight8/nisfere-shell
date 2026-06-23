@@ -107,7 +107,7 @@ QtObject {
                     // 2. Καθαρίζουμε το δίκτυο
                     wifiService.pendingNetwork.forget();
                     wifiService.pendingNetwork = null;
-                    
+
                     // 3. Ενημερώνουμε το state
                     wifiService.statusName = "Disconnected";
 
@@ -137,7 +137,13 @@ QtObject {
         property Connections _wifiNetworks: Connections {
             target: wifiService.device.networks
 
-            function onValuesChanged() {
+            // Triggers after a new network is found/added to the list
+            function onObjectInsertedPost(object, index) {
+                wifiService.updateStatus();
+            }
+
+            // Triggers after a network is removed/lost from the list
+            function onObjectRemovedPost(object, index) {
                 wifiService.updateStatus();
             }
         }

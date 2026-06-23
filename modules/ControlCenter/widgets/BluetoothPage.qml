@@ -82,6 +82,7 @@ Item {
             }
         }
         ScrollView {
+            id: scrollView // Added ID to reference its width
             Layout.fillHeight: true
             Layout.fillWidth: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
@@ -90,15 +91,47 @@ Item {
 
             ColumnLayout {
                 spacing: 10
-                width: parent.width
+                width: scrollView.availableWidth // <--- THE LAYOUT FIX
 
-                Text {
+                // Header Row containing Title and Scan Button
+                RowLayout {
+                    Layout.fillWidth: true
                     Layout.bottomMargin: 5
-                    color: Theme.foreground
-                    font.bold: true
-                    opacity: 0.7
-                    text: "Available & Saved Devices"
+
+                    Text {
+                        Layout.fillWidth: true
+                        color: Theme.foreground
+                        font.bold: true
+                        opacity: 0.7
+                        text: "Available & Saved Devices"
+                    }
+
+                    // Scan Button
+                    Rectangle {
+                        color: BluetoothService.isScanning ? Theme.color1 : Theme.backgroundAlt
+                        height: 28
+                        radius: 14
+                        width: 90
+
+                        RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 5
+
+                            Text {
+                                color: BluetoothService.isScanning ? Theme.background : Theme.foreground
+                                font.pixelSize: 12
+                                text: BluetoothService.isScanning ? "󱓞 Scan..." : "󰂰 Scan"
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: BluetoothService.toggleScan()
+                        }
+                    }
                 }
+
                 Repeater {
                     model: Bluetooth.devices.values
 
@@ -154,29 +187,49 @@ Item {
                                     }
                                 }
                             }
+
+                            // Connect / Pair / Disconnect Button
                             Rectangle {
-                                color: model.connected ? Theme.color1 : Theme.backgroundAlt
+                                color: {
+                                    if (!btnMouse.containsMouse) {
+                                        return (model.connected) ? Theme.color1 : Theme.backgroundAlt;
+                                    }
+                                    return Theme.selected;
+                                }
                                 height: 36
                                 radius: 18
                                 width: 36
-
+                                opacity: model.pairing ? 0.5 : 1.0 // Visual feedback for disabled state
+                                border.width: 1
+                                border.color: Theme.borderColor
                                 Text {
                                     anchors.centerIn: parent
-                                    color: model.connected ? Theme.background : Theme.foreground
+                                    color: {
+                                        if (btnMouse.containsMouse) {
+                                            return Theme.backgroundAlt;
+                                        } else {
+                                            if (model.connected)
+                                                return Theme.foreground;
+                                            return Theme.selected;
+                                        }
+                                    }
                                     font.pixelSize: 16
-                                    text: model.connected ? "󰅖" : "󰄬"
+                                    text: model.pairing ? "󰑮" : (model.connected ? "󰅖" : "󰄬")
                                 }
                                 MouseArea {
+                                    id: btnMouse
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
+                                    enabled: !model.pairing // Disable clicks while pairing
 
                                     onClicked: {
                                         if (model.connected) {
-                                            model.disconnect();
+                                            modelData.connected = false;
                                         } else if (model.paired) {
-                                            model.connect();
+                                            modelData.trusted = true;
+                                            modelData.connected = true;
                                         } else {
-                                            model.pair();
+                                            modelData.connected = true;
                                         }
                                     }
                                 }
