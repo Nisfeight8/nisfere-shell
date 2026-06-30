@@ -1,0 +1,23 @@
+module qs.core
+PopupContainer 1.0 PopupContainer.qml
+BaseDrawer 1.0 BaseDrawer.qml
+BarPopup 1.0 BarPopup.qml
+PanelShape 1.0 PanelShape.qml
+BarWidget 1.0 BarWidget.qml
+CustomSlider 1.0 CustomSlider.qml
+ControlSlider 1.0 ControlSlider.qml
+GlassBackground 1.0 GlassBackground.qml
+ControlButton 1.0 ControlButton.qml
+CircularGauge 1.0 CircularGauge.qml
+MediaSlider 1.0 MediaSlider.qml
+LazyBarPopup 1.0 LazyBarPopup.qml
+SliderRow 1.0 SliderRow.qml
+
+GlassCard 1.0 GlassCard.qml
+LucideIcon 1.0 LucideIcon.qml
+NavTabs 1.0 NavTabs.qml
+SideMenu 1.0 SideMenu.qml
+HoverZone 1.0 HoverZone.qml
+
+singleton Theme 1.0 Theme.qml
+singleton Icons 1.0 Icons.qml
