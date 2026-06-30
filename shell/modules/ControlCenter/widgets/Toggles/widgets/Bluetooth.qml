@@ -4,7 +4,7 @@ import qs.services
 
 ControlButton {
     hasMore: true
-    iconText: Icons.getBuetoothIcon(BluetoothService.isEnabled, BluetoothService.connectedDevicesCount > 0)
+    iconText: Icons.getBluetoothIcon(BluetoothService.isEnabled, BluetoothService.connectedDevicesCount > 0)
     isActive: BluetoothService.isEnabled
     subtitle: BluetoothService.statusName
     title: "Bluetooth"
