@@ -9,14 +9,15 @@ import "widgets/Toggles"
 BaseDrawer {
     id: controlCenterDrawer
 
-    anchors.bottom: true
-    anchors.top: true
+    cornerMode: true
     edge: Qt.RightEdge
-    margins.bottom: Theme.panelBorderSize + Theme.radius
-    margins.top: Theme.barHeight + Theme.radius
+
+    anchors.top: true
+    margins.top: Theme.barHeight
     opened: ShellState.controlCenterOpened
-    panelHeight: Screen.height
+    panelHeight: 650
     panelWidth: Screen.width / 4
+    toggleOnHover: false
 
     onCloseRequest: ShellState.controlCenterOpened = false
     onOpenRequest: ShellState.controlCenterOpened = true

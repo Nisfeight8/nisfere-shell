@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt.labs.folderlistmodel
 import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
@@ -13,6 +14,16 @@ Item {
     property string previewPath: ""
 
     Component.onCompleted: wallpaperList.forceActiveFocus()
+
+    QtObject {
+        id: internal
+        property var wallpaperModel: FolderListModel {
+            folder: WallpaperService.wallpaperDir
+            nameFilters: ["*.jpg", "*.jpeg", "*.png"]
+            showDirs: false
+            sortField: FolderListModel.Name
+        }
+    }
 
     // ── Debounce: preview μόνο αν ο χρήστης μείνει 250ms ─────────
     Timer {
@@ -55,7 +66,7 @@ Item {
                     font.bold: true
                 }
                 Text {
-                    text: WallpaperService.model.count + " found"
+                    text: internal.wallpaperModel.count + " found"
                     color: Theme.foreground
                     font.family: Theme.fontName
                     font.pixelSize: 10
@@ -143,7 +154,7 @@ Item {
             orientation: ListView.Horizontal
             spacing: 10
             clip: true
-            model: WallpaperService.model
+            model: internal.wallpaperModel
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 200
             focus: true
@@ -358,7 +369,7 @@ Item {
     // ── Empty state ───────────────────────────────────────────────
     Text {
         anchors.centerIn: parent
-        visible: WallpaperService.model.count === 0
+        visible: internal.wallpaperModel.count === 0
         text: "No wallpapers found in\n" + WallpaperService.wallpaperDir
         color: Theme.foreground
         font.family: Theme.fontName

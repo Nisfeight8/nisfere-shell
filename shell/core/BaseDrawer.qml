@@ -21,6 +21,7 @@ PanelWindow {
     required property int panelWidth
     property int screenOffset: 0
     property bool toggleOnHover: true
+    property bool cornerMode: false
 
     signal closeRequest
     signal openRequest
@@ -101,11 +102,9 @@ PanelWindow {
                 top: edge === Qt.BottomEdge ? parent.top : undefined
             }
 
-            PanelShape {
+            Loader {
                 anchors.fill: parent
-                bgColor: Theme.background
-                borderColor: root.opened ? Theme.borderColor : "transparent"
-                edge: root.edge
+                sourceComponent: root.cornerMode ? cornerShapeComp : panelShapeComp
             }
 
             Item {
@@ -122,6 +121,25 @@ PanelWindow {
                     active: root.opened || unloadDelayTimer.running
                     asynchronous: root.asynchronousLoad
                     sourceComponent: root.contentComponent
+                }
+            }
+            Component {
+                id: panelShapeComp
+                PanelShape {
+                    anchors.fill: parent
+                    bgColor: Theme.background
+                    borderColor: root.opened ? Theme.borderColor : "transparent"
+                    edge: root.edge
+                }
+            }
+
+            Component {
+                id: cornerShapeComp
+                CornerShape {
+                    anchors.fill: parent
+                    bgColor: Theme.background
+                    borderColor: root.opened ? Theme.borderColor : "transparent"
+                    edge: root.edge
                 }
             }
         }

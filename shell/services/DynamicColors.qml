@@ -65,8 +65,8 @@ QtObject {
         if (c.cursor)         root.cursor        = c.cursor;
         if (c.background_alt) root.backgroundAlt = c.background_alt;
         if (c.border_color)   root.borderColor   = c.border_color;
-        // selected = color5 πάντα
-        if (c.color5)         root.selected      = c.color4;
+
+        if (c.color4)         root.selected      = c.color4;
 
         if (c.color0)  root.color0  = c.color0;
         if (c.color1)  root.color1  = c.color1;

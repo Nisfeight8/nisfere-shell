@@ -4,6 +4,7 @@ import qs.core
 import qs.services
 import "widgets/WallpaperManager"
 import "widgets/DockerManager"
+import "widgets/ThemeManager"
 
 BaseDrawer {
     id: menuDrawer
@@ -25,9 +26,14 @@ BaseDrawer {
             index: 0
         },
         {
+            title: "Colors",
+            icon: "palette",
+            index: 1
+        },
+        {
             title: "Docker",
             icon: "box",
-            index: 1
+            index: 2
         }
     ]
 
@@ -153,12 +159,21 @@ BaseDrawer {
                     }
                 }
 
+                Loader {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    active: currentAppIndex === 1
+                    sourceComponent: Component {
+                        ThemeManager {}
+                    }
+                }
+
                 // Index 2: Docker Manager
                 // ✅ Καταστρέφεται όταν φύγεις → timer σταματά. Ξαναφτιάχνεται → data από singleton
                 Loader {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    active: currentAppIndex === 1
+                    active: currentAppIndex === 2
                     sourceComponent: Component {
                         DockerManager {}
                     }

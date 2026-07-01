@@ -23,6 +23,7 @@ async def handle_command(action, payload, sock):
 
     elif action == "set_colors":
         colors_json_path = payload.get("colors_json_path")
+        print(colors_json_path)
         mode = payload.get("mode", "dark")
 
         success = await asyncio.to_thread(

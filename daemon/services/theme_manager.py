@@ -131,7 +131,7 @@ class ThemeManager:
 
     def _load_static_colors(self, theme_name, mode):
         """Loads ready JSON from the nisfere/themes directory"""
-        file_path = os.path.join(self.themes_dir, f"{theme_name}-{mode}.json")
+        file_path = os.path.join(self.themes_dir, f"{theme_name}")
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Theme file not found: {file_path}")
         with open(file_path, "r") as f:

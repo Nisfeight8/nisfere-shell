@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Io
 import qs.core
 import qs.services
 import "widgets"
@@ -8,31 +7,13 @@ import "widgets"
 BaseDrawer {
     id: launcherWindow
 
-    readonly property var process: Process {
-        id: userProcess
-
-        command: ["sh", "-c", "whoami"]
-
-        running: launcherWindow.opened
-
-        stdout: SplitParser {
-            onRead: raw => username = raw
-        }
-    }
-    property string username: "User"
-
-    function formatUsername(name) {
-        if (!name)
-            return "User";
-        let cleanName = name.trim();
-        return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-    }
-
+    cornerMode: true
+    anchors.top: true
+    margins.top: Theme.barHeight
     edge: Qt.LeftEdge
     opened: ShellState.launcherOpened
-    panelHeight: Screen.height / 1.5
+    panelHeight: 650
     panelWidth: Screen.width / 3.4
-
     onCloseRequest: ShellState.launcherOpened = false
     onOpenRequest: ShellState.launcherOpened = true
     onToggleRequest: ShellState.launcherOpened = !ShellState.launcherOpened
@@ -78,23 +59,23 @@ BaseDrawer {
                         font.bold: true
                         font.family: Theme.fontName
                         font.pixelSize: 22
-                        text: formatUsername(username)
+                        text: SystemInfo.username
                     }
                     RowLayout {
                         spacing: 6
 
-                        Text {
+                        LucideIcon {
+                            size: 18
+                            icon: "clock"
                             color: Theme.selected
-                            font.family: Theme.fontName
-                            font.pixelSize: 14
-                            text: ""
                         }
+
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 14
+                            font.pixelSize: 18
                             opacity: 0.7
-                            text: "Up 2 hours, 15 mins"
+                            text: SystemInfo.uptime
                         }
                     }
                 }
