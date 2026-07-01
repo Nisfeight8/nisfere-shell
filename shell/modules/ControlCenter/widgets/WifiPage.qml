@@ -171,12 +171,12 @@ Item {
                             spacing: 10
 
                             // Signal strength icon
-                            Text {
+                            LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: model.connected ? Theme.selected : Theme.foreground
-                                font.pixelSize: 16
+                                size: 16
                                 opacity: model.connected ? 1.0 : 0.75
-                                text: {
+                                icon: {
                                     const s = model.signalStrength;
                                     return Icons.getWifiItemIcon(s);
                                 }
