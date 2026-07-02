@@ -5,6 +5,7 @@ import qs.services
 import "widgets/WallpaperManager"
 import "widgets/DockerManager"
 import "widgets/ThemeManager"
+import "widgets/AppearanceManager"
 
 BaseDrawer {
     id: menuDrawer
@@ -168,8 +169,6 @@ BaseDrawer {
                     }
                 }
 
-                // Index 2: Docker Manager
-                // ✅ Καταστρέφεται όταν φύγεις → timer σταματά. Ξαναφτιάχνεται → data από singleton
                 Loader {
                     Layout.fillWidth: true
                     Layout.fillHeight: true

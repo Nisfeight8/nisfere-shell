@@ -1,0 +1,13 @@
+{
+  "hyprland-colors.conf": "~/.config/hypr/conf/colors.conf",
+  "alacritty-colors.toml": "~/.config/alacritty/colors.toml",
+  "adw-gtk3.css": ["~/.config/gtk-3.0/gtk.css", "~/.config/gtk-4.0/gtk.css"],
+  "thunar.css": [
+    "~/.config/gtk-3.0/thunar.css",
+    "~/.config/gtk-4.0/thunar.css"
+  ],
+  "bpytop.theme": "~/.config/bpytop/themes/nisfere.theme",
+  "vscode.json": "~/.cache/wallust/colors.json",
+  "vscode": "~/.cache/wallust/colors",
+  "nisfere.colors": "~/.config/qtengine/nisfere.colors"
+}

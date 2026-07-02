@@ -4,7 +4,7 @@ import qs.services
 
 QtObject {
 
-    // ── Static layout values (ποτέ δεν αλλάζουν) ─────────────────
+    // ── Static layout values ───────────────────────────────────
     readonly property bool enableWidgetBorders: true
     readonly property string fontName: "Arimo Nerd Font"
     readonly property int radius: 15
@@ -13,18 +13,22 @@ QtObject {
     readonly property int panelBorderSize: 10
     readonly property int widgetBorderWidth: enableWidgetBorders ? 1 : 0
 
-    // ── Βασικά χρώματα → από DynamicColors ───────────────────────
+    // ── Base colors → from DynamicColors ──────────────────────
     property color background: DynamicColors.background
     property color foreground: DynamicColors.foreground
     property color selected: DynamicColors.selected
+    property color cursor: DynamicColors.cursor
 
-    // ── Computed: υπολογίζονται live όταν αλλάζουν background/foreground
-    // Δεν χρειάζεται να αποθηκεύονται στο JSON - το QML τα ξαναϋπολογίζει ✓
-    property color backgroundAlt: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
-    property color borderColor: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.18))
+    // ── Computed colors ────────────────────────────────────────
+    // Computed in QML rather than reading from DynamicColors so
+    // they respond instantly to color transitions (no file I/O).
+    // The daemon also computes these (for template rendering),
+    // but Qt.tint gives a more harmonious shell result.
+    property color backgroundAlt: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.06))
+    property color borderColor: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.14))
     property color highlightBorderColor: selected
 
-    // ── Palette → από DynamicColors ───────────────────────────────
+    // ── Full palette → from DynamicColors ─────────────────────
     property color color0: DynamicColors.color0
     property color color1: DynamicColors.color1
     property color color2: DynamicColors.color2
@@ -42,7 +46,9 @@ QtObject {
     property color color14: DynamicColors.color14
     property color color15: DynamicColors.color15
 
-    // ── Metadata ──────────────────────────────────────────────────
+    // ── Metadata ───────────────────────────────────────────────
     property string wallpaper: DynamicColors.wallpaper
     property string mode: DynamicColors.mode
+    property string sourceType: DynamicColors.sourceType
+    property string sourceName: DynamicColors.sourceName
 }

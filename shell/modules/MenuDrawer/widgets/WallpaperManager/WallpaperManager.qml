@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import Qt.labs.folderlistmodel
 import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
@@ -10,19 +9,19 @@ Item {
     anchors.fill: parent
 
     property bool applyDynamicColors: true
-    property string confirmedPath: DynamicColors.wallpaper
-    property string previewPath: ""
+    property string selectedMode:     DynamicColors.mode
+    property string confirmedPath:    DynamicColors.wallpaper
+    property string previewPath:      ""
+    property bool loading:            true
 
-    Component.onCompleted: wallpaperList.forceActiveFocus()
+    Component.onCompleted: {
+        wallpaperList.forceActiveFocus();
+        ThemeService.fetchWallpapers();
+    }
 
-    QtObject {
-        id: internal
-        property var wallpaperModel: FolderListModel {
-            folder: WallpaperService.wallpaperDir
-            nameFilters: ["*.jpg", "*.jpeg", "*.png"]
-            showDirs: false
-            sortField: FolderListModel.Name
-        }
+    Connections {
+        target: ThemeService
+        function onWallpapersLoaded() { root.loading = false; }
     }
 
     // ── Debounce: preview μόνο αν ο χρήστης μείνει 250ms ─────────
@@ -31,18 +30,17 @@ Item {
         interval: 250
         onTriggered: {
             if (root.previewPath !== "")
-                WallpaperService.previewWallpaper(root.previewPath);
+                ThemeService.previewWallpaper(root.previewPath);
         }
     }
 
-    // ── Restore: μικρό delay πριν επαναφορά ────────────────────────
-    // Χωρίς delay, το gap μεταξύ items trigger-άρει restore συνέχεια
+    // ── Restore: μικρό delay πριν επαναφορά ──────────────────────
     Timer {
         id: restoreTimer
         interval: 150
         onTriggered: {
             if (root.previewPath === "" && root.confirmedPath !== "")
-                WallpaperService.previewWallpaper(root.confirmedPath);
+                ThemeService.previewWallpaper(root.confirmedPath);
         }
     }
 
@@ -66,7 +64,9 @@ Item {
                     font.bold: true
                 }
                 Text {
-                    text: internal.wallpaperModel.count + " found"
+                    text: root.loading
+                        ? "Loading..."
+                        : ThemeService.wallpapers.length + " found"
                     color: Theme.foreground
                     font.family: Theme.fontName
                     font.pixelSize: 10
@@ -74,10 +74,73 @@ Item {
                 }
             }
 
-            Item {
-                Layout.fillWidth: true
+            Item { Layout.fillWidth: true }
+
+            // ── Light / Dark toggle — only when dynamic colors is on ──
+            RowLayout {
+                spacing: 6
+                visible: root.applyDynamicColors
+                opacity: root.applyDynamicColors ? 1.0 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 200 } }
+
+                Text {
+                    text: "Light"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 11
+                    opacity: root.selectedMode === "light" ? 0.9 : 0.35
+                    verticalAlignment: Text.AlignVCenter
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                }
+
+                Rectangle {
+                    width: 40
+                    height: 22
+                    radius: 11
+                    color: root.selectedMode === "dark"
+                        ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.85)
+                        : Theme.backgroundAlt
+                    border.color: root.selectedMode === "dark" ? Theme.selected : Theme.borderColor
+                    border.width: 1
+                    Behavior on color       { ColorAnimation { duration: 160 } }
+                    Behavior on border.color { ColorAnimation { duration: 160 } }
+
+                    Rectangle {
+                        width: 16; height: 16; radius: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        x: root.selectedMode === "dark" ? parent.width - width - 3 : 3
+                        color: "white"
+                        opacity: root.selectedMode === "dark" ? 1.0 : 0.55
+                        Behavior on x       { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 160 } }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.selectedMode = root.selectedMode === "dark" ? "light" : "dark"
+                    }
+                }
+
+                Text {
+                    text: "Dark"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 11
+                    opacity: root.selectedMode === "dark" ? 0.9 : 0.35
+                    verticalAlignment: Text.AlignVCenter
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                }
+
+                // Vertical separator
+                Rectangle {
+                    width: 1; height: 18
+                    color: Theme.borderColor
+                    opacity: 0.5
+                }
             }
 
+            // ── Dynamic colors toggle ─────────────────────────────
             Text {
                 text: "Dynamic colors"
                 color: Theme.foreground
@@ -87,47 +150,26 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            // ── Custom Toggle ─────────────────────────────────────
             Rectangle {
                 width: 44
                 height: 24
                 radius: 12
-                color: root.applyDynamicColors ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9) : Theme.backgroundAlt
+                color: root.applyDynamicColors
+                    ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9)
+                    : Theme.backgroundAlt
                 border.color: root.applyDynamicColors ? Theme.selected : Theme.borderColor
                 border.width: 1
+                Behavior on color       { ColorAnimation { duration: 160 } }
+                Behavior on border.color { ColorAnimation { duration: 160 } }
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-
-                // Thumb
                 Rectangle {
-                    width: 18
-                    height: 18
-                    radius: 9
+                    width: 18; height: 18; radius: 9
                     anchors.verticalCenter: parent.verticalCenter
                     x: root.applyDynamicColors ? parent.width - width - 3 : 3
                     color: "white"
                     opacity: root.applyDynamicColors ? 1.0 : 0.55
-
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 160
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 160
-                        }
-                    }
+                    Behavior on x       { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                    Behavior on opacity { NumberAnimation { duration: 160 } }
                 }
 
                 MouseArea {
@@ -146,7 +188,7 @@ Item {
             opacity: 0.4
         }
 
-        // ── Horizontal Wallpaper List ─────────────────────────────
+        // ── Wallpaper List ────────────────────────────────────────
         ListView {
             id: wallpaperList
             Layout.fillWidth: true
@@ -154,12 +196,12 @@ Item {
             orientation: ListView.Horizontal
             spacing: 10
             clip: true
-            model: internal.wallpaperModel
+            model: ThemeService.wallpapers
             boundsBehavior: Flickable.StopAtBounds
             highlightMoveDuration: 200
             focus: true
-
             activeFocusOnTab: true
+
             property bool keyboardNavigating: false
 
             Timer {
@@ -168,30 +210,19 @@ Item {
                 onTriggered: wallpaperList.keyboardNavigating = false
             }
 
-            Keys.onLeftPressed: {
-                keyboardNavigating = true;
-                keyboardLockTimer.restart();
-                decrementCurrentIndex();
-            }
-            Keys.onRightPressed: {
-                keyboardNavigating = true;
-                keyboardLockTimer.restart();
-                incrementCurrentIndex();
-            }
+            Keys.onLeftPressed:  { keyboardNavigating = true; keyboardLockTimer.restart(); decrementCurrentIndex(); }
+            Keys.onRightPressed: { keyboardNavigating = true; keyboardLockTimer.restart(); incrementCurrentIndex(); }
             Keys.onReturnPressed: _confirmCurrent()
-            Keys.onEnterPressed: _confirmCurrent()
+            Keys.onEnterPressed:  _confirmCurrent()
 
-            // ── Preview on keyboard navigation ────────────────────
-            // currentItem εκθέτει το itemPath του delegate
             onCurrentItemChanged: {
-                if (currentItem && currentItem.itemPath) {
+                if (currentItem?.itemPath) {
                     root.previewPath = currentItem.itemPath;
                     previewTimer.restart();
                     restoreTimer.stop();
                 }
             }
 
-            // ── Restore όταν φεύγει ο χρήστης από τη λίστα ───────
             HoverHandler {
                 onHoveredChanged: {
                     if (!hovered) {
@@ -203,23 +234,25 @@ Item {
             }
 
             function _confirmCurrent() {
-                if (currentItem && currentItem.itemPath) {
-                    let path = currentItem.itemPath;
-                    root.confirmedPath = path;
+                if (currentItem?.itemPath) {
+                    root.confirmedPath = currentItem.itemPath;
                     root.previewPath = "";
                     previewTimer.stop();
-                    WallpaperService.setWallpaper(path, root.applyDynamicColors);
+                    ThemeService.setWallpaper(
+                        currentItem.itemPath,
+                        root.applyDynamicColors,
+                        root.selectedMode
+                    );
                 }
             }
 
             delegate: Item {
                 id: delegateItem
 
-                // ✅ Εκθέτουμε path ώστε το ListView.currentItem.itemPath να δουλεύει
-                property string itemPath: model.filePath.replace("file://", "")
-                property bool isHovered: mouseArea.containsMouse
-                property bool isCurrent: wallpaperList.currentIndex === index
-                property bool isConfirmed: itemPath === root.confirmedPath
+                property string itemPath:  modelData.path
+                property bool isHovered:   mouseArea.containsMouse
+                property bool isCurrent:   wallpaperList.currentIndex === index
+                property bool isConfirmed: DynamicColors.wallpaper === itemPath
 
                 width: 300
                 height: wallpaperList.height
@@ -231,36 +264,26 @@ Item {
                     radius: Theme.radius
                     color: "transparent"
 
-                    border.width: isConfirmed ? 2 : (isHovered || isCurrent ? 2 : 1)
-                    border.color: isConfirmed ? Theme.selected : (isHovered || isCurrent ? Qt.rgba(Theme.foreground.r, Theme.foreground.g, Theme.foreground.b, 0.5) : Theme.borderColor)
+                    border.width: isConfirmed || isHovered || isCurrent ? 2 : 1
+                    border.color: isConfirmed
+                        ? Theme.selected
+                        : (isHovered || isCurrent
+                            ? Qt.rgba(Theme.foreground.r, Theme.foreground.g, Theme.foreground.b, 0.5)
+                            : Theme.borderColor)
 
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 200
-                        }
-                    }
-                    Behavior on border.width {
-                        NumberAnimation {
-                            duration: 150
-                        }
-                    }
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
+                    Behavior on border.width  { NumberAnimation { duration: 150 } }
 
-                    // ── Wallpaper image ────────────────────────────
                     Image {
                         id: sourceImage
                         anchors.fill: parent
                         anchors.margins: card.border.width
-                        source: model.filePath
+                        source: "file://" + modelData.path
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         visible: false
                         scale: (isHovered || isCurrent) ? 1.04 : 1.0
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: 220
-                                easing.type: Easing.OutCubic
-                            }
-                        }
+                        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     }
 
                     Rectangle {
@@ -276,17 +299,12 @@ Item {
                         maskSource: imgMask
                     }
 
-                    // Dim overlay
                     Rectangle {
                         anchors.fill: sourceImage
                         color: "black"
                         radius: imgMask.radius
                         opacity: (isHovered || isCurrent) ? 0.0 : 0.35
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: 200
-                            }
-                        }
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
                     }
 
                     // ── Confirmed badge ────────────────────────────
@@ -296,9 +314,7 @@ Item {
                         anchors.right: parent.right
                         anchors.topMargin: 8
                         anchors.rightMargin: 8
-                        width: 22
-                        height: 22
-                        radius: 11
+                        width: 22; height: 22; radius: 11
                         color: Theme.selected
 
                         Text {
@@ -324,12 +340,7 @@ Item {
                             anchors.fill: parent
                             anchors.leftMargin: 8
                             anchors.rightMargin: 8
-                            text: {
-                                // Αφαίρεση extension
-                                let parts = (model.fileName || "").split(".");
-                                parts.pop();
-                                return parts.join(".");
-                            }
+                            text: modelData.name
                             color: "white"
                             font.family: Theme.fontName
                             font.pixelSize: 10
@@ -345,8 +356,7 @@ Item {
                         cursorShape: Qt.PointingHandCursor
 
                         onEntered: {
-                            if (wallpaperList.keyboardNavigating)
-                                return;
+                            if (wallpaperList.keyboardNavigating) return;
                             restoreTimer.stop();
                             wallpaperList.currentIndex = index;
                             root.previewPath = delegateItem.itemPath;
@@ -354,11 +364,14 @@ Item {
                         }
 
                         onClicked: {
-                            let path = delegateItem.itemPath;
-                            root.confirmedPath = path;
+                            root.confirmedPath = delegateItem.itemPath;
                             root.previewPath = "";
                             previewTimer.stop();
-                            WallpaperService.setWallpaper(path, root.applyDynamicColors);
+                            ThemeService.setWallpaper(
+                                delegateItem.itemPath,
+                                root.applyDynamicColors,
+                                root.selectedMode
+                            );
                         }
                     }
                 }
@@ -366,11 +379,13 @@ Item {
         }
     }
 
-    // ── Empty state ───────────────────────────────────────────────
+    // ── Empty / loading state ─────────────────────────────────────
     Text {
         anchors.centerIn: parent
-        visible: internal.wallpaperModel.count === 0
-        text: "No wallpapers found in\n" + WallpaperService.wallpaperDir
+        visible: ThemeService.wallpapers.length === 0
+        text: root.loading
+            ? "Loading wallpapers..."
+            : "No wallpapers found in\n~/Pictures/Wallpapers"
         color: Theme.foreground
         font.family: Theme.fontName
         font.pixelSize: 13

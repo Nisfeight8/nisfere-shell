@@ -1,7 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import Qt.labs.folderlistmodel
-import Quickshell
 import qs.core
 import qs.services
 
@@ -9,24 +7,18 @@ Item {
     id: root
     anchors.fill: parent
 
-    // Το μονοπάτι που βρίσκονται τα JSONs
-    property string userHome: Quickshell.env("HOME")
-    property string themesDir: ThemeService.themesDir
+    property bool loading: true
+    property string activeMode: DynamicColors.mode  // sync with current state
 
-    // Κρατάμε ποιο θέμα έχουμε επιλέξει (για να του βάζουμε ένα checkmark)
-    property string confirmedPath: ""
+    Component.onCompleted: {
+        themeList.forceActiveFocus();
+        ThemeService.fetchThemes();
+    }
 
-    // Μόλις ανοίξει, το ListView παίρνει focus για να δουλεύει το πληκτρολόγιο
-    Component.onCompleted: themeList.forceActiveFocus()
-
-    // Το Model που διαβάζει τα JSON (On-Demand Loading)
-    QtObject {
-        id: internal
-        property var themeModel: FolderListModel {
-            folder: root.themesDir
-            nameFilters: ["*.json"] // Φιλτράρουμε ΜΟΝΟ τα json αρχεία!
-            showDirs: false
-            sortField: FolderListModel.Name
+    Connections {
+        target: ThemeService
+        function onThemesLoaded() {
+            root.loading = false;
         }
     }
 
@@ -36,21 +28,96 @@ Item {
         spacing: 12
 
         // ── Header ────────────────────────────────────────────────
-        Column {
-            spacing: 2
-            Text {
-                text: "Color Themes"
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 16
-                font.bold: true
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 10
+
+            Column {
+                spacing: 2
+                Text {
+                    text: "Color Themes"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 16
+                    font.bold: true
+                }
+                Text {
+                    text: root.loading ? "Loading..." : ThemeService.themes.length + " themes available"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 11
+                    opacity: 0.45
+                }
             }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            // ── Dark / Light toggle ───────────────────────────────
             Text {
-                text: internal.themeModel.count + " themes available"
+                text: "Light"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 11
-                opacity: 0.45
+                font.pixelSize: 12
+                opacity: root.activeMode === "light" ? 1.0 : 0.4
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Rectangle {
+                width: 44
+                height: 24
+                radius: 12
+                color: root.activeMode === "dark" ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9) : Theme.backgroundAlt
+                border.color: root.activeMode === "dark" ? Theme.selected : Theme.borderColor
+                border.width: 1
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 160
+                    }
+                }
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 160
+                    }
+                }
+
+                Rectangle {
+                    width: 18
+                    height: 18
+                    radius: 9
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: root.activeMode === "dark" ? parent.width - width - 3 : 3
+                    color: "white"
+                    opacity: root.activeMode === "dark" ? 1.0 : 0.55
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 160
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 160
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.activeMode = root.activeMode === "dark" ? "light" : "dark"
+                }
+            }
+
+            Text {
+                text: "Dark"
+                color: Theme.foreground
+                font.family: Theme.fontName
+                font.pixelSize: 12
+                opacity: root.activeMode === "dark" ? 1.0 : 0.4
+                verticalAlignment: Text.AlignVCenter
             }
         }
 
@@ -62,15 +129,15 @@ Item {
             opacity: 0.4
         }
 
-        // ── Vertical Theme List ───────────────────────────────────
+        // ── Theme list ─────────────────────────────────────────────
         ListView {
             id: themeList
             Layout.fillWidth: true
             Layout.fillHeight: true
-            orientation: ListView.Vertical // ΚΑΘΕΤΗ λίστα!
+            orientation: ListView.Vertical
             spacing: 8
             clip: true
-            model: internal.themeModel
+            model: ThemeService.themes
             boundsBehavior: Flickable.StopAtBounds
             focus: true
             activeFocusOnTab: true
@@ -83,7 +150,6 @@ Item {
                 onTriggered: themeList.keyboardNavigating = false
             }
 
-            // Πλοήγηση με τα Πάνω/Κάτω βελάκια!
             Keys.onUpPressed: {
                 keyboardNavigating = true;
                 keyboardLockTimer.restart();
@@ -98,31 +164,25 @@ Item {
             Keys.onEnterPressed: _confirmCurrent()
 
             function _confirmCurrent() {
-                if (currentItem && currentItem.itemPath) {
-                    let path = currentItem.itemPath;
-                    root.confirmedPath = path;
-                    // Καλούμε το Service μας!
-                    ThemeService.setColors(path, "dark");
-                }
+                if (currentItem?.itemName)
+                    ThemeService.setColors(currentItem.itemName, root.activeMode);
             }
 
-            // ── Delegate (Κάθε Στοιχείο της Λίστας) ───────────────
             delegate: Rectangle {
                 id: delegateItem
 
-                property string itemPath: model.filePath.replace("file://", "")
+                // modelData is {name: string} from daemon
+                property string itemName: modelData.name
                 property bool isHovered: mouseArea.containsMouse
                 property bool isCurrent: themeList.currentIndex === index
-                property bool isConfirmed: itemPath === root.confirmedPath
+                property bool isConfirmed: DynamicColors.sourceType === "static" && DynamicColors.sourceName === modelData.name
 
                 width: ListView.view.width
-                height: 55 // Σταθερό ύψος σαν κουμπί μενού
+                height: 55
                 radius: Theme.radius
 
-                // Δυναμικό Χρώμα Background
                 color: isConfirmed ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : (isHovered || isCurrent ? Theme.backgroundAlt : "transparent")
 
-                // Δυναμικό Border
                 border.width: 1
                 border.color: isConfirmed ? Theme.selected : (isHovered || isCurrent ? Theme.borderColor : "transparent")
 
@@ -142,34 +202,44 @@ Item {
                     anchors.margins: 12
                     spacing: 15
 
-                    // Ένα μικρό εικονίδιο / κουκκίδα μπροστά
                     Rectangle {
                         width: 12
                         height: 12
                         radius: 6
-                        color: isConfirmed ? Theme.selected : Theme.foreground
-                        opacity: isConfirmed ? 1.0 : (isHovered || isCurrent ? 0.6 : 0.3)
+                        color: delegateItem.isConfirmed ? Theme.selected : Theme.foreground
+                        opacity: delegateItem.isConfirmed ? 1.0 : (delegateItem.isHovered || delegateItem.isCurrent ? 0.6 : 0.3)
                     }
 
-                    // Το όνομα του αρχείου
                     Text {
                         Layout.fillWidth: true
-                        text: {
-                            // Καθαρίζουμε το ".json" για να φαίνεται ωραίο
-                            let parts = (model.fileName || "").split(".");
-                            parts.pop();
-                            return parts.join(".");
-                        }
-                        color: isConfirmed ? Theme.selected : Theme.foreground
+                        text: modelData.name
+                        color: delegateItem.isConfirmed ? Theme.selected : Theme.foreground
                         font.family: Theme.fontName
                         font.pixelSize: 15
-                        font.bold: isConfirmed || isHovered || isCurrent
+                        font.bold: delegateItem.isConfirmed || delegateItem.isHovered || delegateItem.isCurrent
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    // Το Checkmark αν το έχουμε επιλέξει
+                    // Mode badge — shows the mode this theme was applied with
+                    Rectangle {
+                        visible: delegateItem.isConfirmed
+                        width: modeLabel.implicitWidth + 12
+                        height: 20
+                        radius: 10
+                        color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.2)
+
+                        Text {
+                            id: modeLabel
+                            anchors.centerIn: parent
+                            text: DynamicColors.mode
+                            color: Theme.selected
+                            font.family: Theme.fontName
+                            font.pixelSize: 10
+                        }
+                    }
+
                     Text {
-                        visible: isConfirmed
+                        visible: delegateItem.isConfirmed
                         text: "✓"
                         color: Theme.selected
                         font.pixelSize: 16
@@ -182,26 +252,22 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-
                     onEntered: {
                         if (themeList.keyboardNavigating)
                             return;
                         themeList.currentIndex = index;
                     }
-
-                    onClicked: {
-                        themeList._confirmCurrent();
-                    }
+                    onClicked: themeList._confirmCurrent()
                 }
             }
         }
     }
 
-    // ── Empty State ───────────────────────────────────────────────
+    // ── Empty / loading state ─────────────────────────────────────
     Text {
         anchors.centerIn: parent
-        visible: internal.themeModel.count === 0
-        text: "No themes found in\n~/.config/nisfere/themes/"
+        visible: ThemeService.themes.length === 0
+        text: root.loading ? "Loading themes..." : "No themes found in\n~/.config/nisfere/themes/"
         color: Theme.foreground
         font.family: Theme.fontName
         font.pixelSize: 13

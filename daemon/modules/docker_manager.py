@@ -1,118 +1,144 @@
 import asyncio
 import json
+import logging
+
 from services.docker_service import DockerService
+
+logger = logging.getLogger(__name__)
 
 docker_svc = DockerService()
 
-ACTIVE_STREAMS = []
 
-# ==========================================
-# EXPOSED ASYNC WRAPPERS
-# ==========================================
+# ── Stream manager ────────────────────────────────────────────────────────────
 
 
-def stop_all_streams():
-    global ACTIVE_STREAMS
-    for proc in ACTIVE_STREAMS:
-        try:
-            proc.terminate()
-        except:
-            pass
-    ACTIVE_STREAMS.clear()
+class _StreamManager:
+    """Tracks active streaming tasks and their subprocesses as pairs."""
+
+    def __init__(self):
+        self._streams: list[tuple[asyncio.Task, asyncio.subprocess.Process]] = []
+
+    def register(self, task: asyncio.Task, proc) -> None:
+        self._streams.append((task, proc))
+
+    def stop_all(self) -> None:
+        for task, proc in self._streams:
+            task.cancel()
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+        self._streams.clear()
+        logger.debug("All streams stopped")
 
 
-async def stream_container_stats(container_id, sock):
-    proc = await docker_svc.get_stats_process(container_id)
-    ACTIVE_STREAMS.append(proc)
+_streams = _StreamManager()
 
+
+# ── Stream coroutines ─────────────────────────────────────────────────────────
+
+
+async def _stream_stats(proc, sock) -> None:
     try:
         while True:
             line = await proc.stdout.readline()
             if not line:
                 break
-
-            stats_str = line.decode("utf-8").strip()
-            if not stats_str:
+            raw = line.decode("utf-8").strip()
+            start = raw.find("{")
+            end = raw.rfind("}") + 1
+            if start == -1 or end == 0:
                 continue
-
-            start_idx = stats_str.find("{")
-            end_idx = stats_str.rfind("}") + 1
-
-            if start_idx != -1 and end_idx != -1:
-                clean_json_str = stats_str[start_idx:end_idx]
-                try:
-                    stats_data = json.loads(clean_json_str)
-                    if sock:
-                        await sock.send({"type": "stream_stat", "payload": stats_data})
-                except json.JSONDecodeError:
-                    pass
+            try:
+                await sock.send(
+                    {"type": "stream_stat", "payload": json.loads(raw[start:end])}
+                )
+            except json.JSONDecodeError:
+                pass
     except asyncio.CancelledError:
+        pass
+    finally:
         proc.terminate()
 
 
-async def stream_container_logs(container_id, sock):
-    proc = await docker_svc.get_logs_process(container_id)
-    ACTIVE_STREAMS.append(proc)
-
+async def _stream_logs(proc, sock) -> None:
     try:
         while True:
             line = await proc.stdout.readline()
             if not line:
                 break
-            if sock:
-                await sock.send({"type": "stream_log", "payload": line.decode("utf-8")})
+            await sock.send({"type": "stream_log", "payload": line.decode("utf-8")})
     except asyncio.CancelledError:
+        pass
+    finally:
         proc.terminate()
 
 
-async def fetch_container_details(container_id):
-    return await asyncio.to_thread(docker_svc.get_container_details, container_id)
+# ── Command handler ───────────────────────────────────────────────────────────
 
 
-async def get_docker_stats():
-    return await asyncio.to_thread(docker_svc.get_docker_status)
-
-
-async def perform_docker_action(action, target, action_type):
-    if action_type == "compose":
-        return await docker_svc.docker_action_async(action, target, action_type)
-    else:
-        return await asyncio.to_thread(
-            docker_svc.docker_action, action, target, action_type
-        )
-
-
-async def handle_command(action, payload, sock):
-    target = payload.get("target", None)
+async def handle_command(action: str, payload: dict, sock) -> None:
+    target = payload.get("target")
     action_type = payload.get("action_type", "container")
-
-    print(f"Docker Module · {action_type} · {action} → {target}")
+    logger.info("Docker · %s · %s → %s", action_type, action, target)
 
     try:
-        if action == "inspect_container":
-            details = await fetch_container_details(target)
-            if sock:
+        match action:
+            case "get_stats":
+                stats = await asyncio.to_thread(docker_svc.get_docker_status)
+                await sock.send(stats)
+
+            case "inspect_container":
+                details = await asyncio.to_thread(
+                    docker_svc.get_container_details, target
+                )
                 await sock.send(details)
-            return
 
-        if action == "start_stream":
-            stop_all_streams()
-            asyncio.create_task(stream_container_stats(target, sock))
-            asyncio.create_task(stream_container_logs(target, sock))
-            return
+            case "start_stream":
+                _streams.stop_all()
+                stats_proc = await docker_svc.get_stats_process(target)
+                logs_proc = await docker_svc.get_logs_process(target)
+                _streams.register(
+                    asyncio.create_task(_stream_stats(stats_proc, sock)), stats_proc
+                )
+                _streams.register(
+                    asyncio.create_task(_stream_logs(logs_proc, sock)), logs_proc
+                )
 
-        if action == "stop_stream":
-            stop_all_streams()
-            return
+            case "stop_stream":
+                _streams.stop_all()
 
-        if action == "get_stats":
-            docker_stats = await get_docker_stats()
-            await sock.send(docker_stats)
-            return
+            case _:
+                # Container / image / volume / compose actions
+                if action_type == "compose":
+                    success = await docker_svc.docker_action_async(
+                        action, target, action_type
+                    )
+                else:
+                    success = await asyncio.to_thread(
+                        docker_svc.docker_action, action, target, action_type
+                    )
 
-        success = await perform_docker_action(action, target, action_type)
-        if success and sock:
-            await sock.send(await get_docker_stats())
+                if success:
+                    await sock.send(
+                        await asyncio.to_thread(docker_svc.get_docker_status)
+                    )
+                else:
+                    await sock.send(
+                        {
+                            "type": "error",
+                            "payload": {
+                                "action": action,
+                                "error": "Docker action failed",
+                            },
+                        }
+                    )
 
     except Exception as e:
-        print(f"Docker Command Error: {e}")
+        logger.error("Docker command error [%s]: %s", action, e)
+        await sock.send(
+            {
+                "type": "error",
+                "payload": {"action": action, "error": str(e)},
+            }
+        )

@@ -16,6 +16,5 @@ singleton BluetoothService 1.0 BluetoothService.qml
 singleton SocketService 1.0 SocketService.qml
 singleton DockerService 1.0 DockerService.qml
 singleton LockerService 1.0 LockerService.qml
-singleton WallpaperService 1.0 WallpaperService.qml
 singleton DynamicColors 1.0 DynamicColors.qml
 singleton ThemeService 1.0 ThemeService.qml
