@@ -392,7 +392,12 @@ class ThemeManager:
                 template_vars["border_color"] = filter_lighten(bg, 0.10)
 
             self._render_all(template_vars)
-            self._sync_papirus_folders(template_vars.get("color4", ""))
+            threading.Thread(
+                target=self._sync_papirus_folders,
+                args=(template_vars.get("color4", ""),),
+                daemon=True,
+            ).start()
+            self._reload_system(mode)
             self._reload_system(mode)
 
             self._save_state(
@@ -512,7 +517,7 @@ class ThemeManager:
             try:
                 # Always use base adw-gtk3 — CSS variables in gtk.css handle all colors.
                 # dark/light variant is irrelevant since we override everything via @define-color.
-                gtk_theme = "'adw-gtk3-dark'" if mode == "dark" else "'adw-gtk3'"
+                gtk_theme = "adw-gtk3-dark" if mode == "dark" else "adw-gtk3"
 
                 # color-scheme: tells GNOME apps and portals the light/dark preference.
                 # Colors themselves come from our rendered CSS, not from this setting.
