@@ -7,18 +7,18 @@ import qs.services
 
 GlassCard {
     id: miniClockCard
+    implicitWidth: mainLayout.implicitWidth + mainLayout.anchors.margins * 2
+    implicitHeight: mainLayout.implicitHeight + mainLayout.anchors.margins * 2
 
-    Layout.fillHeight: true
-    Layout.fillWidth: true
+    readonly property real cellSize: 40
 
     SystemClock {
         id: sysClock
-
         precision: SystemClock.Seconds
     }
+
     ColumnLayout {
         id: mainLayout
-
         property real refSize: 120
 
         anchors.fill: parent
@@ -40,17 +40,19 @@ GlassCard {
                 Layout.alignment: Qt.AlignHCenter
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: Math.max(12, mainLayout.refSize * 0.045)
+                font.pixelSize: Math.max(15, mainLayout.refSize * 0.045)
                 opacity: 0.6
                 text: Qt.formatDateTime(sysClock.date, "dddd, d MMMM")
             }
         }
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
             color: Theme.foreground
             opacity: 0.1
         }
+
         ColumnLayout {
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -74,12 +76,10 @@ GlassCard {
 
                     MouseArea {
                         id: prevMouse
-
                         anchors.fill: parent
                         anchors.margins: -5
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-
                         onClicked: monthGrid.previousMonth()
                     }
                 }
@@ -107,23 +107,21 @@ GlassCard {
 
                     MouseArea {
                         id: nextMouse
-
                         anchors.fill: parent
                         anchors.margins: -5
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-
                         onClicked: monthGrid.nextMonth()
                     }
                 }
             }
+
             DayOfWeekRow {
                 Layout.fillWidth: true
                 locale: monthGrid.locale
 
                 delegate: Text {
                     required property string shortName
-
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
@@ -134,6 +132,7 @@ GlassCard {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
+
             MonthGrid {
                 id: monthGrid
 
@@ -141,32 +140,27 @@ GlassCard {
                     if (month === 11) {
                         year++;
                         month = 0;
-                    } else {
+                    } else
                         month++;
-                    }
                 }
                 function previousMonth() {
                     if (month === 0) {
                         year--;
                         month = 11;
-                    } else {
+                    } else
                         month--;
-                    }
                 }
 
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                Layout.minimumHeight: 200
+                Layout.preferredWidth: miniClockCard.cellSize * 8
+                Layout.preferredHeight: miniClockCard.cellSize * 5
                 month: sysClock.date.getMonth()
-                spacing: 2
                 year: sysClock.date.getFullYear()
 
                 delegate: Item {
                     required property var model
 
                     Rectangle {
-                        property real circleSize: Math.min(parent.width, parent.height) * 0.95
-
+                        property real circleSize: Math.min(parent.width, parent.height) * 0.75
                         anchors.centerIn: parent
                         color: model.today ? Theme.selected : (dayMouseArea.containsMouse ? Theme.foreground : "transparent")
                         height: circleSize
@@ -190,7 +184,6 @@ GlassCard {
                     }
                     MouseArea {
                         id: dayMouseArea
-
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true

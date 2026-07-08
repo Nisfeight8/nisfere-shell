@@ -8,23 +8,18 @@ import qs.services
 Item {
     id: launcherRoot
 
-    Layout.fillHeight: true
-    Layout.fillWidth: true
+    // ✅ ΝΕΟ — ανεξάρτητο, literal μέγεθος. Χωρίς αυτό, το ScrollView
+    // (χωρίς δικό του ουσιαστικό implicitHeight) σταματάει την αλυσίδα στο 0.
+    implicitWidth: 520
+    implicitHeight: 480
 
     property int columns: 4
     property string selectedAppName: ""
-    Connections {
-        target: ShellState
-        function onLauncherOpenedChanged() {
-            if (ShellState.launcherOpened) {
-                searchInput.forceActiveFocus();
-                let apps = DesktopEntries.applications;
-                selectedAppName = apps.length > 0 ? apps[0].name : "";
-            } else {
-                searchInput.text = "";
-                selectedAppName = "";
-            }
-        }
+
+    Component.onCompleted: {
+        searchInput.forceActiveFocus();
+        let apps = DesktopEntries.applications;
+        selectedAppName = apps.count > 0 ? apps.values[0].name : "";
     }
 
     function getVisibleApps() {
@@ -44,11 +39,9 @@ Item {
         let visible = getVisibleApps();
         if (visible.length === 0)
             return;
-
         let idx = visible.findIndex(app => app.name === selectedAppName);
         if (idx === -1)
             idx = 0;
-
         let newIdx = Math.max(0, Math.min(visible.length - 1, idx + delta));
         selectedAppName = visible[newIdx].name;
     }
@@ -56,7 +49,6 @@ Item {
     function launchSelected() {
         if (selectedAppName === "")
             return;
-
         for (let i = 0; i < appsRepeater.count; i++) {
             let item = appsRepeater.itemAt(i);
             if (item && item.appName === selectedAppName) {
@@ -68,10 +60,11 @@ Item {
     }
 
     ColumnLayout {
+        // ✅ Ασφαλές εδώ: launcherRoot.implicitWidth/Height είναι ΑΝΕΞΑΡΤΗΤΑ literals,
+        // δεν διαβάζουν πίσω από αυτό το ColumnLayout — καμία κυκλική εξάρτηση.
         anchors.fill: parent
         spacing: 15
 
-        // ── Search bar ─────────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
             border.color: searchInput.activeFocus ? Theme.selected : "transparent"
@@ -151,7 +144,6 @@ Item {
             }
         }
 
-        // ── Apps Grid ──────────────────────────────────────────────
         ScrollView {
             id: appsScrollView
 
@@ -175,7 +167,6 @@ Item {
 
                         readonly property string appName: modelData.name
                         readonly property var appData: modelData
-
                         readonly property bool isMatch: searchInput.text === "" || modelData.name.toLowerCase().includes(searchInput.text.toLowerCase())
                         readonly property bool isSelected: launcherRoot.selectedAppName === modelData.name
 
@@ -221,7 +212,6 @@ Item {
                                 sourceSize.height: 48
                                 sourceSize.width: 48
                             }
-
                             Text {
                                 Layout.alignment: Qt.AlignHCenter
                                 Layout.maximumWidth: (appsFlow.width / launcherRoot.columns) - 16
@@ -239,11 +229,9 @@ Item {
 
                         MouseArea {
                             id: appMouse
-
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
-
                             onEntered: launcherRoot.selectedAppName = modelData.name
                             onClicked: {
                                 modelData.execute();

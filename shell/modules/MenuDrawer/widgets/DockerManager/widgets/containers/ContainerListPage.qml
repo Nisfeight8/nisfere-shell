@@ -8,9 +8,6 @@ import "widgets"
 Rectangle {
     id: root
 
-    Component.onCompleted: console.log("INSIDE CREATION FROM DOCKER WIDGET")
-    Component.onDestruction: console.log("INSIDE DESTRUCTION")
-
     property var expandedProjects: ({})
     property var projectsArray: {
         var out = [];

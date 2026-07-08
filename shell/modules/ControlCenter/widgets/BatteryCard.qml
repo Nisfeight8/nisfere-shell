@@ -1,33 +1,28 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
-
 import qs.core
 import qs.services
 
 GlassCard {
     id: batteryCard
-
     Layout.fillWidth: true
     implicitHeight: batteryRow.implicitHeight + 30
-
     visible: BatteryService.hasBattery
-
-    
 
     RowLayout {
         id: batteryRow
-
         anchors.fill: parent
         anchors.margins: 15
         spacing: 15
 
         LucideIcon {
             Layout.alignment: Qt.AlignVCenter
-            color: (BatteryService.percentage <= 20 && !BatteryService.isCharging) ? Theme.color1 : Theme.selected
+            color: (BatteryService.percentage <= 20 && !BatteryService.isCharging)
+                ? Theme.color1 : Theme.selected
             size: 34
             icon: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
         }
+
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 6
@@ -52,12 +47,13 @@ GlassCard {
 
             Rectangle {
                 Layout.fillWidth: true
-                color: Theme.background
-                height: 6
+                Layout.preferredHeight: 6  // ← fix: ColumnLayout τώρα "βλέπει" το ύψος
                 radius: 3
+                color: Theme.background
 
                 Rectangle {
-                    color: (BatteryService.percentage <= 20 && !BatteryService.isCharging) ? Theme.color1 : Theme.selected
+                    color: (BatteryService.percentage <= 20 && !BatteryService.isCharging)
+                        ? Theme.color1 : Theme.selected
                     height: parent.height
                     radius: 3
                     width: parent.width * (BatteryService.percentage / 100)

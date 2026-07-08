@@ -7,13 +7,18 @@ import qs.services
 Item {
     id: root
 
-    readonly property real baseScale: Math.min(root.width / 550, root.height / 600)
+    // ✅ Guard κατά του transient zero-size, ίδιο pattern με Media.qml
+    property real safeWidth: root.width > 0 ? root.width : 550
+    property real safeHeight: root.height > 0 ? root.height : 600
+
+    readonly property real baseScale: Math.min(root.safeWidth / 550, root.safeHeight / 600)
     readonly property real cardHeight: Math.max(75, 85 * baseScale)
     readonly property real fontSizeBody: Math.max(11, 14 * baseScale)
     readonly property real fontSizeTitle: Math.max(12, 14 * baseScale)
     readonly property real iconSize: Math.max(32, 40 * baseScale)
 
-    anchors.fill: parent
+    implicitWidth: Screen.width / 2.5
+    implicitHeight: Screen.height / 3.4
 
     ColumnLayout {
         anchors.fill: parent
@@ -22,7 +27,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            height: 45
+            Layout.preferredHeight: 45
 
             RowLayout {
                 spacing: 10
@@ -212,6 +217,7 @@ Item {
                             }
                             Text {
                                 Layout.fillWidth: true
+                                Layout.preferredWidth: 0   // ✅ defensive — elide δεν επηρεάζει implicit width
                                 color: Theme.foreground
                                 elide: Text.ElideRight
                                 font.bold: true
@@ -221,6 +227,7 @@ Item {
                             }
                             Text {
                                 Layout.fillWidth: true
+                                Layout.preferredWidth: 0   // ✅ defensive
                                 color: Theme.foreground
                                 elide: Text.ElideRight
                                 font.family: Theme.fontName

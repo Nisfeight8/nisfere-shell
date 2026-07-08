@@ -16,6 +16,8 @@ QtObject {
         path: "/etc/os-release"
     }
     property FileView _uptimeFile: FileView {
+        blockLoading: true
+
         path: "/proc/uptime"
     }
     property Timer _uptimeTimer: Timer {
@@ -28,6 +30,7 @@ QtObject {
             sysInfo._uptimeFile.reload();
 
             let content = sysInfo._uptimeFile.text().trim();
+
             if (content) {
                 let seconds = parseFloat(content.split(" ")[0]);
                 sysInfo.uptime = sysInfo.formatUptime(seconds);
@@ -49,6 +52,7 @@ QtObject {
 
         return "up " + parts.join(", ");
     }
+    
 
     Component.onCompleted: {
         var content = _osReleaseFile.text();

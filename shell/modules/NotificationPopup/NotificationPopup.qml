@@ -7,41 +7,52 @@ import qs.services
 BaseDrawer {
     id: popupWindow
 
+    // ── State ────────────────────────────────────────────────────────────
     property var currentNotif: null
-    property int savedHeight: loadedItem ? loadedItem.implicitHeight : 0
-    // ✅ Νέο: 1.0 = πλήρες bar, 0.0 = άδειο
     property real notifProgress: 1.0
 
+    // Shorthand — αποφεύγει το currentNotif && currentNotif.x παντού
+    readonly property bool hasNotif: currentNotif !== null
+    readonly property bool isCritical: hasNotif && currentNotif.isCritical
+    readonly property bool hasImage: hasNotif && currentNotif.nImage !== ""
+    readonly property bool hasAppIcon: hasNotif && currentNotif.nAppIcon !== ""
+    readonly property bool hasActions: hasNotif && currentNotif.actions && currentNotif.actions.length > 0
+
+    // ── BaseDrawer config ─────────────────────────────────────────────────
     asynchronousLoad: false
     WlrLayershell.layer: WlrLayer.Overlay
+
     edge: Qt.TopEdge
     edgeMargin: 0
-    opened: currentNotif !== null
-    panelHeight: savedHeight
-    panelWidth: 500
     screenOffset: Theme.barHeight
     toggleOnHover: false
 
-    onCloseRequest: popupWindow.currentNotif = null
+    // Fixed width — χωρίς resize ποτέ, BaseDrawer υπολογίζει height κανονικά
+    // από το implicitHeight του content (δεν override-άρουμε panelHeight/panelWidth)
+    minPanelWidth: 500
+    maxPanelWidth: 500
 
+    opened: hasNotif
+    onCloseRequest: currentNotif = null
+
+    // ── Notification service ──────────────────────────────────────────────
     Connections {
+        target: NotificationService
         function onShowPopup(notifData) {
             popupWindow.currentNotif = notifData;
             hideTimer.restart();
-            // ✅ Reset + restart το progress animation σε κάθε νέα ειδοποίηση
             popupWindow.notifProgress = 1.0;
             progressAnim.restart();
         }
-        target: NotificationService
     }
 
+    // ── Timers & animations ───────────────────────────────────────────────
     Timer {
         id: hideTimer
         interval: 5000
         onTriggered: popupWindow.currentNotif = null
     }
 
-    // ✅ Standalone animation, όχι "on width" - γράφει στο notifProgress
     NumberAnimation {
         id: progressAnim
         target: popupWindow
@@ -52,6 +63,7 @@ BaseDrawer {
         easing.type: Easing.Linear
     }
 
+    // ── Content ───────────────────────────────────────────────────────────
     contentComponent: Component {
         Item {
             id: mainContainer
@@ -60,89 +72,109 @@ BaseDrawer {
 
             ColumnLayout {
                 id: mainColumn
-                anchors.fill: parent
-                anchors.margins: 15
+                anchors {
+                    fill: parent
+                    margins: 15
+                }
                 spacing: 12
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignTop
+                // ── Progress bar ──────────────────────────────────────────
+                Item {
                     Layout.fillWidth: true
-                    spacing: 13
-                    Item {
-                        id: progressTrack
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 5
-
-                        Rectangle {
-                            id: progressBar
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            color: Theme.selected
-                            // ✅ Binding, όχι snapshot - πάντα σωστό,
-                            // ανεξάρτητα πότε έγινε layout το progressTrack
-                            width: progressTrack.width * popupWindow.notifProgress
-                        }
-                    }
-                }
-                RowLayout {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.fillWidth: true
-                    spacing: 13
+                    Layout.preferredHeight: 3
 
                     Rectangle {
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                        }
+                        color: Theme.selected
+                        width: parent.width * popupWindow.notifProgress
+                    }
+                }
+
+                // ── Main row: icon + text ─────────────────────────────────
+                RowLayout {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: true
+                    spacing: 13
+
+                    // Icon / image
+                    Rectangle {
+                        readonly property int _size: popupWindow.hasImage ? 120 : 56
+
                         Layout.alignment: Qt.AlignTop
-                        Layout.preferredHeight: popupWindow.currentNotif && popupWindow.currentNotif.nImage !== "" ? 120 : 56
-                        Layout.preferredWidth: popupWindow.currentNotif && popupWindow.currentNotif.nImage !== "" ? 120 : 56
+                        Layout.preferredHeight: _size
+                        Layout.preferredWidth: _size
                         border.color: Theme.borderColor
                         border.width: Theme.widgetBorderWidth
                         color: Theme.backgroundAlt
                         radius: Theme.radius * 1.2
 
+                        // Fallback icon — visibile solo quando non c'è immagine
                         LucideIcon {
                             anchors.centerIn: parent
+                            color: popupWindow.isCritical ? Theme.color1 : Theme.selected
+                            icon: popupWindow.isCritical ? "alert-triangle" : "bell"
                             size: 24
-                            color: (popupWindow.currentNotif && popupWindow.currentNotif.isCritical) ? Theme.color1 : Theme.selected
-                            icon: (popupWindow.currentNotif && popupWindow.currentNotif.isCritical) ? "alert-triangle" : "bell"
-                            visible: !popupWindow.currentNotif || (popupWindow.currentNotif.nAppIcon === "" && popupWindow.currentNotif.nImage === "")
+                            visible: !popupWindow.hasAppIcon && !popupWindow.hasImage
                         }
+
+                        // App icon / notification image
                         Image {
-                            anchors.fill: parent
-                            anchors.margins: popupWindow.currentNotif && popupWindow.currentNotif.nImage !== "" ? 0 : 8
+                            anchors {
+                                fill: parent
+                                margins: popupWindow.hasImage ? 0 : 8
+                            }
+                            
                             fillMode: Image.PreserveAspectCrop
-                            source: popupWindow.currentNotif && popupWindow.currentNotif.nAppIcon !== "" ? popupWindow.currentNotif.nAppIcon : (popupWindow.currentNotif && popupWindow.currentNotif.nImage !== "" ? popupWindow.currentNotif.nImage : "")
+                            source: {
+                                if (popupWindow.hasAppIcon)
+                                    return popupWindow.currentNotif.nAppIcon;
+                                if (popupWindow.hasImage)
+                                    return popupWindow.currentNotif.nImage;
+                                return "";
+                            }
+                            sourceSize.height: parent._size
+                            sourceSize.width: parent._size
                             visible: source !== ""
                         }
                     }
+
+                    // Text content
                     ColumnLayout {
                         Layout.alignment: Qt.AlignTop
                         Layout.fillWidth: true
                         spacing: 4
 
+                        // Header row: app name + time + close
                         RowLayout {
                             Layout.fillWidth: true
 
                             Text {
                                 Layout.alignment: Qt.AlignVCenter
-                                color: (popupWindow.currentNotif && popupWindow.currentNotif.isCritical) ? Theme.color1 : Theme.selected
+                                color: popupWindow.isCritical ? Theme.color1 : Theme.selected
                                 font.bold: true
                                 font.family: Theme.fontName
                                 font.pixelSize: 12
-                                text: popupWindow.currentNotif ? popupWindow.currentNotif.nAppName.toUpperCase() : ""
+                                text: popupWindow.hasNotif ? popupWindow.currentNotif.nAppName.toUpperCase() : ""
                             }
+
                             Item {
                                 Layout.fillWidth: true
                             }
+
                             Text {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: Theme.foreground
                                 font.family: Theme.fontName
                                 font.pixelSize: 11
                                 opacity: 0.6
-                                text: popupWindow.currentNotif ? popupWindow.currentNotif.timeReceived : ""
+                                text: popupWindow.hasNotif ? popupWindow.currentNotif.timeReceived : ""
                             }
 
-                            // Close Button
+                            // Close button
                             Rectangle {
                                 Layout.alignment: Qt.AlignVCenter
                                 Layout.leftMargin: 4
@@ -153,27 +185,27 @@ BaseDrawer {
 
                                 LucideIcon {
                                     anchors.centerIn: parent
-                                    size: 14
                                     color: closeMouse.containsMouse ? Theme.background : Theme.foreground
-                                    opacity: closeMouse.containsMouse ? 1.0 : 0.6
                                     icon: "x"
+                                    opacity: closeMouse.containsMouse ? 1.0 : 0.6
+                                    size: 14
                                 }
+
                                 MouseArea {
                                     id: closeMouse
-
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     hoverEnabled: true
-
                                     onClicked: {
-                                        if (popupWindow.currentNotif) {
+                                        if (popupWindow.hasNotif)
                                             NotificationService.dismissNotification(popupWindow.currentNotif);
-                                        }
                                         popupWindow.currentNotif = null;
                                     }
                                 }
                             }
                         }
+
+                        // Summary
                         Text {
                             Layout.fillWidth: true
                             color: Theme.foreground
@@ -181,8 +213,10 @@ BaseDrawer {
                             font.bold: true
                             font.family: Theme.fontName
                             font.pixelSize: 15
-                            text: popupWindow.currentNotif ? popupWindow.currentNotif.nSummary : ""
+                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nSummary : ""
                         }
+
+                        // Body
                         Text {
                             Layout.fillWidth: true
                             color: Theme.foreground
@@ -191,19 +225,20 @@ BaseDrawer {
                             font.pixelSize: 13
                             maximumLineCount: 3
                             opacity: 0.8
-                            text: popupWindow.currentNotif ? popupWindow.currentNotif.nBody : ""
+                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nBody : ""
                             wrapMode: Text.Wrap
                         }
                     }
                 }
+
+                // ── Actions ───────────────────────────────────────────────
                 RowLayout {
-                    // Layout.bottomMargin: 20
                     Layout.fillWidth: true
                     spacing: 12
-                    visible: popupWindow.currentNotif && popupWindow.currentNotif.actions && popupWindow.currentNotif.actions.length > 0
+                    visible: popupWindow.hasActions
 
                     Repeater {
-                        model: popupWindow.currentNotif ? popupWindow.currentNotif.actions : []
+                        model: popupWindow.hasActions ? popupWindow.currentNotif.actions : []
 
                         delegate: Rectangle {
                             Layout.fillWidth: true
@@ -221,17 +256,15 @@ BaseDrawer {
                                 font.pixelSize: 12
                                 text: modelData.text
                             }
+
                             MouseArea {
                                 id: actionMouse
-
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 hoverEnabled: true
-
                                 onClicked: {
-                                    if (popupWindow.currentNotif) {
+                                    if (popupWindow.hasNotif)
                                         NotificationService.dismissNotification(popupWindow.currentNotif);
-                                    }
                                     modelData.invoke();
                                     popupWindow.currentNotif = null;
                                 }

@@ -7,6 +7,9 @@ import qs.services
 Item {
     id: root
 
+    implicitWidth: Screen.width / 2.5
+    implicitHeight: Screen.height / 3.4
+
     function getDayName(dateString, index) {
         if (index === 0)
             return "Today";
@@ -17,8 +20,6 @@ Item {
         return days[date.getDay()];
     }
 
-    anchors.fill: parent
-
     ColumnLayout {
         id: mainColumn
 
@@ -28,31 +29,37 @@ Item {
         RowLayout {
             id: topRow
 
-            Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.preferredHeight: 1
             spacing: 10
 
             ColumnLayout {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
+                // Layout.fillHeight: true
+                // Layout.fillWidth: true
                 spacing: 10
 
                 GlassCard {
+                    id: mainWeatherCard
+
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
+                    // ✅ Bubble-up implicit size από το εσωτερικό RowLayout + padding
+                    implicitWidth: weatherRow.implicitWidth + 40
+                    implicitHeight: weatherRow.implicitHeight + 40
+
                     RowLayout {
+                        id: weatherRow
+
                         readonly property var visuals: Icons.getWeatherInfo(WeatherService.weatherCode, WeatherService.isDay)
 
                         anchors.centerIn: parent
                         spacing: 10
 
                         LucideIcon {
-                            color: parent.visuals.color
-                            size: 80
-                            icon: parent.visuals.icon
+                            color: weatherRow.visuals.color
+                            size: 60
+                            icon: weatherRow.visuals.icon
                         }
                         ColumnLayout {
                             spacing: 5
@@ -61,14 +68,14 @@ Item {
                                 color: Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
-                                font.pixelSize: 38
+                                font.pixelSize: 32
                                 text: WeatherService.ready ? Math.round(WeatherService.temperature) + "°C" : "--°C"
                             }
                             Text {
                                 color: Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
-                                font.pixelSize: 20
+                                font.pixelSize: 18
                                 text: WeatherService.ready ? WeatherService.city : "Loading..."
                             }
                             Text {
@@ -89,11 +96,17 @@ Item {
                 spacing: 10
 
                 GlassCard {
+                    id: feelsLikeCard
+
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
+                    // ✅ Bubble-up implicit size
+                    implicitWidth: feelsLikeRow.implicitWidth + 30
+                    implicitHeight: feelsLikeRow.implicitHeight + 30
+
                     RowLayout {
-                        id: infoLayout
+                        id: feelsLikeRow
 
                         anchors.left: parent.left
                         anchors.margins: 15
@@ -115,10 +128,17 @@ Item {
                     }
                 }
                 GlassCard {
+                    id: humidityCard
+
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
+                    implicitWidth: humidityRow.implicitWidth + 30
+                    implicitHeight: humidityRow.implicitHeight + 30
+
                     RowLayout {
+                        id: humidityRow
+
                         anchors.left: parent.left
                         anchors.leftMargin: 15
                         anchors.verticalCenter: parent.verticalCenter
@@ -129,7 +149,6 @@ Item {
                             size: 20
                             icon: "droplets"
                         }
-
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
@@ -140,10 +159,17 @@ Item {
                     }
                 }
                 GlassCard {
+                    id: windCard
+
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
+                    implicitWidth: windRow.implicitWidth + 30
+                    implicitHeight: windRow.implicitHeight + 30
+
                     RowLayout {
+                        id: windRow
+
                         anchors.left: parent.left
                         anchors.leftMargin: 15
                         anchors.verticalCenter: parent.verticalCenter
@@ -154,7 +180,6 @@ Item {
                             size: 20
                             icon: "wind"
                         }
-
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
@@ -166,6 +191,7 @@ Item {
                 }
             }
         }
+
         GlassCard {
             Layout.fillWidth: true
             implicitHeight: forecastTitleText.implicitHeight + 24
@@ -187,7 +213,6 @@ Item {
         RowLayout {
             id: forecastRow
 
-            Layout.fillHeight: true
             Layout.fillWidth: true
             spacing: 10
 
@@ -197,18 +222,21 @@ Item {
                 delegate: GlassCard {
                     id: dayCard
 
-                    // Η μέθοδος αυτή επιστρέφει το object { icon: "sun", color: ... }
                     readonly property var dayVisuals: Icons.getWeatherInfo(modelData.weatherCode, true)
 
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
+                    // ✅ Bubble-up implicit size από το dayColumn + padding
+                    implicitWidth: dayColumn.implicitWidth + 24
+                    implicitHeight: dayColumn.implicitHeight + 24
+
                     ColumnLayout {
                         id: dayColumn
+
+                        // ✅ Μόνο centerIn — αφαιρέθηκε το top-down height/width override
                         anchors.centerIn: parent
-                        height: parent.height - 24
                         spacing: 7
-                        width: parent.width - 24
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
@@ -220,13 +248,11 @@ Item {
                             text: root.getDayName(modelData.date, index)
                         }
 
-                        // ΑΝΤΙΚΑΤΑΣΤΑΣΗ: LucideIcon αντί για Text
                         LucideIcon {
                             Layout.alignment: Qt.AlignHCenter
-                            // Το icon και το color έρχονται έτοιμα από το dayVisuals
                             icon: dayCard.dayVisuals.icon
                             color: dayCard.dayVisuals.color
-                            size: 32 // Αντιστοιχεί στο pixelSize: 32
+                            size: 32
                         }
 
                         RowLayout {

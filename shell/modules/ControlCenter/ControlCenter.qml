@@ -11,86 +11,95 @@ BaseDrawer {
 
     cornerMode: true
     edge: Qt.RightEdge
-
     anchors.top: true
     margins.top: Theme.barHeight
     opened: ShellState.controlCenterOpened
-    panelHeight: 650
     panelWidth: Screen.width / 4
     toggleOnHover: false
-
     onCloseRequest: ShellState.controlCenterOpened = false
     onOpenRequest: ShellState.controlCenterOpened = true
     onToggleRequest: ShellState.controlCenterOpened = !ShellState.controlCenterOpened
 
     contentComponent: Component {
-        StackLayout {
-            id: pageStack
-            anchors.fill: parent
-            currentIndex: 0
 
-            Loader {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                active: pageStack.currentIndex === 0
-                asynchronous: true
-                sourceComponent: mainPageComp
-            }
-            Loader {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                active: pageStack.currentIndex === 1
-                asynchronous: true
-                sourceComponent: Component {
-                    WifiPage {
-                        onBackRequested: pageStack.currentIndex = 0
+        Item {
+            id: pageStack
+
+            property int currentIndex: 0
+
+            implicitHeight: animLoader.item?.implicitHeight ?? 0
+
+            // ── Page Components ───────────────────────────────────────────
+            Component {
+                id: mainPageComp
+
+                ColumnLayout {
+                    spacing: 10
+
+                    Text {
+                        Layout.fillWidth: true
+                        color: Theme.foreground
+                        font.bold: true
+                        font.family: Theme.fontName
+                        font.pixelSize: 22
+                        text: "Control Center"
                     }
-                }
-            }
-            Loader {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                active: pageStack.currentIndex === 2
-                asynchronous: true
-                sourceComponent: Component {
-                    BluetoothPage {
-                        onBackRequested: pageStack.currentIndex = 0
+
+                    Toggles {
+                        Layout.fillWidth: true
                     }
-                }
-            }
-            Loader {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                active: pageStack.currentIndex === 3
-                asynchronous: true
-                sourceComponent: Component {
-                    EthernetPage {
-                        onBackRequested: pageStack.currentIndex = 0
+
+                    SlidersCard {
+                        Layout.fillWidth: true
+                    }
+
+                    BatteryCard {
+                        Layout.fillWidth: true
+                    }
+                    SystemStatsCard{
+                        Layout.fillWidth: true
                     }
                 }
             }
 
             Component {
-                id: mainPageComp
-                Item {
-                    anchors.fill: parent
-                    ColumnLayout {
-                        anchors.fill: parent
-                        spacing: 20
-                        Text {
-                            color: Theme.foreground
-                            font.bold: true
-                            font.family: Theme.fontName
-                            font.pixelSize: 22
-                            text: "Control Center"
-                        }
-                        Toggles {}
-                        SlidersCard {}
-                        BatteryCard {}
-                        SystemStatsCard {}
-                        Item {
-                            Layout.fillHeight: true
-                        }
+                id: wifiPageComp
+                WifiPage {
+                    onBackRequested: pageStack.currentIndex = 0
+                }
+            }
+
+            Component {
+                id: btPageComp
+                BluetoothPage {
+                    onBackRequested: pageStack.currentIndex = 0
+                }
+            }
+
+            Component {
+                id: ethPageComp
+                EthernetPage {
+                    onBackRequested: pageStack.currentIndex = 0
+                }
+            }
+
+            // ── Animated Loader ───────────────────────────────────────────
+            AnimLoader {
+                id: animLoader
+                width: parent.width
+
+                sourceComp: {
+                    switch (pageStack.currentIndex) {
+                    case 0:
+                        return mainPageComp;
+                    case 1:
+                        return wifiPageComp;
+                    case 2:
+                        return btPageComp;
+                    case 3:
+                        return ethPageComp;
+                    default:
+                        return mainPageComp;
                     }
                 }
             }

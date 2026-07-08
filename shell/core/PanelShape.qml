@@ -11,6 +11,11 @@ Item {
     readonly property bool isHorizontal: edge === Qt.LeftEdge || edge === Qt.RightEdge
     property int normalRadius: Theme.radius
 
+    // ΝΕΑ ΙΔΙΟΤΗΤΑ: Πόσα pixels να κόψουμε από το κάτω μέρος για οπτική ισορροπία.
+    // Το invRadius / 2 (δηλ. 8px) συνήθως δημιουργεί το τέλειο οπτικό κέντρο,
+    // αλλά μπορείς να το πειράξεις!
+    property int bottomOffset: invRadius / 1.2
+
     Shape {
         id: theShape
 
@@ -65,25 +70,29 @@ Item {
             }
             PathLine {
                 x: root.invRadius
-                y: theShape.height - root.normalRadius
+                // Αφαιρούμε το offset από την αρχή της κάτω καμπύλης
+                y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathArc {
                 direction: PathArc.Counterclockwise
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: root.invRadius + root.normalRadius
-                y: theShape.height
+                // Αφαιρούμε το offset από το κάτω όριο
+                y: theShape.height - root.bottomOffset
             }
             PathLine {
                 x: theShape.width - root.invRadius - root.normalRadius
-                y: theShape.height
+                // Αφαιρούμε το offset από το κάτω όριο
+                y: theShape.height - root.bottomOffset
             }
             PathArc {
                 direction: PathArc.Counterclockwise
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: theShape.width - root.invRadius
-                y: theShape.height - root.normalRadius
+                // Αφαιρούμε το offset από το τέλος της κάτω καμπύλης
+                y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathLine {
                 x: theShape.width - root.invRadius
@@ -100,9 +109,9 @@ Item {
                 y: 0
             }
         }
+
         ShapePath {
             capStyle: ShapePath.RoundCap
-
             fillColor: "transparent"
             joinStyle: ShapePath.RoundJoin
             startX: 0
@@ -118,25 +127,25 @@ Item {
             }
             PathLine {
                 x: root.invRadius
-                y: theShape.height - root.normalRadius
+                y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathArc {
                 direction: PathArc.Counterclockwise
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: root.invRadius + root.normalRadius
-                y: theShape.height
+                y: theShape.height - root.bottomOffset
             }
             PathLine {
                 x: theShape.width - root.invRadius - root.normalRadius
-                y: theShape.height
+                y: theShape.height - root.bottomOffset
             }
             PathArc {
                 direction: PathArc.Counterclockwise
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: theShape.width - root.invRadius
-                y: theShape.height - root.normalRadius
+                y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathLine {
                 x: theShape.width - root.invRadius

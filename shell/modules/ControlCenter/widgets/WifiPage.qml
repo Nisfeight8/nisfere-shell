@@ -2,13 +2,13 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell.Networking
-
 import qs.core
 import qs.services
 
 Item {
     id: root
-    anchors.fill: parent
+
+    implicitHeight: mainColumn.implicitHeight
 
     property string activeSsidPrompt: ""
     property var wifiDevice: NetworkService.wifi.device
@@ -16,17 +16,19 @@ Item {
     signal backRequested
 
     ColumnLayout {
-        anchors.fill: parent
+        id: mainColumn
+        width: parent.width   // top-down, ΟΧΙ anchors.fill!
         spacing: 16
 
-        // ── HEADER ───────────────────────────────────────────────────────────
+        // ── Header ───────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
 
             Rectangle {
-                width: 32
-                height: 32
+                Layout.preferredWidth: 32   // ✓
+                Layout.preferredHeight: 32  // ✓
+                Layout.alignment: Qt.AlignVCenter
                 radius: 16
                 color: backMouse.containsMouse ? Theme.backgroundAlt : "transparent"
                 border.color: Theme.borderColor
@@ -38,6 +40,7 @@ Item {
                     size: 16
                     color: Theme.foreground
                 }
+
                 MouseArea {
                     id: backMouse
                     anchors.fill: parent
@@ -58,12 +61,14 @@ Item {
 
             // Toggle switch
             Rectangle {
-                width: 44
-                height: 24
+                Layout.preferredWidth: 44   // ✓
+                Layout.preferredHeight: 24  // ✓
+                Layout.alignment: Qt.AlignVCenter
                 radius: 12
                 color: NetworkService.wifiEnabled ? Theme.selected : Theme.backgroundAlt
                 border.color: Theme.borderColor
                 border.width: NetworkService.wifiEnabled ? 0 : 1
+
                 Behavior on color {
                     ColorAnimation {
                         duration: 150
@@ -77,6 +82,7 @@ Item {
                     color: Theme.foreground
                     y: 3
                     x: NetworkService.wifiEnabled ? 23 : 3
+
                     Behavior on x {
                         NumberAnimation {
                             duration: 200
@@ -84,6 +90,7 @@ Item {
                         }
                     }
                 }
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
@@ -92,16 +99,18 @@ Item {
             }
         }
 
-        // ── NETWORK LIST ─────────────────────────────────────────────────────
+        // ── Network List (WiFi ON) ────────────────────────────────────────
         ScrollView {
             id: scrollView
-            Layout.fillHeight: true
             Layout.fillWidth: true
+            // Cap: content ύψος ή 400px max — ΟΧΙ fillHeight ✓
+            Layout.preferredHeight: Math.min(networksColumn.implicitHeight, 400)
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             visible: NetworkService.wifiEnabled && root.wifiDevice !== null
 
             ColumnLayout {
+                id: networksColumn   // ← id για το implicitHeight
                 width: scrollView.availableWidth
                 spacing: 6
 
@@ -122,10 +131,11 @@ Item {
                         id: netCard
                         Layout.fillWidth: true
 
-                        // State properties
                         readonly property bool expanded: root.activeSsidPrompt === model.name
                         property string localError: ""
                         readonly property bool hasError: localError !== ""
+
+                        // implicitHeight: per card — σωστό ✓
                         implicitHeight: expanded ? (hasError ? 138 : 116) : 70
                         clip: true
 
@@ -138,7 +148,6 @@ Item {
 
                         Connections {
                             target: NetworkService.wifi
-
                             function onErrorOccurred(ssid, errorMessage) {
                                 if (model.name === ssid) {
                                     netCard.localError = errorMessage;
@@ -151,12 +160,10 @@ Item {
                             id: errorTimer
                             interval: 10000
                             repeat: false
-                            onTriggered: {
-                                netCard.localError = "";
-                            }
+                            onTriggered: netCard.localError = ""
                         }
 
-                        // ── Network info row ─────────────────────────────
+                        // ── Info row — anchors OK γιατί GlassCard έχει explicit implicitHeight
                         RowLayout {
                             id: infoRow
                             anchors {
@@ -170,19 +177,14 @@ Item {
                             height: 46
                             spacing: 10
 
-                            // Signal strength icon
                             LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: model.connected ? Theme.selected : Theme.foreground
                                 size: 16
                                 opacity: model.connected ? 1.0 : 0.75
-                                icon: {
-                                    const s = model.signalStrength;
-                                    return Icons.getWifiItemIcon(s);
-                                }
+                                icon: Icons.getWifiItemIcon(model.signalStrength)
                             }
 
-                            // Network name + status
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
@@ -196,6 +198,7 @@ Item {
                                     text: model.name
                                     elide: Text.ElideRight
                                 }
+
                                 Text {
                                     Layout.fillWidth: true
                                     color: model.connected ? Theme.selected : (netCard.hasError ? Theme.color1 : Theme.foreground)
@@ -206,7 +209,6 @@ Item {
                                 }
                             }
 
-                            // Lock icon
                             LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: Theme.foreground
@@ -216,22 +218,19 @@ Item {
                                 visible: model.security !== WifiSecurityType.Open && !model.connected && !model.known
                             }
 
-                            // Action button
+                            // Action button — μέσα σε RowLayout → Layout.preferred ✓
                             Rectangle {
+                                Layout.preferredWidth: 30   // ✓
+                                Layout.preferredHeight: 30  // ✓
                                 Layout.alignment: Qt.AlignVCenter
-                                width: 30
-                                height: 30
                                 radius: Theme.radius
-
-                                color: {
-                                    if (!btnMouse.containsMouse) {
-                                        return (model.connected && !netCard.expanded) ? Theme.color1 : "transparent";
-                                    }
-                                    return Theme.selected;
-                                }
-
                                 border.width: 1
                                 border.color: Theme.borderColor
+                                color: {
+                                    if (!btnMouse.containsMouse)
+                                        return (model.connected && !netCard.expanded) ? Theme.color1 : "transparent";
+                                    return Theme.selected;
+                                }
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -243,13 +242,11 @@ Item {
                                     anchors.centerIn: parent
                                     size: 16
                                     color: {
-                                        if (btnMouse.containsMouse) {
+                                        if (btnMouse.containsMouse)
                                             return Theme.backgroundAlt;
-                                        } else {
-                                            if (netCard.expanded || model.connected)
-                                                return Theme.foreground;
-                                            return Theme.selected;
-                                        }
+                                        if (netCard.expanded || model.connected)
+                                            return Theme.foreground;
+                                        return Theme.selected;
                                     }
                                     icon: Icons.getWifiActionIcon(netCard.expanded, model.connected)
                                 }
@@ -261,26 +258,23 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         if (netCard.expanded) {
-                                            // Cancel password entry
                                             root.activeSsidPrompt = "";
                                             passwordInput.text = "";
-                                            netCard.localError = ""; // Clear error on cancel
+                                            netCard.localError = "";
                                         } else if (model.connected) {
                                             NetworkService.wifi.disconnect();
                                         } else if (model.known || model.security === WifiSecurityType.Open) {
                                             NetworkService.wifi.connectTo(model.name);
                                         } else {
                                             root.activeSsidPrompt = model.name;
-                                            Qt.callLater(function () {
-                                                passwordInput.forceActiveFocus();
-                                            });
+                                            Qt.callLater(() => passwordInput.forceActiveFocus());
                                         }
                                     }
                                 }
                             }
                         }
 
-                        // ── Password row (slides in from below via clip) ──
+                        // ── Password row
                         RowLayout {
                             id: passwordRow
                             anchors {
@@ -293,8 +287,8 @@ Item {
                             }
                             height: 38
                             spacing: 8
-
                             opacity: netCard.expanded ? 1.0 : 0.0
+
                             Behavior on opacity {
                                 NumberAnimation {
                                     duration: 160
@@ -333,13 +327,14 @@ Item {
                                 }
                             }
 
-                            // Confirm / connect button
+                            // Confirm button — μέσα σε RowLayout → Layout.preferred ✓
                             Rectangle {
+                                Layout.preferredWidth: 34   // ✓
+                                Layout.preferredHeight: 34  // ✓
                                 Layout.alignment: Qt.AlignVCenter
-                                width: 34
-                                height: 34
                                 radius: Theme.radius
                                 color: confirmMouse.containsMouse ? Qt.lighter(Theme.selected, 1.15) : Theme.selected
+
                                 Behavior on color {
                                     ColorAnimation {
                                         duration: 100
@@ -352,6 +347,7 @@ Item {
                                     color: Theme.background
                                     icon: "check"
                                 }
+
                                 MouseArea {
                                     id: confirmMouse
                                     anchors.fill: parent
@@ -365,7 +361,7 @@ Item {
                             }
                         }
 
-                        // ── Error Message Text ──
+                        // ── Error text
                         Text {
                             anchors {
                                 top: passwordRow.bottom
@@ -392,14 +388,14 @@ Item {
             }
         }
 
-        // ── WI-FI OFF STATE ──────────────────────────────────────────────────
+        // ── WiFi Off State ────────────────────────────────────────────────
         Item {
-            Layout.fillHeight: true
             Layout.fillWidth: true
+            implicitHeight: 150   // ✓ fixed
             visible: !NetworkService.wifiEnabled
 
             ColumnLayout {
-                anchors.centerIn: parent
+                anchors.centerIn: parent   // actual positioning ✓
                 spacing: 10
 
                 LucideIcon {

@@ -8,25 +8,23 @@ import qs.services
 Item {
     id: root
 
+    implicitWidth: Screen.width / 2.5
+    implicitHeight: Screen.height / 3.4
+
     property real artSize: ringOuter * 0.6
-    property real ringOuter: Math.max(80, Math.min(safeHeight * 0.82, safeWidth * 0.42))
-    property real rowSpacing: ringOuter * 0.18
+    property real ringOuter: 250
+    property real rowSpacing: 40
     property real safeHeight: root.height > 0 ? root.height : 300
     property real safeWidth: root.width > 0 ? root.width : 400
-    property real songLength: 0
-    property real songPos: 0
     property real strokeSize: Math.max(6, ringOuter * 0.05)
     property real trackRadius: (ringOuter - strokeSize) / 2
 
     function formatTime(position) {
         let seconds = (MediaService.length > 10000) ? Math.floor(position / 1000000) : Math.floor(position);
-
         let m = Math.floor(seconds / 60);
         let s = seconds % 60;
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
-
-    anchors.fill: parent
 
     RowLayout {
         id: content
@@ -71,7 +69,6 @@ Item {
 
                 Image {
                     id: coverImage
-
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     source: MediaService.albumArt
@@ -120,7 +117,7 @@ Item {
         ColumnLayout {
             id: rightCol
 
-            Layout.preferredWidth: Math.max(180, root.width - root.ringOuter - root.rowSpacing - 48)
+            Layout.preferredWidth: root.ringOuter * 1.6
             spacing: Math.max(6, root.ringOuter * 0.06)
 
             Item {
@@ -239,6 +236,7 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 0   // ✅ ΝΕΟ — δεν επηρεάζει implicit width του rightCol
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.bold: true
@@ -251,6 +249,7 @@ Item {
                 }
                 Text {
                     Layout.fillWidth: true
+                    Layout.preferredWidth: 0   // ✅ ΝΕΟ
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.family: Theme.fontName
@@ -296,7 +295,6 @@ Item {
                 Layout.topMargin: Math.max(4, root.ringOuter * 0.06)
                 spacing: Math.max(14, root.ringOuter * 0.16)
 
-                // Previous Button
                 LucideIcon {
                     icon: "skip-back"
                     size: Math.max(20, root.ringOuter * 0.10)
@@ -311,8 +309,6 @@ Item {
                         onClicked: MediaService.previous()
                     }
                 }
-
-                // Play/Pause Button
                 Rectangle {
                     property real size: Math.min(65, Math.max(45, root.ringOuter * 0.35))
                     color: Theme.selected
@@ -341,8 +337,6 @@ Item {
                         onClicked: MediaService.togglePlayPause()
                     }
                 }
-
-                // Next Button
                 LucideIcon {
                     icon: "skip-forward"
                     size: Math.max(20, root.ringOuter * 0.10)

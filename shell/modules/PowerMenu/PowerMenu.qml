@@ -60,14 +60,14 @@ PanelWindow {
                     font.family: Theme.fontName
                     font.pixelSize: 32
                     font.bold: true
-                    color: Theme.foreground
+                    color: Theme.selected
                     Layout.alignment: Qt.AlignHCenter
                 }
                 Text {
                     text: SystemInfo.osName + " • " + SystemInfo.uptime
                     font.family: Theme.fontName
                     font.pixelSize: 16
-                    color: Theme.foreground
+                    color: Theme.selected
                     opacity: 0.7
                     Layout.alignment: Qt.AlignHCenter
                 }
@@ -138,7 +138,6 @@ PanelWindow {
                             }
                         }
 
-                        // 🛠️ ΛΥΣΗ 1: Διαβάζουμε το μοντέλο απευθείας!
                         ToolTip {
                             visible: btnMouse.containsMouse
                             text: modelData.label
@@ -151,7 +150,7 @@ PanelWindow {
                             rightPadding: 12
 
                             contentItem: Text {
-                                text: modelData.label // 🛠️ ΑΠΕΥΘΕΙΑΣ BINDING ΕΔΩ!
+                                text: modelData.label
                                 color: Theme.selected
                                 font.family: Theme.fontName
                                 font.pixelSize: 14

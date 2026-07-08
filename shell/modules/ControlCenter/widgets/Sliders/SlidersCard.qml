@@ -6,16 +6,17 @@ import "widgets"
 
 GlassCard {
     Layout.fillWidth: true
-    // implicitHeight will automatically adjust when the Loader disappears
-    height: slidersColumn.implicitHeight + 15
-    
+
+    // implicitHeight (όχι height!) ← ColumnLayout το χρειάζεται για layout
+    // +30 = 15 (top margin) + 15 (bottom margin)
+    implicitHeight: slidersColumn.implicitHeight + 15
+
     ColumnLayout {
         id: slidersColumn
         anchors.fill: parent
         anchors.margins: 15
         spacing: 15
 
-        // Mandatory Widgets: No Loader needed
         Volume {
             Layout.fillWidth: true
         }
@@ -25,14 +26,13 @@ GlassCard {
             Layout.fillWidth: true
         }
 
-        // Conditional Widget: Use Loader for memory/performance
         Loader {
             active: BrightnessService.isAvailable
             asynchronous: true
             source: "widgets/Brightness.qml"
-
             Layout.fillWidth: true
-            Layout.preferredHeight: BrightnessService.isAvailable ?  mic.height : 0
+            Layout.preferredHeight: BrightnessService.isAvailable ? mic.implicitHeight : 0
+            //                                                       ↑ implicitHeight όχι height
         }
     }
 }

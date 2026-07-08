@@ -133,7 +133,8 @@ QtObject {
                 nSummary: item.nSummary,
                 nBody: item.nBody,
                 nImage: item.nImage,
-                timeReceived: item.timeReceived
+                timeReceived: item.timeReceived,
+                isCritical:   item.isCritical
             };
         });
 

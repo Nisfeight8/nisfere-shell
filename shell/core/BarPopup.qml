@@ -23,11 +23,7 @@ PopupWindow {
     PopupContainer {
         id: container
 
-        bottomPadding: 15
-        leftPadding: 30
         opacity: root.showPopup ? 1 : 0
-        rightPadding: 30
-        topPadding: 15
         y: root.showPopup ? 0 : -10
 
         Loader {

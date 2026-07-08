@@ -18,3 +18,5 @@ singleton DockerService 1.0 DockerService.qml
 singleton LockerService 1.0 LockerService.qml
 singleton DynamicColors 1.0 DynamicColors.qml
 singleton ThemeService 1.0 ThemeService.qml
+singleton InternalNotificationService 1.0 InternalNotificationService.qml
+singleton UpdateService 1.0 UpdateService.qml

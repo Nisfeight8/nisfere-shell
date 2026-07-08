@@ -2,57 +2,62 @@ import QtQuick
 import QtQuick.Layouts
 import "widgets"
 
-RowLayout {
-    spacing: 15
+Item {
+    id: root
 
-    ColumnLayout {
-        Layout.fillHeight: true
-        Layout.fillWidth: true
-        Layout.preferredWidth: 1.5
+    implicitWidth: rowLayout.implicitWidth
+    implicitHeight: rowLayout.implicitHeight
 
-        Loader {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            asynchronous: true
-            sourceComponent: Component {
-                MiniClock {}
-            }
-        }
-    }
-
-    ColumnLayout {
-        Layout.fillHeight: true
-        Layout.fillWidth: true
-        Layout.preferredWidth: 1.5
+    RowLayout {
+        id: rowLayout
+        anchors.fill: parent
         spacing: 10
 
-        Loader {
+        ColumnLayout {
+            id: leftColumn
             Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            asynchronous: true
-            sourceComponent: Component {
-                MiniWeather {}
+
+            Loader {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                asynchronous: true
+                sourceComponent: Component {
+                    MiniClock {}
+                }
             }
         }
 
-        Loader {
+        ColumnLayout {
+            id: rightColumn
             Layout.fillHeight: true
             Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            asynchronous: true
-            sourceComponent: Component {
-                MiniMedia {}
-            }
-        }
+            Layout.preferredWidth: rightColumn.implicitWidth * 1.4
+            spacing: 10
 
-        Loader {
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            asynchronous: true
-            sourceComponent: Component {
-                SystemInfoDetails {}
+            Loader {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                asynchronous: true
+                sourceComponent: Component {
+                    MiniWeather {}
+                }
+            }
+            Loader {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                asynchronous: true
+                sourceComponent: Component {
+                    MiniMedia {}
+                }
+            }
+            Loader {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                asynchronous: true
+                sourceComponent: Component {
+                    SystemInfoDetails {}
+                }
             }
         }
     }

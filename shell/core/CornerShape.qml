@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Shapes
-import qs.core
 
 Item {
     id: root
@@ -8,127 +7,122 @@ Item {
     property color bgColor: Theme.background
     property color borderColor: Theme.borderColor
     property int edge: Qt.RightEdge
-    property int inv: Theme.panelBorderSize   // ταιριάζει με screen border πάχος
-    property int r: Theme.radius
+    property int invRadius: 16
+    property int normalRadius: Theme.radius
+
+    property int bottomOffset: 0
 
     Shape {
+        id: theShape
         anchors.fill: parent
         layer.enabled: true
-        preferredRendererType: Shape.CurveRenderer
 
+        transformOrigin: Item.Center
         transform: Scale {
             origin.x: root.width / 2
             xScale: root.edge === Qt.LeftEdge ? -1 : 1
         }
 
-        // ── FILL (CW path) ──────────────────────────────────────────
+        // ── FILL ──────────────────────────────────────────────────────
         ShapePath {
             fillColor: root.bgColor
-            strokeColor: "transparent"
-            startX: root.width
+            startX: 0
             startY: 0
+            strokeColor: "transparent"
 
-            // Δεξιά πλευρά (attached στο screen border)
-            PathLine {
-                x: root.width
-                y: root.height
+            // 1. Top-Left (Ελεύθερη): Inverted (Σκάβει μέσα)
+            PathArc {
+                radiusX: root.invRadius
+                radiusY: root.invRadius
+                x: root.invRadius
+                y: root.invRadius
             }
-
-            // Bottom-right: CONCAVE — center (w,h), CCW 90°
+            // 2. Left Edge: Κατεβαίνει και αφήνει χώρο ΚΑΙ για το πάτωμα ΚΑΙ για την καμπύλη ΚΑΙ αφαιρούμε το offset
+            PathLine {
+                x: root.invRadius
+                y: theShape.height - root.invRadius - root.normalRadius - root.bottomOffset
+            }
+            // 3. Bottom-Left (Ελεύθερη): Normal (Κυρτό) - Πιο πάνω κατά το offset
             PathArc {
                 direction: PathArc.Counterclockwise
-                radiusX: root.inv
-                radiusY: root.inv
-                x: root.width - root.inv
-                y: root.height
+                radiusX: root.normalRadius
+                radiusY: root.normalRadius
+                x: root.invRadius + root.normalRadius
+                y: theShape.height - root.invRadius - root.bottomOffset
             }
-
-            // Κάτω πλευρά
+            // 4. Bottom Edge: Σταματάει πιο ψηλά (αφήνει κενό από κάτω + το offset)
             PathLine {
-                x: root.r
-                y: root.height
+                x: theShape.width - root.invRadius
+                y: theShape.height - root.invRadius - root.bottomOffset
             }
-
-            // Bottom-left: CONVEX — center (r, h-r), default CW 90°
+            // 5. Bottom-Right: Η κοίλη καμπύλη που απλώνει προς τη γωνία - Ανεβασμένη κατά το offset
             PathArc {
-                radiusX: root.r
-                radiusY: root.r
-                x: 0
-                y: root.height - root.r
+                direction: PathArc.Clockwise
+                radiusX: root.invRadius
+                radiusY: root.invRadius
+                x: theShape.width
+                y: theShape.height - root.bottomOffset
             }
-
-            // Αριστερή πλευρά (free)
+            // 6. Right Edge (Attached): Φεύγει κατευθείαν από τη γωνία και ανεβαίνει
             PathLine {
-                x: 0
+                x: theShape.width
                 y: 0
             }
-
-            // Top-left: CONCAVE — center (0,0), CCW 90°
-            PathArc {
-                direction: PathArc.Counterclockwise
-                radiusX: root.inv
-                radiusY: root.inv
-                x: 0
-                y: 0
-            }
-
-            // Πάνω πλευρά (attached στο bar)
+            // 7. Top Edge (Attached): Κλείνει αριστερά
             PathLine {
-                x: root.width
+                x: 0
                 y: 0
             }
         }
 
-        // ── BORDER (μόνο ελεύθερες πλευρές) ────────────────────────
-        // Path direction: top-left → down left → bottom → bottom-right
-        // Σημείωση: ίδια corners, ΑΝΤΙΘΕΤΗ κατεύθυνση διαδρομής
-        // → CW/CCW αντιστρέφονται σε σχέση με το fill!
+        // ── BORDER ────────────────────────────────────────────────────
+        // Είναι καρμπόν το ίδιο Path με το Fill, αλλά σταματάει
+        // εκεί που ακουμπάει σε οθόνη (Right/Top edge)
         ShapePath {
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
             fillColor: "transparent"
-            strokeColor: root.borderColor
-            strokeWidth: Theme.widgetBorderWidth
-            capStyle: ShapePath.FlatCap
             startX: 0
             startY: 0
+            strokeColor: root.borderColor
+            strokeWidth: Theme.widgetBorderWidth
 
-            // Top-left: CONCAVE — center (0,0), default CW 90°
-            // (αντίθετο από fill γιατί έρχεται από δεξιά αντί αριστερά)
+            // 1. Top-Left: Inverted
             PathArc {
-                radiusX: root.inv
-                radiusY: root.inv
-                x: 0
-                y: 0
+                radiusX: root.invRadius
+                radiusY: root.invRadius
+                x: root.invRadius
+                y: root.invRadius
             }
-
-            // Αριστερή πλευρά κάτω
+            // 2. Left Edge: Αφαιρούμε το offset
             PathLine {
-                x: 0
-                y: root.height - root.r
+                x: root.invRadius
+                y: theShape.height - root.invRadius - root.normalRadius - root.bottomOffset
             }
-
-            // Bottom-left: CONVEX — center (r, h-r), CCW 90°
+            // 3. Bottom-Left: Αφαιρούμε το offset
             PathArc {
                 direction: PathArc.Counterclockwise
-                radiusX: root.r
-                radiusY: root.r
-                x: root.r
-                y: root.height
+                radiusX: root.normalRadius
+                radiusY: root.normalRadius
+                x: root.invRadius + root.normalRadius
+                y: theShape.height - root.invRadius - root.bottomOffset
             }
-
-            // Κάτω πλευρά δεξιά
+            // 4. Bottom Edge: Αφαιρούμε το offset
             PathLine {
-                x: root.width
-                y: root.height
+                x: theShape.width - root.invRadius
+                y: theShape.height - root.invRadius - root.bottomOffset
             }
-
-            // Bottom-right: CONCAVE — center (w,h), default CW 90°
+            // 5. Bottom-Right: Αφαιρούμε το offset
             PathArc {
-                radiusX: root.inv
-                radiusY: root.inv
-                x: root.width
-                y: root.height
+                direction: PathArc.Clockwise
+                radiusX: root.invRadius
+                radiusY: root.invRadius
+                x: theShape.width
+                y: theShape.height - root.bottomOffset
             }
-            // ✅ Σταματάει εδώ — δεξιά πλευρά καλύπτεται από screen border
+            // 6. Right Edge (Attached): Φεύγει κατευθείαν από τη γωνία και ανεβαίνει
+
+            // Σταματάει εδώ! Δεν τραβάει PathLine για δεξιά και πάνω πλευρά.
         }
     }
 }

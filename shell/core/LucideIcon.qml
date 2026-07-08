@@ -7,7 +7,6 @@ IconImage {
 
     property string icon: "activity"
     property int size: 24
-
     source: icon ? Quickshell.shellDir + "/assets/icons/" + icon + ".svg" : ""
     sourceSize.width: size
     sourceSize.height: size

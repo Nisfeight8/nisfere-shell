@@ -5,7 +5,7 @@ QtObject {
     id: root
     property bool controlCenterOpened: false
     property int currentDashboardTab: 0
-    property bool launcherOpened: false
+    property bool systemDrawerOpened: false
     property bool powerMenuOpened: false
     property bool menuDrawerOpened: false
     property bool dashboardOpened: false

@@ -9,10 +9,12 @@ GlassCard {
 
     property real refSize: 120
 
-    Layout.fillHeight: true
-    Layout.fillWidth: true
+    implicitWidth: mainLayout.implicitWidth + mainLayout.anchors.margins * 2
+    implicitHeight: mainLayout.implicitHeight + mainLayout.anchors.margins * 2
 
     RowLayout {
+        id: mainLayout
+
         anchors.fill: parent
         anchors.margins: Math.max(10, miniMedia.refSize * 0.1)
         spacing: Math.max(10, miniMedia.refSize * 0.1)
@@ -49,6 +51,7 @@ GlassCard {
 
             Text {
                 Layout.fillWidth: true
+                Layout.preferredWidth: 0
                 color: Theme.foreground
                 elide: Text.ElideRight
                 font.bold: true
@@ -58,6 +61,7 @@ GlassCard {
             }
             Text {
                 Layout.fillWidth: true
+                Layout.preferredWidth: 0
                 color: Theme.foreground
                 elide: Text.ElideRight
                 font.family: Theme.fontName
@@ -86,11 +90,9 @@ GlassCard {
 
                     MouseArea {
                         id: mediaMouseAreaPrev
-
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-
                         onClicked: MediaService.previous()
                     }
                 }
@@ -109,11 +111,9 @@ GlassCard {
 
                     MouseArea {
                         id: mediaMouseAreaPlay
-
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-
                         onClicked: MediaService.togglePlayPause()
                     }
                 }
@@ -126,11 +126,9 @@ GlassCard {
 
                     MouseArea {
                         id: mediaMouseAreaNext
-
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-
                         onClicked: MediaService.next()
                     }
                 }

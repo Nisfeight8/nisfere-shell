@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import qs.core
 import qs.services
 import "widgets"
@@ -11,8 +10,6 @@ BaseDrawer {
     edge: Qt.TopEdge
     edgeMargin: 0
     opened: ShellState.dashboardOpened
-    panelHeight: Screen.height / 2.3
-    panelWidth: Screen.width / 2.2
     screenOffset: Theme.barHeight
     toggleOnHover: false
 
@@ -21,80 +18,103 @@ BaseDrawer {
     onToggleRequest: ShellState.dashboardOpened = !ShellState.dashboardOpened
 
     contentComponent: Component {
-        ColumnLayout {
-            id: mainColumn
-            anchors.fill: parent
-            spacing: 10
+        Item {
+            id: wrapper
 
-            NavTabs {
-                id: dashboardTabs
-                Layout.fillWidth: true
-                spacing: 10
-                currentIndex: ShellState.currentDashboardTab
-                onTabClicked: function (tabIndex) {
-                    ShellState.currentDashboardTab = tabIndex;
-                }
-                tabModel: [
-                    {
-                        icon: "layout-dashboard",
-                        title: "Overview"
-                    },
-                    {
-                        icon: "music",
-                        title: "Media"
-                    },
-                    {
-                        icon: "sun",
-                        title: "Weather"
-                    },
-                    {
-                        icon: "bell",
-                        title: "Alerts"
-                    }
-                ]
+            property real _lastWidth: 0
+            property real _lastHeight: 0
+
+            implicitWidth: _lastWidth
+            implicitHeight: _lastHeight
+
+            function _syncSize() {
+                const item = animLoader.item;
+                if (!item)
+                    return;
+                if (item.implicitWidth > 0)
+                    _lastWidth = item.implicitWidth;
+                if (item.implicitHeight > 0)
+                    _lastHeight = item.implicitHeight + navTabs.height + col.spacing;
             }
 
-            StackLayout {
-                id: contentStack
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                currentIndex: ShellState.currentDashboardTab
+            // ✅ Ενημερώνει το cache όποτε αλλάζει το φορτωμένο item ή το implicit size του
+            Connections {
+                target: animLoader.item
+                function onImplicitWidthChanged() {
+                    wrapper._syncSize();
+                }
+                function onImplicitHeightChanged() {
+                    wrapper._syncSize();
+                }
+            }
 
-                // ✅ Explicit Loaders - χωρίς Repeater, χωρίς race condition
-                Loader {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    active: ShellState.currentDashboardTab === 0
-                    asynchronous: true
-                    sourceComponent: Component {
-                        Overview {}
-                    }
+            Component.onCompleted: {
+                _syncSize();
+            }
+
+            Component {
+                id: overviewComp
+                Overview {}
+            }
+            Component {
+                id: mediaComp
+                Media {}
+            }
+            Component {
+                id: weatherComp
+                Weather {}
+            }
+            Component {
+                id: notificationsComp
+                Notifications {}
+            }
+
+            Column {
+                id: col
+                spacing: 10
+
+                NavTabs {
+                    id: navTabs
+                    width: wrapper.implicitWidth   // ✅ ακολουθεί το ήδη σταθεροποιημένο πλάτος
+                    height: 30
+                    currentIndex: ShellState.currentDashboardTab
+                    onTabClicked: index => ShellState.currentDashboardTab = index
+                    tabModel: [
+                        {
+                            icon: "layout-dashboard",
+                            title: "Overview"
+                        },
+                        {
+                            icon: "music",
+                            title: "Media"
+                        },
+                        {
+                            icon: "sun",
+                            title: "Weather"
+                        },
+                        {
+                            icon: "bell",
+                            title: "Alerts"
+                        }
+                    ]
                 }
-                Loader {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    active: ShellState.currentDashboardTab === 1
-                    asynchronous: true
-                    sourceComponent: Component {
-                        Media {}
-                    }
-                }
-                Loader {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    active: ShellState.currentDashboardTab === 2
-                    asynchronous: true
-                    sourceComponent: Component {
-                        Weather {}
-                    }
-                }
-                Loader {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    active: ShellState.currentDashboardTab === 3
-                    asynchronous: true
-                    sourceComponent: Component {
-                        Notifications {}
+
+                AnimLoader {
+                    id: animLoader
+                    onItemChanged: wrapper._syncSize()
+                    sourceComp: {
+                        switch (ShellState.currentDashboardTab) {
+                        case 0:
+                            return overviewComp;
+                        case 1:
+                            return mediaComp;
+                        case 2:
+                            return weatherComp;
+                        case 3:
+                            return notificationsComp;
+                        default:
+                            return overviewComp;
+                        }
                     }
                 }
             }

@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-
 import qs.core
 import qs.services
 
@@ -9,15 +8,17 @@ GlassCard {
 
     property real refSize: 120
 
-    Layout.fillHeight: true
-    Layout.fillWidth: true
+    implicitWidth: gridLayout.implicitWidth + gridLayout.anchors.margins * 2
+    implicitHeight: gridLayout.implicitHeight + gridLayout.anchors.margins * 2
 
     GridLayout {
-        anchors.centerIn: parent
+        id: gridLayout
+
+        anchors.fill: parent
+        anchors.margins: 15
         columnSpacing: Math.max(10, systemInfoDetailsMini.refSize * 0.10)
         columns: 2
         rowSpacing: Math.max(15, systemInfoDetailsMini.refSize * 0.15)
-        width: parent.width * 0.9
 
         InfoItem {
             iconName: "user"
@@ -56,7 +57,6 @@ GlassCard {
             size: Math.max(16, systemInfoDetailsMini.refSize * 0.18)
             icon: iconName
         }
-
         ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             Layout.fillWidth: true
@@ -64,6 +64,7 @@ GlassCard {
 
             Text {
                 color: Theme.foreground
+                Layout.preferredWidth: 0
                 font.family: Theme.fontName
                 font.pixelSize: Math.max(9, systemInfoDetailsMini.refSize * 0.08)
                 opacity: 0.5
@@ -71,6 +72,7 @@ GlassCard {
             }
             Text {
                 Layout.fillWidth: true
+                Layout.preferredWidth: 0
                 color: Theme.foreground
                 elide: Text.ElideRight
                 font.bold: true

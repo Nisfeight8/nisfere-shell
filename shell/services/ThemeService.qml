@@ -43,7 +43,6 @@ QtObject {
             break;
         case "theme_state":
             root.currentState = payload;
-            console.log(payload)
             root.stateLoaded(payload);
             break;
         case "wallpapers_list":

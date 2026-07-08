@@ -5,10 +5,17 @@ import qs.services
 
 Item {
     id: root
-    anchors.fill: parent
+
+    implicitWidth: parent.width
+
+    readonly property real listHeight: Screen.height * 0.25
+
+    implicitHeight: headerRow.implicitHeight + dividerRect.height + root.listHeight + (mainColumn.spacing * 2) + (mainColumn.anchors.margins * 2)
 
     property bool loading: true
-    property string activeMode: DynamicColors.mode  // sync with current state
+    property string activeMode: DynamicColors.mode
+
+    signal requestBack
 
     Component.onCompleted: {
         themeList.forceActiveFocus();
@@ -23,12 +30,14 @@ Item {
     }
 
     ColumnLayout {
+        id: mainColumn
         anchors.fill: parent
         anchors.margins: 12
         spacing: 12
 
         // ── Header ────────────────────────────────────────────────
         RowLayout {
+            id: headerRow
             Layout.fillWidth: true
             spacing: 10
 
@@ -54,7 +63,6 @@ Item {
                 Layout.fillWidth: true
             }
 
-            // ── Dark / Light toggle ───────────────────────────────
             Text {
                 text: "Light"
                 color: Theme.foreground
@@ -123,6 +131,7 @@ Item {
 
         // Divider
         Rectangle {
+            id: dividerRect
             Layout.fillWidth: true
             height: 1
             color: Theme.borderColor
@@ -132,8 +141,11 @@ Item {
         // ── Theme list ─────────────────────────────────────────────
         ListView {
             id: themeList
+
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            // ✅ Explicit literal — ίδιο fix με WallpaperManager's ListView
+            Layout.preferredHeight: root.listHeight
+
             orientation: ListView.Vertical
             spacing: 8
             clip: true
@@ -171,7 +183,6 @@ Item {
             delegate: Rectangle {
                 id: delegateItem
 
-                // modelData is {name: string} from daemon
                 property string itemName: modelData.name
                 property bool isHovered: mouseArea.containsMouse
                 property bool isCurrent: themeList.currentIndex === index
@@ -185,17 +196,6 @@ Item {
 
                 border.width: 1
                 border.color: isConfirmed ? Theme.selected : (isHovered || isCurrent ? Theme.borderColor : "transparent")
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -212,15 +212,16 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
+                        Layout.preferredWidth: 0   // ✅ defensive — elide-safe (ίδιο pattern με MiniMedia)
                         text: modelData.name
                         color: delegateItem.isConfirmed ? Theme.selected : Theme.foreground
                         font.family: Theme.fontName
                         font.pixelSize: 15
                         font.bold: delegateItem.isConfirmed || delegateItem.isHovered || delegateItem.isCurrent
                         verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
                     }
 
-                    // Mode badge — shows the mode this theme was applied with
                     Rectangle {
                         visible: delegateItem.isConfirmed
                         width: modeLabel.implicitWidth + 12
@@ -263,7 +264,6 @@ Item {
         }
     }
 
-    // ── Empty / loading state ─────────────────────────────────────
     Text {
         anchors.centerIn: parent
         visible: ThemeService.themes.length === 0

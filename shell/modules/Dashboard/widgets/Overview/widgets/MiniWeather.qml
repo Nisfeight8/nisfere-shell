@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-
 import qs.core
 import qs.services
 
@@ -8,20 +7,20 @@ GlassCard {
     id: miniWeatherCard
 
     property real refSize: 120
-    
     readonly property var weatherVisuals: Icons.getWeatherInfo(WeatherService.weatherCode, WeatherService.isDay)
 
-    Layout.fillHeight: true
-    Layout.fillWidth: true
+    implicitWidth: mainLayout.implicitWidth + mainLayout.anchors.margins * 2
+    implicitHeight: mainLayout.implicitHeight + mainLayout.anchors.margins * 2
 
     ColumnLayout {
-        anchors.centerIn: parent
+        id: mainLayout
+
+        anchors.fill: parent
+        anchors.margins: 15
         spacing: Math.max(5, miniWeatherCard.refSize * 0.1)
-        width: parent.width * 0.9
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
             spacing: Math.max(5, miniWeatherCard.refSize * 0.08)
 
             LucideIcon {
@@ -31,7 +30,6 @@ GlassCard {
                 icon: miniWeatherCard.weatherVisuals.icon
                 size: Math.max(24, miniWeatherCard.refSize * 0.35)
             }
-
             Text {
                 Layout.alignment: Qt.AlignVCenter
                 color: Theme.foreground
@@ -51,7 +49,6 @@ GlassCard {
 
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
-            Layout.fillWidth: true
             spacing: 2
 
             Text {

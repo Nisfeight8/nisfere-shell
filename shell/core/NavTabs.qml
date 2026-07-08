@@ -18,7 +18,7 @@ RowLayout {
             property bool isSelected: root.currentIndex === index
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 45
+            Layout.fillHeight: true
 
             RowLayout {
                 anchors.centerIn: parent

@@ -19,6 +19,8 @@ NavTabs 1.0 NavTabs.qml
 SideMenu 1.0 SideMenu.qml
 HoverZone 1.0 HoverZone.qml
 CornerShape 1.0 CornerShape.qml
+Anim 1.0 Anim.qml
+AnimLoader 1.0 AnimLoader.qml
 
 singleton Theme 1.0 Theme.qml
 singleton Icons 1.0 Icons.qml

@@ -8,18 +8,7 @@ import qs.services
 WlSessionLock {
     id: sessionLock
     locked: ShellState.isLocked
-
-    Connections {
-        target: ShellState
-        function onIsLockedChanged() {
-            if (ShellState.isLocked) {
-                console.log("INSIDE LOCKER START");
-                LockerService.start();
-            } else
-                LockerService.stop();
-        }
-    }
-
+    
     WlSessionLockSurface {
         color: "black"
 
@@ -79,6 +68,24 @@ WlSessionLock {
                 errorText.opacity = 0;
                 errorTimer.stop();
                 passwordInput.background.border.color = passwordInput.activeFocus ? Theme.selected : Theme.borderColor;
+            }
+
+            Keys.onPressed: event => {
+                if (!(event.modifiers & Qt.ControlModifier && event.modifiers & Qt.ShiftModifier))
+                    return;
+
+                if (event.key === Qt.Key_L) {
+                    // Toggle log panel
+                    logPanel.visible = !logPanel.visible;
+                    if (logPanel.visible)
+                        logView.positionViewAtEnd();
+                    event.accepted = true;
+                } else if (event.key === Qt.Key_U) {
+                    // Force-unlock without auth (debug only)
+                    LockerService.stop();
+                    ShellState.isLocked = false;
+                    event.accepted = true;
+                }
             }
 
             ColumnLayout {
