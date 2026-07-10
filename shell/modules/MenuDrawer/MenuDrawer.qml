@@ -14,7 +14,7 @@ BaseDrawer {
     opened: ShellState.menuDrawerOpened
 
     minPanelWidth: Screen.width * 0.32
-    panelHeight: Screen.height / 2.8
+    // panelHeight: Screen.height / 2.8
 
     property int currentAppIndex: -1
     property string currentAppTitle: "Nisfere Tools"

@@ -8,8 +8,8 @@ import qs.services
 Item {
     id: root
 
-    implicitWidth: Screen.width / 2.5
-    implicitHeight: Screen.height / 3.4
+    implicitWidth: content.width
+    implicitHeight: content.height
 
     property real artSize: ringOuter * 0.6
     property real ringOuter: 250
@@ -29,7 +29,7 @@ Item {
     RowLayout {
         id: content
 
-        anchors.centerIn: parent
+        // anchors.centerIn: parent
         spacing: root.rowSpacing
 
         Item {

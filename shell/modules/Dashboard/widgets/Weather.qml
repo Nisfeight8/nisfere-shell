@@ -7,8 +7,8 @@ import qs.services
 Item {
     id: root
 
-    implicitWidth: Screen.width / 2.5
-    implicitHeight: Screen.height / 3.4
+    implicitWidth: mainColumn.width
+    implicitHeight: mainColumn.height
 
     function getDayName(dateString, index) {
         if (index === 0)
@@ -23,7 +23,6 @@ Item {
     ColumnLayout {
         id: mainColumn
 
-        anchors.fill: parent
         spacing: 15
 
         RowLayout {
@@ -33,8 +32,7 @@ Item {
             spacing: 10
 
             ColumnLayout {
-                // Layout.fillHeight: true
-                // Layout.fillWidth: true
+
                 spacing: 10
 
                 GlassCard {
