@@ -7,8 +7,9 @@ import qs.services
 Item {
     id: root
 
-    implicitWidth: mainColumn.width
-    implicitHeight: mainColumn.height
+    anchors.fill: parent
+    implicitWidth: parent.width
+    implicitHeight: parent.height
 
     function getDayName(dateString, index) {
         if (index === 0)
@@ -22,7 +23,7 @@ Item {
 
     ColumnLayout {
         id: mainColumn
-
+        anchors.fill: parent
         spacing: 15
 
         RowLayout {
@@ -227,7 +228,7 @@ Item {
 
                     // ✅ Bubble-up implicit size από το dayColumn + padding
                     implicitWidth: dayColumn.implicitWidth + 24
-                    implicitHeight: dayColumn.implicitHeight + 24
+                    implicitHeight: dayColumn.implicitHeight + 40
 
                     ColumnLayout {
                         id: dayColumn
@@ -250,7 +251,7 @@ Item {
                             Layout.alignment: Qt.AlignHCenter
                             icon: dayCard.dayVisuals.icon
                             color: dayCard.dayVisuals.color
-                            size: 32
+                            size: 40
                         }
 
                         RowLayout {

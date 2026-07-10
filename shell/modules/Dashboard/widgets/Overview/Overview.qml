@@ -8,9 +8,10 @@ Item {
 
     property int _readyCount: 0
     readonly property bool _allReady: _readyCount >= 4
+    anchors.fill: parent
+    implicitWidth: parent.width
+    implicitHeight: parent.height
 
-    implicitWidth: _allReady ? rowLayout.implicitWidth : 0
-    implicitHeight: _allReady ? rowLayout.implicitHeight : 0
 
     RowLayout {
         id: rowLayout

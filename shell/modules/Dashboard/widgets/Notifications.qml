@@ -8,8 +8,8 @@ Item {
     id: root
 
     // ✅ Guard κατά του transient zero-size, ίδιο pattern με Media.qml
-    property real safeWidth: root.width > 0 ? root.width : 550
-    property real safeHeight: root.height > 0 ? root.height : 600
+    property real safeWidth: parent.width
+    property real safeHeight: parent.height
 
     readonly property real baseScale: Math.min(root.safeWidth / 550, root.safeHeight / 600)
     readonly property real cardHeight: Math.max(75, 85 * baseScale)
@@ -17,8 +17,9 @@ Item {
     readonly property real fontSizeTitle: Math.max(12, 14 * baseScale)
     readonly property real iconSize: Math.max(32, 40 * baseScale)
 
-    implicitWidth: Screen.width / 2.5
-    implicitHeight: Screen.height / 3.4
+    anchors.fill: parent
+    implicitWidth: parent.width
+    implicitHeight: parent.height
 
     ColumnLayout {
         anchors.fill: parent

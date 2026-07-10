@@ -12,14 +12,13 @@ BaseDrawer {
     margins.top: Theme.barHeight
     edge: Qt.LeftEdge
     opened: ShellState.systemDrawerOpened
-    panelWidth: Screen.width / 3.4
-    minPanelHeight: 600
+    minPanelWidth: Screen.width / 3.4
+    minPanelHeight: Screen.width / 3
 
     onCloseRequest: ShellState.systemDrawerOpened = false
     onOpenRequest: ShellState.systemDrawerOpened = true
     onToggleRequest: ShellState.systemDrawerOpened = !ShellState.systemDrawerOpened
 
-    // Load cached updates on open (instant, no waiting)
     onOpenedChanged: if (opened)
         UpdateService.loadCached()
 

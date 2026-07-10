@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import qs.core
@@ -14,14 +16,15 @@ BaseDrawer {
     anchors.top: true
     margins.top: Theme.barHeight
     opened: ShellState.controlCenterOpened
-    panelWidth: Screen.width / 4
+    minPanelWidth: Screen.width / 4
+    minPanelHeight: 300
     toggleOnHover: false
     onCloseRequest: ShellState.controlCenterOpened = false
     onOpenRequest: ShellState.controlCenterOpened = true
     onToggleRequest: ShellState.controlCenterOpened = !ShellState.controlCenterOpened
 
     contentComponent: Component {
-
+        id: container
         Item {
             id: pageStack
 

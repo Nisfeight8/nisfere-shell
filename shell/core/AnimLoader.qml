@@ -42,7 +42,7 @@ Loader {
             target: root
             property: "opacity"
             to: 0
-            easing.type: Easing.InCubic
+            easing.type: Easing.Bezier
             duration: 150
         }
         ScriptAction {
@@ -58,7 +58,7 @@ Loader {
         target: root
         property: "opacity"
         to: 1
-        easing.type: Easing.OutCubic
-        duration: 300
+        easing.type: Easing.Bezier
+        duration: 200
     }
 }

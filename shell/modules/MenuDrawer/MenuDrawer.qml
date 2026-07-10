@@ -14,7 +14,7 @@ BaseDrawer {
     opened: ShellState.menuDrawerOpened
 
     minPanelWidth: Screen.width * 0.32
-    // panelHeight: Screen.height / 2.8
+    minPanelHeight: Screen.height * 0.32
 
     property int currentAppIndex: -1
     property string currentAppTitle: "Nisfere Tools"
@@ -46,12 +46,13 @@ BaseDrawer {
         Item {
             id: rootContent
 
-            property real _lastWidth: 200
-            property real _lastHeight: 1500
+            property real _lastWidth: 0
+            property real _lastHeight: 0
 
             implicitWidth: _lastWidth
             implicitHeight: _lastHeight
 
+            
             function _syncSize() {
                 const item = pageLoader.item;
                 if (!item)
@@ -75,6 +76,7 @@ BaseDrawer {
                     rootContent._syncSize();
                 }
             }
+
             Connections {
                 target: menuDrawer
                 function onCurrentAppIndexChanged() {
