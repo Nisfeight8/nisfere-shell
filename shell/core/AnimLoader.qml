@@ -5,10 +5,7 @@ Loader {
 
     property Component sourceComp
     property bool isComplete
-    property int outAnimType: Anim.FastEffects
-    property int inAnimType: Anim.DefaultEffects
     property bool _waitingForLoad: false
-    property bool _isTransitioning: anim.running || fadeInAnim.running
 
     onSourceCompChanged: {
         if (isComplete) {

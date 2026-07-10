@@ -32,10 +32,10 @@ Item {
                 model: [
                     {
                         value: SystemStatsService.cpuUsage,
-                        main: (SystemStatsService.cpuUsage * 100).toFixed(0) + "%",
+                        main: SystemStatsService.cpuTempText,
                         sub: "CPU",
-                        sideTop: SystemStatsService.cpuTempText,
-                        sideSub: "temp"
+                        sideTop: Math.round(SystemStatsService.cpuUsage * 100) + "%",
+                        sideSub: "Usage"
                     },
                     {
                         value: SystemStatsService.ramUsage,
