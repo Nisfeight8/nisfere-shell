@@ -44,165 +44,44 @@ Item {
             }
 
             // ── Refresh button ─────────────────────────────────────
-            Rectangle {
-                id: refreshBtn
-                property bool isHovered: false
-                width: 30
-                height: 30
+            IconButton {
+                icon: "refresh-cw"
+                size: 30
+                iconSize: 14
                 radius: 7
-                color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.18) : Theme.backgroundAlt
-                border.width: isHovered ? 1 : 0
-                border.color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.4)
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-                Behavior on border.width {
-                    NumberAnimation {
-                        duration: 150
-                    }
-                }
-
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "refresh-cw"
-                    size: 14
-                    color: refreshBtn.isHovered ? Theme.selected : Theme.foreground
-                    opacity: UpdateService.loading ? 0.35 : (refreshBtn.isHovered ? 1.0 : 0.6)
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 150
-                        }
-                    }
-                    RotationAnimator on rotation {
-                        from: 0
-                        to: 360
-                        duration: 900
-                        loops: Animation.Infinite
-                        running: UpdateService.loading
-                    }
-                }
-
-                HoverHandler {
-                    cursorShape: Qt.PointingHandCursor
-                    onHoveredChanged: refreshBtn.isHovered = hovered
-                }
-                TapHandler {
-                    onTapped: if (!UpdateService.loading && !UpdateService.updateRunning)
-                        UpdateService.refresh()
-                }
-                ToolTip {
-                    visible: refreshBtn.isHovered
-                    text: "Check for updates"
-                    delay: 500
-                }
+                normalColor: Theme.backgroundAlt
+                tooltipText: "Check for updates"
+                enabled: !UpdateService.loading && !UpdateService.updateRunning
+                spinning: UpdateService.loading
+                onTapped: UpdateService.refresh()
             }
 
             // ── Update All button ──────────────────────────────────
-            Rectangle {
-                id: updateBtn
-                property bool isHovered: false
-                visible: UpdateService.count > 0 && !UpdateService.updateRunning
-                width: 30
-                height: 30
+            IconButton {
+                icon: "circle-fading-arrow-up"
+                size: 30
+                iconSize: 14
                 radius: 7
-                color: isHovered ? Qt.rgba(Theme.color2.r, Theme.color2.g, Theme.color2.b, 0.2) : Theme.backgroundAlt
-                border.width: isHovered ? 1 : 0
-                border.color: Qt.rgba(Theme.color2.r, Theme.color2.g, Theme.color2.b, 0.4)
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-                Behavior on border.width {
-                    NumberAnimation {
-                        duration: 150
-                    }
-                }
-
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "circle-fading-arrow-up"
-                    size: 14
-                    color: updateBtn.isHovered ? Theme.color2 : Theme.foreground
-                    opacity: updateBtn.isHovered ? 1.0 : 0.6
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 150
-                        }
-                    }
-                }
-
-                HoverHandler {
-                    cursorShape: Qt.PointingHandCursor
-                    onHoveredChanged: updateBtn.isHovered = hovered
-                }
-                TapHandler {
-                    onTapped: UpdateService.runUpdates()
-                }
-                ToolTip {
-                    visible: updateBtn.isHovered
-                    text: "Update all packages\n(opens polkit dialog)"
-                    delay: 500
-                }
+                normalColor: Theme.backgroundAlt
+                visible: UpdateService.count > 0 && !UpdateService.updateRunning
+                hoverColor: Theme.color2
+                activeColor: Theme.color2
+                tooltipText: "Update all packages\nopens polkit dialog"
+                onTapped: UpdateService.runUpdates()
             }
 
             // ── Close log button ───────────────────────────────────
-            Rectangle {
-                id: closeLogBtn
-                property bool isHovered: false
-                visible: UpdateService.updateLog.length > 0 && !UpdateService.updateRunning
-                width: 30
-                height: 30
+            IconButton {
+                icon: "x"
+                size: 30
+                iconSize: 13
                 radius: 7
-                color: isHovered ? Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.15) : Theme.backgroundAlt
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "x"
-                    size: 13
-                    color: closeLogBtn.isHovered ? Theme.color1 : Theme.foreground
-                    opacity: closeLogBtn.isHovered ? 1.0 : 0.5
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 150
-                        }
-                    }
-                }
-
-                HoverHandler {
-                    cursorShape: Qt.PointingHandCursor
-                    onHoveredChanged: closeLogBtn.isHovered = hovered
-                }
-                TapHandler {
-                    onTapped: UpdateService.clearLog()
-                }
-                ToolTip {
-                    visible: closeLogBtn.isHovered
-                    text: "Clear log"
-                    delay: 500
-                }
+                normalColor: Theme.backgroundAlt
+                visible: UpdateService.updateLog.length > 0 && !UpdateService.updateRunning
+                hoverColor: Theme.color1
+                activeColor: Theme.color1
+                tooltipText: "Clear log"
+                onTapped: UpdateService.clearLog()
             }
         }
 
@@ -225,7 +104,6 @@ Item {
                 spacing: 2
                 clip: true
 
-                // Auto-scroll to bottom as new lines arrive
                 onCountChanged: Qt.callLater(() => positionViewAtEnd())
 
                 delegate: Text {

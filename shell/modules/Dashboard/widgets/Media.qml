@@ -13,7 +13,7 @@ Item {
     implicitHeight: parent.height
 
     property real artSize: ringOuter * 0.6
-    property real ringOuter: 250
+    property real ringOuter: 290
     property real rowSpacing: 40
     property real safeHeight: root.height > 0 ? root.height : 300
     property real safeWidth: root.width > 0 ? root.width : 400

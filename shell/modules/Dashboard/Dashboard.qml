@@ -13,8 +13,8 @@ BaseDrawer {
     opened: ShellState.dashboardOpened
     screenOffset: Theme.barHeight
     toggleOnHover: false
-    panelWidth: Screen.width * 0.46
-    panelHeight: Screen.height * 0.43
+    minPanelWidth: Screen.width * 0.46
+    minPanelHeight: Screen.height * 0.43
     onCloseRequest: ShellState.dashboardOpened = false
     onOpenRequest: ShellState.dashboardOpened = true
     onToggleRequest: ShellState.dashboardOpened = !ShellState.dashboardOpened

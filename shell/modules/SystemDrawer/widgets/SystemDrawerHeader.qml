@@ -46,7 +46,6 @@ Item {
                     icon: "user"
                     size: 26
                     color: Theme.selected
-                    // visible: !avatar.visible
                 }
             }
 
@@ -104,54 +103,15 @@ Item {
                         },
                     ]
 
-                    Rectangle {
-                        id: btn
-                        width: 32
-                        height: 32
+                    IconButton {
+                        icon: modelData.icon
+                        size: 32
+                        iconSize: 16
                         radius: 8
-                        // ↓ Use explicit property — avoids forward-reference
-                        //   issue with HoverHandler id inside Repeater delegates
-                        property bool isHovered: false
-                        color: isHovered ? Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.18) : "transparent"
-                        border.width: isHovered ? 1 : 0
-                        border.color: Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.35)
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 150
-                            }
-                        }
-                        Behavior on border.width {
-                            NumberAnimation {
-                                duration: 150
-                            }
-                        }
-
-                        LucideIcon {
-                            anchors.centerIn: parent
-                            icon: modelData.icon
-                            size: 16
-                            color: btn.isHovered ? Theme.color1 : Theme.foreground
-                            opacity: btn.isHovered ? 1.0 : 0.4
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 150
-                                }
-                            }
-                            Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 150
-                                }
-                            }
-                        }
-
-                        HoverHandler {
-                            cursorShape: Qt.PointingHandCursor
-                            // Set property imperatively — no forward reference
-                            onHoveredChanged: btn.isHovered = hovered
-                        }
-                        TapHandler {
-                            onTapped: root._run(modelData.cmd)
-                        }
+                        hoverColor: Theme.color1
+                        activeColor: Theme.color1
+                        idleOpacity: 0.4
+                        onTapped: root._run(modelData.cmd)
                     }
                 }
             }

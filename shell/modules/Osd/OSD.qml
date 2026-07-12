@@ -9,13 +9,14 @@ PanelWindow {
     id: osd
 
     // ── OSD state ─────────────────────────────────────────────────────────
-    property string osdType: "volume"   // "volume" | "mic" | "brightness" | "media" | "battery" | "keyboard"
+    property string osdType: "volume"   // "volume" | "mic" | "brightness" | "media" | "battery" | "keyboard" | "screenshot"
     property string osdTitle: "Volume"
     property string osdSubtitle: ""     // π.χ. track artist, ή full layout name
-    property real osdValue: 0.0       // 0.0–1.0
+    property real osdValue: 0.0       // 0.0–1.0 (or raw countdown int for "screenshot")
     property bool osdMuted: false     // muted / paused / off state
 
     readonly property bool showBar: osdType === "volume" || osdType === "mic" || osdType === "brightness" || osdType === "battery"
+    readonly property bool showCountdown: osdType === "screenshot"
 
     readonly property string osdIcon: {
         switch (osdType) {
@@ -43,6 +44,8 @@ PanelWindow {
             return "battery-low";
         case "keyboard":
             return "keyboard";
+        case "screenshot":
+            return "camera";
         default:
             return "activity";
         }
@@ -71,7 +74,6 @@ PanelWindow {
     // ── Show / hide animation ────────────────────────────────────────────
     property bool shown: false
 
-    // Rise offset: 0 = at rest, 24 = pushed down/faded for the hidden state
     property real riseOffset: shown ? 0 : 24
 
     Behavior on riseOffset {
@@ -150,6 +152,20 @@ PanelWindow {
         }
     }
 
+    // Screenshot countdown — needed since the QuickActions drawer closes
+    // immediately after picking delay2/delay5, so this OSD is the only
+    // visible feedback the user gets while grim waits to fire.
+    Connections {
+        target: ScreenshotService
+        function onCountdownTick(remaining) {
+            hideTimer.interval = 900;
+            if (remaining > 0)
+                osd.show("screenshot", "Screenshot in", remaining, false, "Hold still...");
+            else
+                hideTimer.interval = 1800;
+        }
+    }
+
     // ── Content ───────────────────────────────────────────────────────────
     Rectangle {
         id: card
@@ -202,7 +218,7 @@ PanelWindow {
             }
             spacing: 14
 
-            // ── Icon badge ────────────────────────────────────────────────
+            // ── Icon badge (or countdown number) ──────────────────────────
             Rectangle {
                 Layout.alignment: Qt.AlignVCenter
                 width: 42
@@ -212,23 +228,35 @@ PanelWindow {
                 border.color: Theme.borderColor
                 border.width: Theme.widgetBorderWidth
 
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 150
+                    }
+                }
+                Behavior on height {
+                    NumberAnimation {
+                        duration: 150
+                    }
+                }
+
                 LucideIcon {
                     anchors.centerIn: parent
                     icon: osd.osdIcon
                     size: 20
                     color: osd.osdMuted ? Theme.foreground : Theme.selected
                     opacity: osd.osdMuted ? 0.5 : 1.0
+                    visible: !osd.showCountdown
+                }
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 150
-                        }
-                    }
+                // Big countdown digit — replaces the icon for screenshot delay
+                Text {
+                    anchors.centerIn: parent
+                    visible: osd.showCountdown
+                    text: Math.round(osd.osdValue)
+                    color: Theme.selected
+                    font.family: Theme.fontName
+                    font.pixelSize: 26
+                    font.bold: true
                 }
             }
 
@@ -320,7 +348,7 @@ PanelWindow {
                     }
                 }
 
-                // Subtitle — π.χ. artist name, ή full keyboard layout name
+                // Subtitle — π.χ. artist name, full keyboard layout name, ή "Hold still..."
                 Text {
                     Layout.fillWidth: true
                     visible: !osd.showBar && osd.osdSubtitle !== ""

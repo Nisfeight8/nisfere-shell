@@ -9,9 +9,11 @@ import qs.modules.SystemDrawer
 import qs.modules.ScreenBorder
 import qs.modules.PowerMenu
 import qs.modules.ControlCenter
-import qs.modules.MenuDrawer
+import qs.modules.QuickActionsDrawer
 import qs.modules.Locker
 import qs.modules.Osd
+import qs.modules.AreaPicker
+import qs.modules.CentralLauncher
 
 import qs.modules.Dashboard
 import qs.services
@@ -30,16 +32,16 @@ ShellRoot {
         }
         target: "nisfere-lock"
     }
-
+    AreaPicker {}
     ScreenBorder {}
     NotificationPopup {}
     Bar {}
     OSD {}
     SystemDrawer {}
     ControlCenter {}
-    MenuDrawer {}
+    QuickActionsDrawer {}
     Dashboard {}
-
+    CentralLauncher {}
     LazyLoader {
         id: powerMenuLoader
 

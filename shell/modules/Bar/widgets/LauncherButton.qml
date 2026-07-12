@@ -19,6 +19,6 @@ BarWidget {
         cursorShape: Qt.PointingHandCursor
         parent: launcherBtn
 
-        onClicked: ShellState.launcherOpened = !ShellState.launcherOpened
+        onClicked: ShellState.appLauncherOpened = !ShellState.appLauncherOpened
     }
 }

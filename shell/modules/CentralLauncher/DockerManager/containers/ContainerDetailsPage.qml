@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import qs.core
 import qs.services
-import "../../widgets"
+import "../shared"
 
 Rectangle {
     id: root

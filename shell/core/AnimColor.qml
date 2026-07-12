@@ -1,30 +1,15 @@
 import QtQuick
 import qs.core
 
-// Reusable NumberAnimation with named duration+easing pairs from
-// AnimTokens, instead of hardcoded values scattered everywhere.
-// Usage: Anim { type: Anim.DefaultSpatial }
-NumberAnimation {
+// ColorAnimation counterpart to Anim — same named types/durations/curves,
+// for use in `Behavior on someColor { AnimColor { type: Anim.DefaultEffects } }`.
+// NumberAnimation can't drive color properties, hence this sibling type;
+// it shares Anim's Type enum (referenced as Anim.XXX) to keep one naming
+// scheme across both.
+ColorAnimation {
     id: root
 
-    enum Type {
-        StandardSmall = 0,
-        Standard,
-        StandardLarge,
-        StandardExtraLarge,
-        EmphasizedSmall,
-        Emphasized,
-        EmphasizedLarge,
-        EmphasizedExtraLarge,
-        FastSpatial,
-        DefaultSpatial,
-        SlowSpatial,
-        FastEffects,
-        DefaultEffects,
-        SlowEffects
-    }
-
-    property int type: Anim.DefaultSpatial
+    property int type: Anim.DefaultEffects
 
     duration: {
         switch (type) {

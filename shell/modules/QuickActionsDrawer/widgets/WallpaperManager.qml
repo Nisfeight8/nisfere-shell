@@ -13,7 +13,6 @@ Item {
     readonly property real cardWidth: cardHeight * 16 / 9   // 16:9 ratio
 
     implicitHeight: headerRow.implicitHeight + dividerRect.height + root.cardHeight + (mainColumn.spacing * 3) + (mainColumn.anchors.margins * 3)
-    signal requestBack
 
     property bool applyDynamicColors: true
     property string selectedMode: DynamicColors.mode
@@ -273,8 +272,6 @@ Item {
             }
 
             Keys.onLeftPressed: {
-                if (wallpaperList.currentIndex === 0)
-                    root.requestBack();
                 keyboardNavigating = true;
                 keyboardLockTimer.restart();
                 decrementCurrentIndex();

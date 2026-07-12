@@ -20,3 +20,6 @@ singleton DynamicColors 1.0 DynamicColors.qml
 singleton ThemeService 1.0 ThemeService.qml
 singleton InternalNotificationService 1.0 InternalNotificationService.qml
 singleton UpdateService 1.0 UpdateService.qml
+singleton ScreenRecordService 1.0 ScreenRecordService.qml
+singleton ScreenshotService 1.0 ScreenshotService.qml
+singleton AreaPickerService 1.0 AreaPickerService.qml

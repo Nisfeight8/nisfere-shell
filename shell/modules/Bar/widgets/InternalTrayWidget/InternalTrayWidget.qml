@@ -1,7 +1,6 @@
 import QtQuick
 import qs.core
 import qs.services
-import "widgets"
 
 Item {
     id: root

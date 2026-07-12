@@ -11,7 +11,6 @@ BaseDrawer {
     property var currentNotif: null
     property real notifProgress: 1.0
 
-    // Shorthand — αποφεύγει το currentNotif && currentNotif.x παντού
     readonly property bool hasNotif: currentNotif !== null
     readonly property bool isCritical: hasNotif && currentNotif.isCritical
     readonly property bool hasImage: hasNotif && currentNotif.nImage !== ""
@@ -27,8 +26,6 @@ BaseDrawer {
     screenOffset: Theme.barHeight
     toggleOnHover: false
 
-    // Fixed width — χωρίς resize ποτέ, BaseDrawer υπολογίζει height κανονικά
-    // από το implicitHeight του content (δεν override-άρουμε panelHeight/panelWidth)
     minPanelWidth: 500
     maxPanelWidth: 500
 
@@ -46,7 +43,6 @@ BaseDrawer {
         }
     }
 
-    // ── Timers & animations ───────────────────────────────────────────────
     Timer {
         id: hideTimer
         interval: 5000
@@ -100,34 +96,30 @@ BaseDrawer {
                     Layout.fillWidth: true
                     spacing: 13
 
-                    // Icon / image
                     Rectangle {
                         readonly property int _size: popupWindow.hasImage ? 120 : 56
 
                         Layout.alignment: Qt.AlignTop
-                        Layout.preferredHeight: _size
                         Layout.preferredWidth: _size
+                        Layout.preferredHeight: _size
                         border.color: Theme.borderColor
                         border.width: Theme.widgetBorderWidth
                         color: Theme.backgroundAlt
                         radius: Theme.radius * 1.2
 
-                        // Fallback icon — visibile solo quando non c'è immagine
                         LucideIcon {
                             anchors.centerIn: parent
-                            color: popupWindow.isCritical ? Theme.color1 : Theme.selected
                             icon: popupWindow.isCritical ? "alert-triangle" : "bell"
+                            color: popupWindow.isCritical ? Theme.color1 : Theme.selected
                             size: 24
                             visible: !popupWindow.hasAppIcon && !popupWindow.hasImage
                         }
 
-                        // App icon / notification image
                         Image {
                             anchors {
                                 fill: parent
                                 margins: popupWindow.hasImage ? 0 : 8
                             }
-                            
                             fillMode: Image.PreserveAspectCrop
                             source: {
                                 if (popupWindow.hasAppIcon)
@@ -136,8 +128,8 @@ BaseDrawer {
                                     return popupWindow.currentNotif.nImage;
                                 return "";
                             }
-                            sourceSize.height: parent._size
                             sourceSize.width: parent._size
+                            sourceSize.height: parent._size
                             visible: source !== ""
                         }
                     }
@@ -154,11 +146,11 @@ BaseDrawer {
 
                             Text {
                                 Layout.alignment: Qt.AlignVCenter
+                                text: popupWindow.hasNotif ? popupWindow.currentNotif.nAppName.toUpperCase() : ""
                                 color: popupWindow.isCritical ? Theme.color1 : Theme.selected
                                 font.bold: true
                                 font.family: Theme.fontName
                                 font.pixelSize: 12
-                                text: popupWindow.hasNotif ? popupWindow.currentNotif.nAppName.toUpperCase() : ""
                             }
 
                             Item {
@@ -167,40 +159,30 @@ BaseDrawer {
 
                             Text {
                                 Layout.alignment: Qt.AlignVCenter
+                                text: popupWindow.hasNotif ? popupWindow.currentNotif.timeReceived : ""
                                 color: Theme.foreground
                                 font.family: Theme.fontName
                                 font.pixelSize: 11
                                 opacity: 0.6
-                                text: popupWindow.hasNotif ? popupWindow.currentNotif.timeReceived : ""
                             }
 
-                            // Close button
-                            Rectangle {
+                            // Close button — hover-solid, matches NotificationCenter style
+                            IconButton {
                                 Layout.alignment: Qt.AlignVCenter
                                 Layout.leftMargin: 4
-                                color: closeMouse.containsMouse ? Theme.color1 : "transparent"
-                                height: 24
+                                icon: "x"
+                                size: 24
+                                iconSize: 14
                                 radius: 12
-                                width: 24
-
-                                LucideIcon {
-                                    anchors.centerIn: parent
-                                    color: closeMouse.containsMouse ? Theme.background : Theme.foreground
-                                    icon: "x"
-                                    opacity: closeMouse.containsMouse ? 1.0 : 0.6
-                                    size: 14
-                                }
-
-                                MouseArea {
-                                    id: closeMouse
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (popupWindow.hasNotif)
-                                            NotificationService.dismissNotification(popupWindow.currentNotif);
-                                        popupWindow.currentNotif = null;
-                                    }
+                                hoverSolid: true
+                                hoverColor: Theme.color1
+                                contrastColor: Theme.background
+                                fixedIconColor: Theme.foreground
+                                idleOpacity: 0.6
+                                onTapped: {
+                                    if (popupWindow.hasNotif)
+                                        NotificationService.dismissNotification(popupWindow.currentNotif);
+                                    popupWindow.currentNotif = null;
                                 }
                             }
                         }
@@ -208,30 +190,32 @@ BaseDrawer {
                         // Summary
                         Text {
                             Layout.fillWidth: true
+                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nSummary : ""
                             color: Theme.foreground
                             elide: Text.ElideRight
                             font.bold: true
                             font.family: Theme.fontName
                             font.pixelSize: 15
-                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nSummary : ""
                         }
 
                         // Body
                         Text {
                             Layout.fillWidth: true
+                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nBody : ""
                             color: Theme.foreground
                             elide: Text.ElideRight
                             font.family: Theme.fontName
                             font.pixelSize: 13
                             maximumLineCount: 3
                             opacity: 0.8
-                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nBody : ""
                             wrapMode: Text.Wrap
                         }
                     }
                 }
 
                 // ── Actions ───────────────────────────────────────────────
+                // Kept as Rectangle — these are full-width text-label buttons,
+                // a different shape than the icon-only IconButton component.
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 12
@@ -241,28 +225,41 @@ BaseDrawer {
                         model: popupWindow.hasActions ? popupWindow.currentNotif.actions : []
 
                         delegate: Rectangle {
+                            id: actionBtn
+                            property bool isHovered: false
+
                             Layout.fillWidth: true
                             Layout.preferredHeight: 36
-                            border.color: Theme.borderColor
-                            border.width: 1
-                            color: actionMouse.containsMouse ? Theme.selected : "transparent"
                             radius: Theme.radius
+                            border.width: 1
+                            border.color: Theme.borderColor
+                            color: isHovered ? Theme.selected : "transparent"
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: 120
+                                }
+                            }
 
                             Text {
                                 anchors.centerIn: parent
-                                color: actionMouse.containsMouse ? Theme.background : Theme.foreground
+                                text: modelData.text
+                                color: actionBtn.isHovered ? Theme.background : Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
                                 font.pixelSize: 12
-                                text: modelData.text
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 120
+                                    }
+                                }
                             }
 
-                            MouseArea {
-                                id: actionMouse
-                                anchors.fill: parent
+                            HoverHandler {
                                 cursorShape: Qt.PointingHandCursor
-                                hoverEnabled: true
-                                onClicked: {
+                                onHoveredChanged: actionBtn.isHovered = hovered
+                            }
+                            TapHandler {
+                                onTapped: {
                                     if (popupWindow.hasNotif)
                                         NotificationService.dismissNotification(popupWindow.currentNotif);
                                     modelData.invoke();

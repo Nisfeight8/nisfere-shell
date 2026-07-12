@@ -2,9 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 import qs.services
-import "widgets/containers"
-import "widgets/images"
-import "widgets/volumes"
+import "containers"
+import "images"
+import "volumes"
 
 Rectangle {
     id: root

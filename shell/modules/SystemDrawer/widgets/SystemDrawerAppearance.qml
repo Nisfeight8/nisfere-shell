@@ -173,7 +173,7 @@ Item {
                                 ShellState.appLauncherOpened = true;
                                 break;
                             default:
-                                ShellState.controlCenterOpened = true;
+                                ShellState.quickActionsOpened = true;
                                 ShellState.controlCenterTab = modelData.state;
                                 break;
                             }

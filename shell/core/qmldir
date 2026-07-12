@@ -20,7 +20,12 @@ SideMenu 1.0 SideMenu.qml
 HoverZone 1.0 HoverZone.qml
 CornerShape 1.0 CornerShape.qml
 Anim 1.0 Anim.qml
+AnimColor 1.0 AnimColor.qml
 AnimLoader 1.0 AnimLoader.qml
+CircularActionButton 1.0 CircularActionButton.qml
+StyledToolTip 1.0 StyledToolTip.qml
+IconButton 1.0 IconButton.qml
 
 singleton Theme 1.0 Theme.qml
 singleton Icons 1.0 Icons.qml
+singleton AnimTokens 1.0 AnimTokens.qml

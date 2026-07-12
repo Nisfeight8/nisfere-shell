@@ -75,16 +75,8 @@ QtObject {
             target: ethernetService.device
             ignoreUnknownSignals: true
 
-            // _init: skip the first call (hardware detection on startup)
-            property bool _init: false
-
             function onConnectedChanged() {
-                let wasInit = _init;
-                if (!_init)
-                    _init = true;
                 ethernetService.updateStatus();
-                if (!wasInit)
-                    return;
                 if (ethernetService.device.connected)
                     root.ethernetConnected(ethernetService.statusName);
                 else
@@ -145,16 +137,8 @@ QtObject {
             target: wifiService.device
             ignoreUnknownSignals: true
 
-            // _init: skip the first call (hardware detection on startup)
-            property bool _init: false
-
             function onConnectedChanged() {
-                let wasInit = _init;
-                if (!_init)
-                    _init = true;
                 wifiService.updateStatus();
-                if (!wasInit)
-                    return;
                 if (wifiService.device.connected)
                     root.wifiConnected(wifiService.statusName);
                 else
