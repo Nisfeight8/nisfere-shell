@@ -45,7 +45,7 @@ Item {
                     color: Theme.selected
                     height: 22
                     opacity: 0.9
-                    radius: 11
+                    radius: Theme.radius
                     visible: NotificationService.notifications.length > 0
                     width: Math.max(22, notifCountText.implicitWidth + 12)
 
@@ -166,7 +166,7 @@ Item {
                         Rectangle {
                             Layout.preferredWidth: root.iconSize
                             Layout.preferredHeight: root.iconSize
-                            radius: 8
+                            radius: Theme.radius
                             color: Theme.background
                             border.width: 1
                             border.color: Theme.borderColor
@@ -241,7 +241,7 @@ Item {
                             icon: "x"
                             size: 28
                             iconSize: 14
-                            radius: 6
+                            radius: Theme.radius
                             hoverSolid: true
                             hoverColor: Theme.color1
                             fixedIconColor: Theme.foreground

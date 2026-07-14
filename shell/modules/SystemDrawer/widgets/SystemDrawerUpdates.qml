@@ -48,7 +48,7 @@ Item {
                 icon: "refresh-cw"
                 size: 30
                 iconSize: 14
-                radius: 7
+                radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 tooltipText: "Check for updates"
                 enabled: !UpdateService.loading && !UpdateService.updateRunning
@@ -61,7 +61,7 @@ Item {
                 icon: "circle-fading-arrow-up"
                 size: 30
                 iconSize: 14
-                radius: 7
+                radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 visible: UpdateService.count > 0 && !UpdateService.updateRunning
                 hoverColor: Theme.color2
@@ -75,7 +75,7 @@ Item {
                 icon: "x"
                 size: 30
                 iconSize: 13
-                radius: 7
+                radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 visible: UpdateService.updateLog.length > 0 && !UpdateService.updateRunning
                 hoverColor: Theme.color1
@@ -89,7 +89,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             height: 120
-            radius: 8
+            radius: Theme.radius
             color: Theme.backgroundAlt
             visible: UpdateService.updateLog.length > 0
             clip: true
@@ -134,7 +134,7 @@ Item {
                 Rectangle {
                     width: 3
                     height: 3
-                    radius: 2
+                    radius: Theme.radius
                     color: Theme.selected
                     opacity: 0.6
                 }

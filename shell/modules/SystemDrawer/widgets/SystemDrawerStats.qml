@@ -78,7 +78,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             height: 32
-            radius: 8
+            radius: Theme.radius
             color: Theme.backgroundAlt
 
             RowLayout {

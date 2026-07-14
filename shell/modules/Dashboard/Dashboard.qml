@@ -4,6 +4,7 @@ import qs.core
 import qs.services
 import "widgets"
 import "widgets/Overview"
+import "widgets/Productivity"
 
 BaseDrawer {
     id: dashboard
@@ -15,9 +16,11 @@ BaseDrawer {
     toggleOnHover: false
     minPanelWidth: Screen.width * 0.46
     minPanelHeight: Screen.height * 0.43
+
     onCloseRequest: ShellState.dashboardOpened = false
     onOpenRequest: ShellState.dashboardOpened = true
     onToggleRequest: ShellState.dashboardOpened = !ShellState.dashboardOpened
+
     contentComponent: Component {
         Item {
             id: wrapper
@@ -38,18 +41,24 @@ BaseDrawer {
                 id: notificationsComp
                 Notifications {}
             }
+            Component {
+                id: productivityComp
+                Productivity {}
+            }
 
             ColumnLayout {
                 id: mainColumn
                 anchors.fill: parent
                 spacing: 15
+
                 RowLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     spacing: 15
+
                     NavTabs {
                         id: navTabs
-                        width: wrapper.implicitWidth   // ✅ ακολουθεί το ήδη σταθεροποιημένο πλάτος
+                        width: wrapper.implicitWidth
                         height: 30
                         currentIndex: ShellState.currentDashboardTab
                         onTabClicked: index => ShellState.currentDashboardTab = index
@@ -69,10 +78,15 @@ BaseDrawer {
                             {
                                 icon: "bell",
                                 title: "Alerts"
-                            }
+                            },
+                            {
+                                icon: "brain",
+                                title: "Productivity"
+                            },
                         ]
                     }
                 }
+
                 AnimLoader {
                     id: animLoader
                     Layout.fillWidth: true
@@ -87,6 +101,8 @@ BaseDrawer {
                             return weatherComp;
                         case 3:
                             return notificationsComp;
+                        case 4:
+                            return productivityComp;
                         default:
                             return overviewComp;
                         }

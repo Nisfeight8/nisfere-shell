@@ -16,6 +16,9 @@ Item {
     property color progressColor: Theme.selected
     property string sideTextSubtitle: "Usage"
     property string sideTextTitle: "0%"
+    // Set false to hide the corner label entirely (e.g. for timers/
+    // countdowns where a "usage %" style side label doesn't make sense).
+    property bool showSideText: true
     property string subText: "Metric"
     property color trackColor: Theme.backgroundAlt
     property real value: 0.0
@@ -68,6 +71,7 @@ Item {
             }
         }
     }
+
     ColumnLayout {
         anchors.centerIn: parent
         spacing: -root.effectiveSize * 0.02
@@ -87,7 +91,9 @@ Item {
             text: root.subText
         }
     }
+
     ColumnLayout {
+        visible: root.showSideText
         spacing: -2
         x: root.centerX + (root.circleRadius * 0.707)
         y: root.centerY + (root.circleRadius * 0.707) - (height / 2)

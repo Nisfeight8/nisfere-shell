@@ -127,7 +127,7 @@ Item {
                     color: isHovered && modelData.ready ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : Theme.backgroundAlt
                     height: 92
                     opacity: modelData.ready ? 1.0 : 0.5
-                    radius: 10
+                    radius: Theme.radius
 
                     Behavior on border.color {
                         ColorAnimation {

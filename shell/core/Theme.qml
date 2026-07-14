@@ -7,7 +7,7 @@ QtObject {
     // ── Static layout values ───────────────────────────────────
     readonly property bool enableWidgetBorders: true
     readonly property string fontName: "Arimo Nerd Font"
-    readonly property int radius: 15
+    readonly property int radius: 20
     readonly property int barHeight: 50
     readonly property int padding: 6
     readonly property int panelBorderSize: 10

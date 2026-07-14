@@ -23,3 +23,6 @@ singleton UpdateService 1.0 UpdateService.qml
 singleton ScreenRecordService 1.0 ScreenRecordService.qml
 singleton ScreenshotService 1.0 ScreenshotService.qml
 singleton AreaPickerService 1.0 AreaPickerService.qml
+singleton ClipboardService 1.0 ClipboardService.qml
+singleton TasksService 1.0 TasksService.qml
+singleton FocusService 1.0 FocusService.qml

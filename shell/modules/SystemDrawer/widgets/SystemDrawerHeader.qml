@@ -107,7 +107,7 @@ Item {
                         icon: modelData.icon
                         size: 32
                         iconSize: 16
-                        radius: 8
+                        radius: Theme.radius
                         hoverColor: Theme.color1
                         activeColor: Theme.color1
                         idleOpacity: 0.4
@@ -121,7 +121,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             height: 30
-            radius: 8
+            radius: Theme.radius
             color: Theme.backgroundAlt
 
             RowLayout {

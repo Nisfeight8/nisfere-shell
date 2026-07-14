@@ -40,6 +40,11 @@ Item {
             label: "Picker",
             action: "colorpicker"
         },
+        {
+            icon: "clipboard-list",
+            label: "Clipboard",
+            action: "clipboard"
+        },
     ]
 
     RowLayout {

@@ -18,7 +18,6 @@ Item {
             Layout.fillWidth: true
             spacing: 12
 
-            // Wallpaper thumbnail — larger
             Rectangle {
                 width: 90
                 height: 56
@@ -32,7 +31,6 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
-                // Subtle border overlay
                 Rectangle {
                     anchors.fill: parent
                     radius: 8
@@ -80,106 +78,49 @@ Item {
             }
         }
 
-        // ── Quick-action buttons ──────────────────────────────────
+        // ── Quick-action tiles ─────────────────────────────────────
         GridLayout {
             Layout.fillWidth: true
             columns: 2
             rowSpacing: 6
             columnSpacing: 6
 
-            Repeater {
-                model: [
-                    {
-                        icon: "layout-grid",
-                        label: "App Launcher",
-                        state: "launcher"
-                    },
-                    {
-                        icon: "image",
-                        label: "Wallpapers",
-                        state: "wallpapers"
-                    },
-                    {
-                        icon: "palette",
-                        label: "Themes",
-                        state: "themes"
-                    },
-                    {
-                        icon: "sparkles",
-                        label: "Appearance",
-                        state: "appearance"
-                    },
-                ]
-
-                Rectangle {
-                    id: btn
-                    property bool isHovered: false
-
-                    Layout.fillWidth: true
-                    height: 36
-                    radius: 8
-
-                    color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : Theme.backgroundAlt
-                    border.width: isHovered ? 1 : 1
-                    border.color: isHovered ? Theme.selected : Theme.borderColor
-
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 7
-
-                        LucideIcon {
-                            icon: modelData.icon
-                            size: 15
-                            color: btn.isHovered ? Theme.selected : Theme.foreground
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 150
-                                }
-                            }
-                        }
-                        Text {
-                            text: modelData.label
-                            color: btn.isHovered ? Theme.selected : Theme.foreground
-                            font.family: Theme.fontName
-                            font.pixelSize: 12
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 150
-                                }
-                            }
-                        }
-                    }
-
-                    HoverHandler {
-                        cursorShape: Qt.PointingHandCursor
-                        onHoveredChanged: btn.isHovered = hovered
-                    }
-                    TapHandler {
-                        onTapped: {
-                            switch (modelData.state) {
-                            case "launcher":
-                                ShellState.launcherOpened = false;
-                                ShellState.appLauncherOpened = true;
-                                break;
-                            default:
-                                ShellState.quickActionsOpened = true;
-                                ShellState.controlCenterTab = modelData.state;
-                                break;
-                            }
-                        }
-                    }
+            NavTile {
+                Layout.fillWidth: true
+                icon: "layout-grid"
+                label: "App Launcher"
+                onTapped: {
+                    ShellState.launcherOpened = false;
+                    ShellState.appLauncherOpened = true;
                 }
+            }
+
+            NavTile {
+                Layout.fillWidth: true
+                icon: "image"
+                label: "Wallpapers"
+                onTapped: {
+                    ShellState.quickActionsOpened = true;
+                    ShellState.quickAction = "wallpaper";
+                }
+            }
+
+            NavTile {
+                Layout.fillWidth: true
+                icon: "palette"
+                label: "Themes"
+                onTapped: {
+                    ShellState.quickActionsOpened = true;
+                    ShellState.quickAction = "colors";
+                }
+            }
+
+            NavTile {
+                Layout.fillWidth: true
+                icon: "activity"
+                label: "System Monitor"
+                ready: false
+                subLabel: "Coming soon"
             }
         }
     }

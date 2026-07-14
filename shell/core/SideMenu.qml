@@ -7,7 +7,7 @@ Item {
 
     property var menuModel: []
     property int currentIndex: 0
-
+    signal tabClicked(int tabIndex)
     implicitWidth: 220
 
     ListView {
@@ -109,7 +109,7 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
 
-                onClicked: root.currentIndex = index
+                onClicked: root.tabClicked(index)
             }
         }
     }

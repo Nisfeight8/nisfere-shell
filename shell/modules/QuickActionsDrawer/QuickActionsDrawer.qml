@@ -1,7 +1,10 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell.Io
 import qs.core
 import qs.services
+import "widgets/ThemeManager"
+import "widgets/WallpaperManager"
 import "widgets"
 
 BaseDrawer {
@@ -12,6 +15,9 @@ BaseDrawer {
     minPanelWidth: Screen.width * 0.20
     toggleOnHover: true
 
+    // Simplified: `opened` tracks only the toggle state now, since
+    // nested panels always close the WHOLE drawer directly (no more
+    // "stay open while quickAction is set" special case needed).
     opened: ShellState.quickActionsOpened
 
     onCloseRequest: {
@@ -77,7 +83,7 @@ BaseDrawer {
                 }
             }
 
-            Keys.onEscapePressed: root.closeRequest()
+            Keys.onEscapePressed: ShellState.quickActionsOpened = false
 
             // ── Page components ─────────────────────────────────────
             Component {
@@ -110,6 +116,10 @@ BaseDrawer {
                 id: colorsComp
                 ThemeManager {}
             }
+            Component {
+                id: clipboardComp
+                ClipboardPanel {}
+            }
 
             // ── Page content — no back header, no manual navigation.
             // Nested panels close the WHOLE drawer directly when done
@@ -129,6 +139,8 @@ BaseDrawer {
                         return wallpaperComp;
                     case "colors":
                         return colorsComp;
+                    case "clipboard":
+                        return clipboardComp;
                     default:
                         return barComp;
                     }

@@ -5,6 +5,7 @@ import qs.core
 import qs.services
 import "widgets"
 import "DockerManager"
+
 PanelWindow {
     id: root
 
@@ -111,7 +112,7 @@ PanelWindow {
                 border.width: 1
                 color: Theme.backgroundAlt
                 height: 44
-                radius: 10
+                radius: Theme.radius
                 visible: root.activeTool !== ""
 
                 RowLayout {
@@ -131,7 +132,7 @@ PanelWindow {
 
                         color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : "transparent"
                         height: 32
-                        radius: 8
+                        radius: Theme.radius
                         width: 32
 
                         Behavior on color {
@@ -215,7 +216,7 @@ PanelWindow {
                 border.width: 1
                 color: Theme.backgroundAlt
                 height: 44
-                radius: 10
+                radius: Theme.radius
                 visible: root.activeTool === ""
 
                 Behavior on border.color {
@@ -331,10 +332,6 @@ PanelWindow {
                             label: "Apps"
                         },
                         {
-                            icon: "sparkles",
-                            label: "Appearance"
-                        },
-                        {
                             icon: "wrench",
                             label: "Tools"
                         },
@@ -351,7 +348,7 @@ PanelWindow {
                         border.width: 1
                         color: isActive ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.18) : (isHovered ? Theme.backgroundAlt : "transparent")
                         height: 32
-                        radius: 8
+                        radius: Theme.radius
 
                         Behavior on border.color {
                             ColorAnimation {
@@ -442,15 +439,15 @@ PanelWindow {
                     searchText: searchInput.text
                     visible: root.activeTool === "" && root.activeTab === 0
                 }
-                LauncherAppearancePanel {
-                    anchors.fill: parent
-                    searchText: searchInput.text
-                    visible: root.activeTool === "" && root.activeTab === 1
-                }
+                // LauncherAppearancePanel {
+                //     anchors.fill: parent
+                //     searchText: searchInput.text
+                //     visible: root.activeTool === "" && root.activeTab === 1
+                // }
                 LauncherToolsPanel {
                     anchors.fill: parent
                     searchText: searchInput.text
-                    visible: root.activeTool === "" && root.activeTab === 2
+                    visible: root.activeTool === "" && root.activeTab === 1
 
                     onToolRequested: panel => root.activeTool = panel
                 }
@@ -462,8 +459,7 @@ PanelWindow {
                     visible: active
 
                     sourceComponent: Component {
-                        DockerManager {
-                        }   // ← compile-άρεται στο CentralLauncher context
+                        DockerManager {}   // ← compile-άρεται στο CentralLauncher context
                     }
                 }
             }

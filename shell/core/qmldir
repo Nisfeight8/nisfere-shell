@@ -25,6 +25,8 @@ AnimLoader 1.0 AnimLoader.qml
 CircularActionButton 1.0 CircularActionButton.qml
 StyledToolTip 1.0 StyledToolTip.qml
 IconButton 1.0 IconButton.qml
+NavTile 1.0 NavTile.qml
+SidebarTabs 1.0 SidebarTabs.qml
 
 singleton Theme 1.0 Theme.qml
 singleton Icons 1.0 Icons.qml

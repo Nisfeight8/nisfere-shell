@@ -1,6 +1,12 @@
 import QtQuick
 import QtQuick.Layouts
+import qs.core
 
+// Horizontal top-tab bar with an animated underline indicator.
+// NOTE: when embedding this in a Layout, size it with
+// `Layout.preferredHeight`, not a raw `height:` — a RowLayout's own
+// height property doesn't reliably constrain fillHeight children the
+// way Layout.preferredHeight does.
 RowLayout {
     id: root
     property var tabModel: []
@@ -18,9 +24,14 @@ RowLayout {
             property bool isSelected: root.currentIndex === index
 
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            // NOTE: fillHeight removed — this widget is meant to be a
+            // slim, fixed-height tab bar (sized via the parent's
+            // Layout.preferredHeight), not something that should stretch
+            // to consume whatever vertical space is available.
+            implicitHeight: content.implicitHeight + 12
 
             RowLayout {
+                id: content
                 anchors.centerIn: parent
                 spacing: 8
 
@@ -29,10 +40,9 @@ RowLayout {
                     size: 18
                     color: isSelected ? Theme.selected : Theme.foreground
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
-
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 200
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
                     Behavior on opacity {
@@ -49,10 +59,9 @@ RowLayout {
                     font.family: Theme.fontName
                     font.pixelSize: 14
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
-
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 200
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
                     Behavior on opacity {
@@ -63,14 +72,13 @@ RowLayout {
                 }
             }
 
-            // Το πανέμορφο Animated Underline
             Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Theme.selected
                 height: 3
-                opacity: isSelected ? 1 : 0
                 radius: 2
+                opacity: isSelected ? 1 : 0
                 width: isSelected ? parent.width * 0.6 : 0
 
                 Behavior on opacity {
@@ -91,7 +99,6 @@ RowLayout {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 hoverEnabled: true
-
                 onClicked: root.tabClicked(index)
             }
         }
