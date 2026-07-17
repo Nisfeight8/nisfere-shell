@@ -1,15 +1,23 @@
 import QtQuick
-import QtQuick.Controls
 import qs.core
+import qs.services
 
+
+// Simple icon(+optional info text) with a bar-appropriate tooltip.
+// Uses BarTooltip (PopupWindow-based) rather than StyledToolTip —
+// the bar's own PanelWindow is too short to contain a normal in-window
+// Popup rendering below it; see BarTooltip.qml for the full explanation.
 Item {
     id: root
+
     property string iconName: ""
     property string infoText: ""
     property string tooltipText: ""
     property int iconSize: 16
+
     implicitWidth: contentRow.implicitWidth
     implicitHeight: contentRow.implicitHeight
+
     Row {
         id: contentRow
         spacing: 6
@@ -36,19 +44,9 @@ Item {
         id: hoverHandler
     }
 
-    CompactPopup {
-        showPopup: hoverHandler.hovered && root.tooltipText !== ""
+    BarTooltip {
+        showPopup: hoverHandler.hovered && !ShellState.controlCenterOpened && root.tooltipText !== ""
         targetItem: root
-
-        contentComponent: Component {
-            Text {
-                text: root.tooltipText
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 11
-                font.bold: true
-                padding: 15
-            }
-        }
+        text: root.tooltipText
     }
 }

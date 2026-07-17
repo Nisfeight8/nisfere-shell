@@ -100,7 +100,6 @@ Rectangle {
                 }
             }
 
-            // Γρήγορα Actions
             Row {
                 spacing: 6
 

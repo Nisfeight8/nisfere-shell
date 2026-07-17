@@ -123,7 +123,7 @@ Column {
                 }
 
                 ActionButton {
-                    btnColor: Theme.color9 // Κόκκινο χρώμα διαγραφής
+                    btnColor: Theme.color9
                     label: "✕"
 
                     onClicked: DockerService.composeAction("down", root.proj)

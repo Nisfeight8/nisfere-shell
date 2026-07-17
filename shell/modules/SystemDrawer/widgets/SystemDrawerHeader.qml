@@ -87,32 +87,17 @@ Item {
                 spacing: 4
                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
-                Repeater {
-                    model: [
-                        {
-                            icon: "lock",
-                            cmd: ["loginctl", "lock-session"]
-                        },
-                        {
-                            icon: "rotate-ccw",
-                            cmd: ["systemctl", "reboot"]
-                        },
-                        {
-                            icon: "power",
-                            cmd: ["systemctl", "poweroff"]
-                        },
-                    ]
-
-                    IconButton {
-                        icon: modelData.icon
-                        size: 32
-                        iconSize: 16
-                        radius: Theme.radius
-                        hoverColor: Theme.color1
-                        activeColor: Theme.color1
-                        idleOpacity: 0.4
-                        onTapped: root._run(modelData.cmd)
-                    }
+                IconButton {
+                    icon: "power"
+                    size: 32
+                    iconSize: 16
+                    radius: Theme.radius
+                    hoverColor: Theme.color1
+                    activeColor: Theme.color1
+                    normalColor: Theme.backgroundAlt
+                    idleOpacity: 0.4
+                    tooltipText: "Open Power Menu"
+                    onTapped: ShellState.powerMenuOpened = true
                 }
             }
         }

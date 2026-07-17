@@ -12,15 +12,8 @@ BarWidget {
     readonly property string iconName: hasWindow && windowClass !== "" ? Icons.getAppIcon(windowClass) : Icons.getAppIcon("desktop")
     readonly property string windowClass: hasWindow ? activeWin.appId : ""
     readonly property string windowTitle: hasWindow ? activeWin.title : "Desktop"
-
     useGradient: true
 
-    Behavior on implicitWidth {
-        NumberAnimation {
-            duration: 200
-            easing.type: Easing.OutCubic
-        }
-    }
 
     Text {
         anchors.verticalCenter: parent.verticalCenter

@@ -43,7 +43,6 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    // ✅ Bubble-up implicit size από το εσωτερικό RowLayout + padding
                     implicitWidth: weatherRow.implicitWidth + 40
                     implicitHeight: weatherRow.implicitHeight + 40
 
@@ -226,14 +225,12 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    // ✅ Bubble-up implicit size από το dayColumn + padding
                     implicitWidth: dayColumn.implicitWidth + 24
                     implicitHeight: dayColumn.implicitHeight + 40
 
                     ColumnLayout {
                         id: dayColumn
 
-                        // ✅ Μόνο centerIn — αφαιρέθηκε το top-down height/width override
                         anchors.centerIn: parent
                         spacing: 7
 

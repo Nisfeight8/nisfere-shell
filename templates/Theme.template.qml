@@ -14,22 +14,15 @@ QtObject {
     readonly property int panelBorderSize: 10
     readonly property int widgetBorderWidth: enableWidgetBorders ? 1 : 0
 
-    // Borders: 10% πιο φωτεινά από το φόντο για να ξεχωρίζουν διακριτικά
     readonly property color background: "{{background}}"
     readonly property color foreground: "{{foreground}}"
 
-    // Προσθέτουμε 5% (0.05) από το foreground στο background.
-    // Παίζει τέλεια ΚΑΙ σε Dark ΚΑΙ σε Light!
     readonly property color backgroundAlt: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.12))
 
     readonly property color selected: "{{color4}}"
 
-    // Προσθέτουμε 10% (0.1) από το foreground στο background για τα borders
     readonly property color borderColor: Qt.tint(background, Qt.rgba(foreground.r, foreground.g, foreground.b, 0.18))
 
-    // Για το Highlight Border δεν χρειάζεται saturate του wallust.
-    // Αν θες να είναι ελαφρώς πιο σκούρο/έντονο, το QML έχει δικές του συναρτήσεις.
-    // Το αφήνουμε απλά ίσο με το επιλεγμένο accent:
     readonly property color highlightBorderColor: selected
 
     // --- Wallust / 16 Color Palette ---

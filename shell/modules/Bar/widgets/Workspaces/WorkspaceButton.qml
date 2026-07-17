@@ -26,16 +26,6 @@ Item {
         color: wsItem.isFocused ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : hover.hovered ? Theme.backgroundAlt : "transparent"
         border.width: wsItem.isFocused ? 1 : 0
         border.color: Theme.selected
-        Behavior on color {
-            AnimColor {
-                type: Anim.FastEffects
-            }
-        }
-        Behavior on border.color {
-            AnimColor {
-                type: Anim.FastEffects
-            }
-        }
     }
 
     RowLayout {
@@ -87,15 +77,9 @@ Item {
                         return "";
                     }
 
-                    // appId/WM_CLASS doesn't always match the .desktop
-                    // file's actual Icon= field (casing, suffixes, aliases
-                    // like "firefox" vs "firefox-esr"). heuristicLookup()
-                    // fuzzy-matches against installed .desktop entries and
-                    // gives us the canonical icon name from the match,
-                    // falling back to the raw appClass if nothing matched.
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: 16
+                    font.pixelSize: wsItem.isFocused ? 16 : 14
                     text: Icons.getAppIcon(appClass)
                 }
             }

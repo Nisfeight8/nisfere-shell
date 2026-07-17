@@ -93,16 +93,4 @@ BarWidget {
             }
         }
     }
-
-    // --- Battery Icon ---
-    Loader {
-        active: BatteryService.hasBattery
-        asynchronous: false
-        sourceComponent: Component {
-            TrayIcon {
-                iconName: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
-                tooltipText: `Battery: ${BatteryService.percentage}%\n Status: ${BatteryService.stateName}\n${BatteryService.timeText}`
-            }
-        }
-    }
 }

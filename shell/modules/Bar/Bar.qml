@@ -1,10 +1,10 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import qs.core
 import "widgets"
 import "widgets/Workspaces"
 import "widgets/InternalTrayWidget"
-
 
 PanelWindow {
     id: myBar
@@ -45,50 +45,45 @@ PanelWindow {
                 verticalCenter: parent.verticalCenter
             }
         }
+
         Clock {
             id: clockWidget
             anchors.centerIn: parent
         }
-        TrayWidget {
-            id: sysTrayWidget
-            anchors {
-                right: audioWidget.left
-                rightMargin: 15
-                verticalCenter: parent.verticalCenter
-            }
-        }
-        AudioWidget {
-            id: audioWidget
-            anchors {
-                right: keyboardWidget.left
-                rightMargin: 15
-                verticalCenter: parent.verticalCenter
-            }
-        }
-        KeyboardWidget {
-            id: keyboardWidget
-            anchors {
-                right: internalSystemTrayWidget.left
-                rightMargin: 15
-                verticalCenter: parent.verticalCenter
-            }
-        }
 
-        InternalTrayWidget {
-            id: internalSystemTrayWidget
-            anchors {
-                right: powerButton.left
-                rightMargin: 15
-                verticalCenter: parent.verticalCenter
-            }
-        }
-
-        PowerButton {
-            id: powerButton
+        // ── Right-side cluster ────────────────────────────────────
+        // RowLayout instead of manual anchor chains — conditionally
+        // visible widgets (BatteryWidget on desktops with no battery,
+        // and any future opt-in widgets like a recording indicator or
+        // now-playing widget) collapse their gap automatically here,
+        // rather than leaving a dead 15px+width hole the way anchored
+        // `right: X.left` chains do when X.visible turns false.
+        RowLayout {
+            id: rightCluster
             anchors {
                 right: parent.right
                 rightMargin: 20
                 verticalCenter: parent.verticalCenter
+            }
+            spacing: 15
+
+            TrayWidget {
+                id: sysTrayWidget
+            }
+            BatteryWidget {
+                id: batteryWidget
+            }
+            AudioWidget {
+                id: audioWidget
+            }
+            KeyboardWidget {
+                id: keyboardWidget
+            }
+            InternalTrayWidget {
+                id: internalSystemTrayWidget
+            }
+            PowerButton {
+                id: powerButton
             }
         }
     }

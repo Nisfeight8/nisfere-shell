@@ -9,7 +9,6 @@ PopupWindow {
     required property bool showPopup
     required property Item targetItem
 
-    // Υπολογισμός κεντραρίσματος
     property real targetX: targetItem.mapToItem(null, 0, 0).x + (targetItem.width / 2) - (implicitWidth / 2)
 
     anchor.rect.x: Math.max(10, targetX)
@@ -18,7 +17,6 @@ PopupWindow {
 
     color: "transparent"
 
-    // Το μέγεθος του παραθύρου εξαρτάται από το περιεχόμενο του Loader + padding
     implicitWidth: contentLoader.implicitWidth + 20
     implicitHeight: contentLoader.implicitHeight + 20
 
@@ -27,11 +25,6 @@ PopupWindow {
     Item {
         id: container
         anchors.fill: parent
-
-        // color: "transparent"
-        // // border.color: Theme.borderColor
-        // // border.width: 1
-        // radius: 6
 
         PanelShape {
             anchors.fill: parent

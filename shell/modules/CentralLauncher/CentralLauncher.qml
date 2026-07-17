@@ -459,7 +459,7 @@ PanelWindow {
                     visible: active
 
                     sourceComponent: Component {
-                        DockerManager {}   // ← compile-άρεται στο CentralLauncher context
+                        DockerManager {}
                     }
                 }
             }

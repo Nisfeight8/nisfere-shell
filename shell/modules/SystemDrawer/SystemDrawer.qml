@@ -61,6 +61,7 @@ BaseDrawer {
                         height: 1
                         color: Theme.borderColor
                         opacity: 0.35
+                        visible: BatteryService.hasBattery
                     }
                     // ── Battery ─────────────────────────────────────
 

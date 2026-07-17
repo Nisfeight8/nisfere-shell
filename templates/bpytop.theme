@@ -13,7 +13,7 @@ theme[graph_text]="{{color4}}"           # Color of text appearing on top of gra
 # OTHER
 theme[main_bg]="{{background}}"          # Main background
 theme[selected_bg]="{{color4}}"          # Background color of selected item
-theme[selected_fg]="{{background}}"      # Foreground color of selected item (καλύτερα background για contrast)
+theme[selected_fg]="{{background}}"      # Foreground color of selected item
 theme[proc_misc]="{{color4}}"            # Misc colors for processes box
 
 # OUTLINES

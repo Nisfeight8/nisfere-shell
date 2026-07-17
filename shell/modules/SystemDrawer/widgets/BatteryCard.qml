@@ -47,7 +47,7 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 6  // ← fix: ColumnLayout τώρα "βλέπει" το ύψος
+                Layout.preferredHeight: 6 
                 radius: 3
                 color: Theme.backgroundAlt
 

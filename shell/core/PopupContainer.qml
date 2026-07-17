@@ -7,20 +7,20 @@ Item {
     default property alias content: innerContent.data
     readonly property int invRadius: Theme.radius
     property int padding: 30
-    implicitHeight: Math.max(80, innerContent.childrenRect.height + padding *2)
-    implicitWidth: Math.max(150, innerContent.childrenRect.width + padding *2)    
+    implicitHeight: Math.max(80, innerContent.childrenRect.height + padding * 2)
+    implicitWidth: Math.max(150, innerContent.childrenRect.width + padding * 2)
 
-
+    // Same motion split used by BaseDrawer/AnimLoader across the shell:
+    // position (y) is a spatial move, opacity is a pure fade/effect —
+    // each gets the matching Material-3-derived curve from our Anim system.
     Behavior on opacity {
-        NumberAnimation {
-            duration: 500
-            easing.type: Easing.OutCubic
+        Anim {
+            type: Anim.DefaultEffects
         }
     }
     Behavior on y {
-        NumberAnimation {
-            duration: 500
-            easing.type: Easing.OutCubic
+        Anim {
+            type: Anim.DefaultSpatial
         }
     }
 

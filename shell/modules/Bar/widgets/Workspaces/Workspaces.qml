@@ -4,8 +4,8 @@ import qs.core
 
 BarWidget {
     id: workspacesWidget
-
-    bgColor: "transparent"
+    useGradient: true
+    // bgColor: "transparent"
     paddingX: 0
     spacing: 6
 

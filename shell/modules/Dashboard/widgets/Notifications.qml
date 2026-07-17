@@ -1,13 +1,12 @@
 import QtQuick
 import QtQuick.Layouts
-
+import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
 Item {
     id: root
 
-    // ✅ Guard κατά του transient zero-size, ίδιο pattern με Media.qml
     property real safeWidth: parent.width
     property real safeHeight: parent.height
 
@@ -171,6 +170,7 @@ Item {
                             color: Theme.background
                             border.width: 1
                             border.color: Theme.borderColor
+                            clip: true   // safety net for anything else that might overflow
 
                             LucideIcon {
                                 anchors.centerIn: parent
@@ -179,12 +179,31 @@ Item {
                                 color: notif.isCritical ? Theme.color1 : Theme.selected
                                 visible: !notif.nAppIcon && !notif.nImage
                             }
+
+                            // Hidden — only used as texture source for OpacityMask below
                             Image {
+                                id: notifImage
                                 anchors.fill: parent
                                 anchors.margins: 4
                                 fillMode: Image.PreserveAspectFit
                                 source: notif.nAppIcon || notif.nImage || ""
-                                visible: source !== ""
+                                visible: false
+                            }
+                            Rectangle {
+                                id: notifImageMask
+                                anchors.fill: notifImage
+                                radius: Theme.radius - 4   // slightly smaller to match the inset margin
+                                visible: false
+                            }
+                            // Rounds the image's corners to match the badge — plain clip:true
+                            // only clips to the rectangular bounds, not the rounded shape, so
+                            // the image's own square corners would still poke out past the
+                            // background's curve without this.
+                            OpacityMask {
+                                anchors.fill: notifImage
+                                source: notifImage
+                                maskSource: notifImageMask
+                                visible: notifImage.source !== ""
                             }
                         }
 

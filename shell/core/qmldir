@@ -4,6 +4,8 @@ BaseDrawer 1.0 BaseDrawer.qml
 BarPopup 1.0 BarPopup.qml
 PanelShape 1.0 PanelShape.qml
 BarWidget 1.0 BarWidget.qml
+BarTooltip 1.0 BarTooltip.qml
+
 CustomSlider 1.0 CustomSlider.qml
 ControlSlider 1.0 ControlSlider.qml
 GlassBackground 1.0 GlassBackground.qml

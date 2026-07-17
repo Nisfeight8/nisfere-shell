@@ -5,7 +5,7 @@ Item {
     id: root
     property real bgRadius: Theme.radius
     anchors.fill: parent
-    clip: true   // ✅ Native rounded clip - καμία OpacityMask, κανένα shader
+    clip: true
 
     // Base translucent background
     Rectangle {
@@ -15,8 +15,7 @@ Item {
         opacity: 0.65
     }
 
-    // ✅ Native Rectangle gradient - μηδενικό GPU/FBO κόστος
-    // (μόνο κάθετο, όχι diagonal - δες σημείωση παρακάτω)
+    // ✅ Native Rectangle gradient 
     Rectangle {
         anchors.fill: parent
         radius: root.bgRadius

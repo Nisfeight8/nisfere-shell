@@ -75,6 +75,12 @@ PanelWindow {
             Repeater {
                 model: [
                     {
+                        icon: "lock",
+                        label: "Lock",
+                        cmd: ["loginctl", "lock-session"],
+                        color: Theme.selected
+                    },
+                    {
                         icon: "power",
                         label: "Shutdown",
                         cmd: ["systemctl", "poweroff"],

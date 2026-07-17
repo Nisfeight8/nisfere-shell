@@ -10,7 +10,6 @@ BarWidget {
 
     RowLayout {
         spacing: 6
-        // Εδώ το verticalAlignment δουλεύει κανονικά
         Layout.alignment: Qt.AlignVCenter
         LucideIcon {
             color: AudioService.muted ? Theme.color1 : Theme.selected

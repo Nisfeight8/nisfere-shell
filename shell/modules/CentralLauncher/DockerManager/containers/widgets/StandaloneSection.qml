@@ -53,7 +53,6 @@ Column {
         delegate: ContainerRow {
             cd: modelData
             isStandalone: true
-            // Προωθούμε το signal της διαγραφής προς τα πάνω
             onDeleteRequested: (cId, cName) => root.containerDeleteRequested(cId, cName)
         }
     }

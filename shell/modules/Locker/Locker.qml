@@ -237,7 +237,6 @@ WlSessionLock {
                         }
                     }
 
-                    // Error label κάτω από το input
                     Text {
                         id: errorText
                         Layout.alignment: Qt.AlignHCenter

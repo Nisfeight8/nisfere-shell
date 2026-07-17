@@ -98,7 +98,7 @@ BarWidget {
                             }
                             LucideIcon {
                                 color: Theme.selected
-                                size: 14 // Αντιστοιχεί στο pixelSize: 14
+                                size: 14
                                 icon: "check"
                                 visible: KeyboardService.getShort(KeyboardService.currentLayout) === KeyboardService.getShort(modelData.toLowerCase())
                             }

@@ -7,8 +7,6 @@ import "widgets"
 GlassCard {
     Layout.fillWidth: true
 
-    // implicitHeight (όχι height!) ← ColumnLayout το χρειάζεται για layout
-    // +30 = 15 (top margin) + 15 (bottom margin)
     implicitHeight: slidersColumn.implicitHeight + 30
 
     ColumnLayout {

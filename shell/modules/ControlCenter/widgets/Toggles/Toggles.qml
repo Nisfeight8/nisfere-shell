@@ -28,12 +28,10 @@ GridLayout {
                 active: BluetoothService.hasBluetooth
             },
             {
-                // Το Toggle για το Theme (πάντα ορατό)
                 source: "widgets/ThemeToggle.qml",
                 active: true
             },
             {
-                // Το Toggle του Keyboard: Εμφανίζεται ΜΟΝΟ αν υπάρχουν 2+ γλώσσες!
                 source: "widgets/KeyboardToggle.qml",
                 active: KeyboardService.availableLayouts.length > 1
             },

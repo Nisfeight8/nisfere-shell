@@ -48,7 +48,7 @@ BarWidget {
             anchors.centerIn: parent
             color: Theme.selected
             size: 16
-            icon: "bell" // Αντικατάσταση του "󰂚"
+            icon: "bell"
         }
 
         Rectangle {

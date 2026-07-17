@@ -81,7 +81,6 @@ Rectangle {
             Layout.fillWidth: true
             currentIndex: root.currentTab
 
-            // TAB 0: Containers - πάντα loaded (default tab)
             Loader {
                 Layout.fillHeight: true
                 Layout.fillWidth: true

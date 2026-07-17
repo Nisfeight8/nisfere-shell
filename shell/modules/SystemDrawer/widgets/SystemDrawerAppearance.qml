@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
@@ -23,14 +24,33 @@ Item {
                 height: 56
                 radius: 8
                 color: Theme.backgroundAlt
-                clip: true
+                clip: true   // safety net — doesn't round the image itself, see below
 
+                // Hidden — only used as texture source for OpacityMask
                 Image {
+                    id: wallpaperThumb
                     anchors.fill: parent
                     source: Theme.wallpaper ? "file://" + Theme.wallpaper : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
+                    visible: false
                 }
+                Rectangle {
+                    id: wallpaperThumbMask
+                    anchors.fill: wallpaperThumb
+                    radius: 8
+                    visible: false
+                }
+                // clip:true only clips to the rectangular bounds, not the rounded
+                // shape — since the image (PreserveAspectCrop) exactly fills the
+                // whole rectangle, its square corners would still show past the
+                // radius curve without this mask.
+                OpacityMask {
+                    anchors.fill: wallpaperThumb
+                    source: wallpaperThumb
+                    maskSource: wallpaperThumbMask
+                }
+
                 Rectangle {
                     anchors.fill: parent
                     radius: 8

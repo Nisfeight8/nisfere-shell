@@ -10,10 +10,6 @@ Item {
     property int invRadius: 16
     readonly property bool isHorizontal: edge === Qt.LeftEdge || edge === Qt.RightEdge
     property int normalRadius: Theme.radius
-
-    // ΝΕΑ ΙΔΙΟΤΗΤΑ: Πόσα pixels να κόψουμε από το κάτω μέρος για οπτική ισορροπία.
-    // Το invRadius / 2 (δηλ. 8px) συνήθως δημιουργεί το τέλειο οπτικό κέντρο,
-    // αλλά μπορείς να το πειράξεις!
     property int bottomOffset: invRadius / 1.2
 
     Shape {
@@ -70,7 +66,6 @@ Item {
             }
             PathLine {
                 x: root.invRadius
-                // Αφαιρούμε το offset από την αρχή της κάτω καμπύλης
                 y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathArc {
@@ -78,12 +73,10 @@ Item {
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: root.invRadius + root.normalRadius
-                // Αφαιρούμε το offset από το κάτω όριο
                 y: theShape.height - root.bottomOffset
             }
             PathLine {
                 x: theShape.width - root.invRadius - root.normalRadius
-                // Αφαιρούμε το offset από το κάτω όριο
                 y: theShape.height - root.bottomOffset
             }
             PathArc {
@@ -91,7 +84,6 @@ Item {
                 radiusX: root.normalRadius
                 radiusY: root.normalRadius
                 x: theShape.width - root.invRadius
-                // Αφαιρούμε το offset από το τέλος της κάτω καμπύλης
                 y: theShape.height - root.normalRadius - root.bottomOffset
             }
             PathLine {

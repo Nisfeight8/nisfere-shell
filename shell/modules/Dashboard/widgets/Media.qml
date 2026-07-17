@@ -19,6 +19,7 @@ Item {
     property real safeWidth: root.width > 0 ? root.width : 400
     property real strokeSize: Math.max(6, ringOuter * 0.05)
     property real trackRadius: (ringOuter - strokeSize) / 2
+    property bool dropdownOpen: false   // fully self-managed player-switcher dropdown state
 
     function formatTime(position) {
         let seconds = (MediaService.length > 10000) ? Math.floor(position / 1000000) : Math.floor(position);
@@ -126,7 +127,7 @@ Item {
                 RowLayout {
                     id: contentRow
                     anchors.centerIn: parent
-                    opacity: playerMouse.containsMouse || playerDropdown.opened ? 1.0 : 0.7
+                    opacity: playerMouse.containsMouse || root.dropdownOpen ? 1.0 : 0.7
                     spacing: 8
                     Behavior on opacity {
                         Anim {
@@ -153,7 +154,7 @@ Item {
                         color: Theme.selected
                         size: 22
                         opacity: 0.7
-                        icon: playerDropdown.opened ? "chevron-up" : "chevron-down"
+                        icon: root.dropdownOpen ? "chevron-up" : "chevron-down"
                         visible: MediaService.list.length > 1
                     }
                 }
@@ -164,7 +165,16 @@ Item {
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                     enabled: MediaService.list.length > 1
                     hoverEnabled: true
-                    onClicked: playerDropdown.opened ? playerDropdown.close() : playerDropdown.open()
+                    onClicked: {
+                        // Drive open/closed entirely via our OWN boolean —
+                        // not by reading playerDropdown.opened — and don't
+                        // rely on the Popup's built-in closePolicy at all
+                        // (Popup inside a Quickshell PanelWindow may not
+                        // have a proper Overlay backing it, so its
+                        // automatic outside-press-close behavior isn't
+                        // reliable here). This sidesteps that entirely.
+                        root.dropdownOpen = !root.dropdownOpen;
+                    }
                 }
 
                 Popup {
@@ -173,6 +183,11 @@ Item {
                     width: 160
                     x: (parent.width - width)
                     y: parent.height + 5
+
+                    // Fully controlled by our own property — no
+                    // closePolicy-driven auto-close at all.
+                    closePolicy: Popup.NoAutoClose
+                    visible: root.dropdownOpen
 
                     background: Rectangle {
                         border.color: Theme.borderColor
@@ -218,7 +233,7 @@ Item {
                                     hoverEnabled: true
                                     onClicked: {
                                         MediaService.selectPlayer(index);
-                                        playerDropdown.close();
+                                        root.dropdownOpen = false;
                                     }
                                 }
                             }

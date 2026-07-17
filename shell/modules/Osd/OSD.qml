@@ -280,7 +280,6 @@ PanelWindow {
                         color: Theme.foreground
                     }
 
-                    // Percentage — μόνο για bar-driven types
                     Text {
                         visible: osd.showBar
                         text: Math.round(osd.osdValue * 100) + "%"
@@ -333,7 +332,6 @@ PanelWindow {
                             }
                         }
 
-                        // Λεπτή γυαλάδα πάνω στο fill — δίνει βάθος χωρίς gradient asset
                         Rectangle {
                             anchors {
                                 top: parent.top
@@ -348,7 +346,6 @@ PanelWindow {
                     }
                 }
 
-                // Subtitle — π.χ. artist name, full keyboard layout name, ή "Hold still..."
                 Text {
                     Layout.fillWidth: true
                     visible: !osd.showBar && osd.osdSubtitle !== ""
