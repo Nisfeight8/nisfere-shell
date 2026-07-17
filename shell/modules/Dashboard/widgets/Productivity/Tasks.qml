@@ -7,6 +7,27 @@ Item {
     id: root
     anchors.fill: parent
 
+    // "active" | "completed" — which list is currently shown
+    property string filter: "active"
+    property var filteredTasks: []
+
+    // Explicit update pattern — property var bindings with .filter()
+    // aren't reliably re-evaluated by QML's dependency tracking, so we
+    // recompute imperatively whenever the source data or filter changes.
+    function _updateFilteredTasks() {
+        filteredTasks = root.filter === "active" ? TasksService.tasks.filter(t => !t.done) : TasksService.tasks.filter(t => t.done);
+    }
+
+    onFilterChanged: _updateFilteredTasks()
+    Component.onCompleted: _updateFilteredTasks()
+
+    Connections {
+        target: TasksService
+        function onTasksChanged() {
+            root._updateFilteredTasks();
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
@@ -81,12 +102,43 @@ Item {
             }
         }
 
+        // ── Active / Completed toggle ──────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Repeater {
+                model: [
+                    {
+                        key: "active",
+                        icon: "circle-dashed",
+                        label: "Active",
+                        count: TasksService.remainingCount
+                    },
+                    {
+                        key: "completed",
+                        icon: "check-check",
+                        label: "Completed",
+                        count: TasksService.completedCount
+                    },
+                ]
+
+                NavTile {
+                    Layout.fillWidth: true
+                    icon: modelData.icon
+                    label: modelData.label + " (" + modelData.count + ")"
+                    isActive: root.filter === modelData.key
+                    onTapped: root.filter = modelData.key
+                }
+            }
+        }
+
         // ── Task list ─────────────────────────────────────────────
         ListView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: TasksService.tasks.length > 0
-            model: TasksService.tasks
+            visible: root.filteredTasks.length > 0
+            model: root.filteredTasks
             spacing: 4
             clip: true
 
@@ -99,8 +151,6 @@ Item {
                 radius: Theme.radius
                 color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.1) : Theme.backgroundAlt
 
-                // Behavior on color { AnimColor { type: Anim.FastEffects } }
-
                 RowLayout {
                     anchors {
                         fill: parent
@@ -109,7 +159,6 @@ Item {
                     }
                     spacing: 10
 
-                    // Checkbox toggle
                     Rectangle {
                         id: checkbox
                         width: 20
@@ -181,48 +230,45 @@ Item {
         }
 
         // ── Empty state ───────────────────────────────────────────
-        ColumnLayout {
-            anchors.centerIn: parent
+        // Wrapped in a plain Item (safe for Layout.fillWidth/fillHeight)
+        // with anchors.centerIn inside it (safe here since the Item
+        // itself isn't fighting anchors vs Layout positioning) — more
+        // reliable than relying on Layout.alignment resolution when the
+        // container itself is a fillWidth child of another Layout.
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: TasksService.tasks.length === 0
-            spacing: 8
+            visible: root.filteredTasks.length === 0
 
-            Item {
-                Layout.fillHeight: true
-            }
-            LucideIcon {
-                Layout.alignment: Qt.AlignHCenter
-                icon: "list-checks"
-                size: 32
-                color: Theme.foreground
-                opacity: 0.35
-            }
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                text: "No tasks yet"
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 12
-                opacity: 0.5
-            }
-            Item {
-                Layout.fillHeight: true
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: 8
+
+                LucideIcon {
+                    Layout.alignment: Qt.AlignHCenter
+                    icon: root.filter === "active" ? "list-checks" : "check-check"
+                    size: 32
+                    color: Theme.foreground
+                    opacity: 0.35
+                }
+                Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: root.filter === "active" ? "No active tasks" : "No completed tasks"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 12
+                    opacity: 0.5
+                }
             }
         }
 
-        // ── Footer ────────────────────────────────────────────────
+        // ── Footer — clear completed, only relevant on that tab ────
         RowLayout {
             Layout.fillWidth: true
-            visible: TasksService.tasks.length > 0
+            visible: root.filter === "completed" && TasksService.completedCount > 0
             spacing: 8
 
-            Text {
-                text: TasksService.remainingCount + " remaining"
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 11
-                opacity: 0.5
+            Item {
                 Layout.fillWidth: true
             }
 
@@ -232,7 +278,6 @@ Item {
                 iconSize: 12
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
-                visible: TasksService.completedCount > 0
                 hoverColor: Theme.color1
                 activeColor: Theme.color1
                 tooltipText: "Clear completed"

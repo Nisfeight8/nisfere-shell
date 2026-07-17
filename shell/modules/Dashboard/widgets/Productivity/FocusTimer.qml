@@ -28,52 +28,13 @@ Item {
                         icon: "coffee"
                     },
                 ]
-
-                Rectangle {
+                NavTile {
                     id: modeBtn
-                    property bool isSelected: FocusService.mode === modelData.key
-
-                    width: 110
-                    height: 36
-                    radius: Theme.radius
-                    color: isSelected ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : "transparent"
-                    border.width: 1
-                    border.color: isSelected ? Theme.selected : Theme.borderColor
-
-                    Behavior on color {
-                        AnimColor {
-                            type: Anim.FastEffects
-                        }
-                    }
-                    Behavior on border.color {
-                        AnimColor {
-                            type: Anim.FastEffects
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 6
-                        LucideIcon {
-                            icon: modelData.icon
-                            size: 15
-                            color: modeBtn.isSelected ? Theme.selected : Theme.foreground
-                        }
-                        Text {
-                            text: modelData.label
-                            color: modeBtn.isSelected ? Theme.selected : Theme.foreground
-                            font.family: Theme.fontName
-                            font.pixelSize: 13
-                            font.bold: modeBtn.isSelected
-                        }
-                    }
-
-                    HoverHandler {
-                        cursorShape: Qt.PointingHandCursor
-                    }
-                    TapHandler {
-                        onTapped: FocusService.switchMode(modelData.key)
-                    }
+                    isActive: FocusService.mode === modelData.key
+                    Layout.fillWidth: true
+                    icon: modelData.icon
+                    label: modelData.label
+                    onTapped: FocusService.switchMode(modelData.key)
                 }
             }
         }
@@ -137,6 +98,7 @@ Item {
                 icon: "rotate-ccw"
                 size: 44
                 iconSize: 18
+                activeSolid: true
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 tooltipText: "Reset"
@@ -147,6 +109,7 @@ Item {
                 icon: FocusService.running ? "pause" : "play"
                 size: 60
                 iconSize: 26
+                activeSolid: true
                 radius: Theme.radius
                 normalColor: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15)
                 hoverColor: Theme.selected

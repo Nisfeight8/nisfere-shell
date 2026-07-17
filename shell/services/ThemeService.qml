@@ -53,6 +53,10 @@ QtObject {
             root.themes = payload.themes ?? [];
             root.themesLoaded(root.themes);
             break;
+        case "theme_mode_toggled":
+            if (payload.success)
+                fetchState();
+            break;
         case "error":
             console.warn("WallpaperService: daemon error for action '" + (payload.action ?? "?") + "':", payload.error);
             break;
@@ -82,6 +86,9 @@ QtObject {
         });
     }
 
+    function toggleMode() {
+        SocketService.sendCommand("theme", "toggle_mode", {});
+    }
     // ── Fetch methods ────────────────────────────────────────────
     function fetchState() {
         SocketService.sendCommand("theme", "get_state", {});

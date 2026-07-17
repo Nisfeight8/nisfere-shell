@@ -2,11 +2,11 @@ import QtQuick
 import qs.core
 import qs.services
 
-Item {
+BarWidget {
     id: root
-
-    implicitWidth: bar.implicitWidth
-    implicitHeight: bar.implicitHeight
+    useGradient: true
+    // implicitWidth: bar.implicitWidth
+    // implicitHeight: bar.implicitHeight
 
     HoverHandler {
         cursorShape: Qt.PointingHandCursor
@@ -15,97 +15,93 @@ Item {
     TapHandler {
         onTapped: ShellState.controlCenterOpened = !ShellState.controlCenterOpened
     }
+    spacing: 4
 
-    BarWidget {
-        id: bar
-        spacing: 4
-
-        // --- Network Icon ---
-        Loader {
-            active: NetworkService.hasEthernet || NetworkService.hasWifi
-            asynchronous: false
-            sourceComponent: Component {
-                TrayIcon {
-                    iconName: {
-                        if (NetworkService.isEthernetConnected)
-                            return "network";
-                        if (NetworkService.hasWifi)
-                            return Icons.getWifiIcon(NetworkService.wifiEnabled, NetworkService.isWifiConnected, NetworkService.wifi.netStrength);
-                        return "wifi-off";
-                    }
-
-                    tooltipText: {
-                        if (NetworkService.isEthernetConnected) {
-                            return "Network: Ethernet\nStatus: Connected";
-                        } else if (NetworkService.hasWifi) {
-                            if (NetworkService.isWifiConnected) {
-                                return `Wi-Fi: ${NetworkService.wifiName}\nSignal: ${Math.round(NetworkService.wifi.netStrength * 100)}%`;
-                            } else if (NetworkService.wifiEnabled) {
-                                return "Wi-Fi: Searching...";
-                            } else {
-                                return "Wi-Fi: Disabled";
-                            }
-                        }
-                        return "Network: Unavailable";
-                    }
+    // --- Network Icon ---
+    Loader {
+        active: NetworkService.hasEthernet || NetworkService.hasWifi
+        asynchronous: false
+        sourceComponent: Component {
+            TrayIcon {
+                iconName: {
+                    if (NetworkService.isEthernetConnected)
+                        return "network";
+                    if (NetworkService.hasWifi)
+                        return Icons.getWifiIcon(NetworkService.wifiEnabled, NetworkService.isWifiConnected, NetworkService.wifi.netStrength);
+                    return "wifi-off";
                 }
-            }
-        }
 
-        // --- Bluetooth Icon ---
-        Loader {
-            active: BluetoothService.hasBluetooth
-            asynchronous: false
-            sourceComponent: Component {
-                TrayIcon {
-                    iconName: Icons.getBluetoothIcon(BluetoothService.isEnabled, BluetoothService.connectedDevicesCount > 0)
-                    infoText: BluetoothService.connectedDevicesCount > 0 ? BluetoothService.connectedDevicesCount.toString() : ""
-                    tooltipText: {
-                        if (!BluetoothService.isEnabled) {
-                            return "Bluetooth: Disabled";
-                        } else if (BluetoothService.connectedDevicesCount === 0) {
-                            return BluetoothService.isScanning ? "Bluetooth: Searching..." : "Bluetooth: On";
+                tooltipText: {
+                    if (NetworkService.isEthernetConnected) {
+                        return "Network: Ethernet\nStatus: Connected";
+                    } else if (NetworkService.hasWifi) {
+                        if (NetworkService.isWifiConnected) {
+                            return `Wi-Fi: ${NetworkService.wifiName}\nSignal: ${Math.round(NetworkService.wifi.netStrength * 100)}%`;
+                        } else if (NetworkService.wifiEnabled) {
+                            return "Wi-Fi: Searching...";
                         } else {
-                            return `Bluetooth: ${BluetoothService.statusName}`;
+                            return "Wi-Fi: Disabled";
                         }
+                    }
+                    return "Network: Unavailable";
+                }
+            }
+        }
+    }
+
+    // --- Bluetooth Icon ---
+    Loader {
+        active: BluetoothService.hasBluetooth
+        asynchronous: false
+        sourceComponent: Component {
+            TrayIcon {
+                iconName: Icons.getBluetoothIcon(BluetoothService.isEnabled, BluetoothService.connectedDevicesCount > 0)
+                infoText: BluetoothService.connectedDevicesCount > 0 ? BluetoothService.connectedDevicesCount.toString() : ""
+                tooltipText: {
+                    if (!BluetoothService.isEnabled) {
+                        return "Bluetooth: Disabled";
+                    } else if (BluetoothService.connectedDevicesCount === 0) {
+                        return BluetoothService.isScanning ? "Bluetooth: Searching..." : "Bluetooth: On";
+                    } else {
+                        return `Bluetooth: ${BluetoothService.statusName}`;
                     }
                 }
             }
         }
+    }
 
-        // --- Brightness Icon ---
-        Loader {
-            active: BrightnessService.isAvailable
-            asynchronous: false
-            sourceComponent: Component {
-                TrayIcon {
-                    iconName: "sun"
-                    tooltipText: `Brightness: ${Math.round(BrightnessService.percentage * 100)}%`
-                }
+    // --- Brightness Icon ---
+    Loader {
+        active: BrightnessService.isAvailable
+        asynchronous: false
+        sourceComponent: Component {
+            TrayIcon {
+                iconName: "sun"
+                tooltipText: `Brightness: ${Math.round(BrightnessService.percentage * 100)}%`
             }
         }
+    }
 
-        // --- Volume Icon (Always active) ---
-        TrayIcon {
-            iconName: Icons.getVolumeIcon(AudioService.volume, AudioService.muted)
-            tooltipText: {
-                if (AudioService.muted) {
-                    return "Volume: Muted";
-                } else {
-                    return `Volume: ${Math.round(AudioService.volume * 100)}%`;
-                }
+    // --- Volume Icon (Always active) ---
+    TrayIcon {
+        iconName: Icons.getVolumeIcon(AudioService.volume, AudioService.muted)
+        tooltipText: {
+            if (AudioService.muted) {
+                return "Volume: Muted";
+            } else {
+                return `Volume: ${Math.round(AudioService.volume * 100)}%`;
             }
         }
+    }
 
-        // --- Battery Icon ---
-        Loader {
-            active: BatteryService.hasBattery
-            asynchronous: false
-            sourceComponent: Component {
-                TrayIcon {
-                    iconName: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
-                    tooltipText: `Battery: ${BatteryService.percentage}%\n Status: ${BatteryService.stateName}\n${BatteryService.timeText}`
-                }
+    // --- Battery Icon ---
+    Loader {
+        active: BatteryService.hasBattery
+        asynchronous: false
+        sourceComponent: Component {
+            TrayIcon {
+                iconName: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
+                tooltipText: `Battery: ${BatteryService.percentage}%\n Status: ${BatteryService.stateName}\n${BatteryService.timeText}`
             }
         }
     }

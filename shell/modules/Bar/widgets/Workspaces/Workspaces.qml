@@ -7,12 +7,10 @@ BarWidget {
 
     bgColor: "transparent"
     paddingX: 0
-    spacing: 14
+    spacing: 6
 
     Repeater {
         model: Hyprland.workspaces.values
-
-        delegate: WorkspaceButton {
-        }
+        delegate: WorkspaceButton {}
     }
 }

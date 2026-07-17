@@ -70,7 +70,7 @@ Item {
                 icon: Icons.getDndIcon(NotificationService.dndEnabled)
                 size: 40
                 normalColor: Theme.backgroundAlt
-                alwaysBorder: true
+                // hoverColor: Theme.selected
                 isActive: NotificationService.dndEnabled
                 activeSolid: true
                 dimWhenIdle: false
@@ -82,7 +82,8 @@ Item {
                 icon: "trash"
                 size: 40
                 normalColor: Theme.backgroundAlt
-                alwaysBorder: true
+                hoverColor: Theme.color1
+                // alwaysBorder: true
                 fixedIconColor: Theme.color1
                 dimWhenIdle: false
                 visible: NotificationService.notifications.length > 0
@@ -241,11 +242,10 @@ Item {
                             icon: "x"
                             size: 28
                             iconSize: 14
+                            normalColor: Theme.backgroundAlt
+                            activeSolid: true
                             radius: Theme.radius
-                            hoverSolid: true
                             hoverColor: Theme.color1
-                            fixedIconColor: Theme.foreground
-                            idleOpacity: 0.3
                             onTapped: NotificationService.close(index)
                         }
                     }

@@ -47,7 +47,7 @@ Item {
                     text: "Color Themes"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 16
+                    font.pixelSize: 14
                     font.bold: true
                 }
                 Text {
@@ -63,6 +63,7 @@ Item {
                 Layout.fillWidth: true
             }
 
+            // ── Light / Dark mode toggle ───────────────────────────
             Text {
                 text: "Light"
                 color: Theme.foreground
@@ -72,51 +73,9 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Rectangle {
-                width: 44
-                height: 24
-                radius: 12
-                color: root.activeMode === "dark" ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9) : Theme.backgroundAlt
-                border.color: root.activeMode === "dark" ? Theme.selected : Theme.borderColor
-                border.width: 1
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-
-                Rectangle {
-                    width: 18
-                    height: 18
-                    radius: 9
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: root.activeMode === "dark" ? parent.width - width - 3 : 3
-                    color: "white"
-                    opacity: root.activeMode === "dark" ? 1.0 : 0.55
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 160
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 160
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.activeMode = root.activeMode === "dark" ? "light" : "dark"
-                }
+            ToggleSwitch {
+                checked: root.activeMode === "dark"
+                onToggled: root.activeMode = root.activeMode === "dark" ? "light" : "dark"
             }
 
             Text {
@@ -143,7 +102,6 @@ Item {
             id: themeList
 
             Layout.fillWidth: true
-            // ✅ Explicit literal — ίδιο fix με WallpaperManager's ListView
             Layout.preferredHeight: root.listHeight
 
             orientation: ListView.Vertical
@@ -193,9 +151,19 @@ Item {
                 radius: Theme.radius
 
                 color: isConfirmed ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : (isHovered || isCurrent ? Theme.backgroundAlt : "transparent")
-
                 border.width: 1
                 border.color: isConfirmed ? Theme.selected : (isHovered || isCurrent ? Theme.borderColor : "transparent")
+
+                Behavior on color {
+                    AnimColor {
+                        type: Anim.FastEffects
+                    }
+                }
+                Behavior on border.color {
+                    AnimColor {
+                        type: Anim.FastEffects
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -208,11 +176,16 @@ Item {
                         radius: 6
                         color: delegateItem.isConfirmed ? Theme.selected : Theme.foreground
                         opacity: delegateItem.isConfirmed ? 1.0 : (delegateItem.isHovered || delegateItem.isCurrent ? 0.6 : 0.3)
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 150
+                            }
+                        }
                     }
 
                     Text {
                         Layout.fillWidth: true
-                        Layout.preferredWidth: 0   // ✅ defensive — elide-safe (ίδιο pattern με MiniMedia)
+                        Layout.preferredWidth: 0
                         text: modelData.name
                         color: delegateItem.isConfirmed ? Theme.selected : Theme.foreground
                         font.family: Theme.fontName
@@ -220,6 +193,11 @@ Item {
                         font.bold: delegateItem.isConfirmed || delegateItem.isHovered || delegateItem.isCurrent
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
+                        Behavior on color {
+                            AnimColor {
+                                type: Anim.FastEffects
+                            }
+                        }
                     }
 
                     Rectangle {

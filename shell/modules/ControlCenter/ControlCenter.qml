@@ -32,19 +32,15 @@ BaseDrawer {
 
             implicitHeight: animLoader.item?.implicitHeight ?? 0
 
-            // ── Page Components ───────────────────────────────────────────
+            // ── Page Components ───────────────────────────────────
             Component {
                 id: mainPageComp
 
                 ColumnLayout {
                     spacing: 10
 
-                    Text {
+                    PageTitle {
                         Layout.fillWidth: true
-                        color: Theme.foreground
-                        font.bold: true
-                        font.family: Theme.fontName
-                        font.pixelSize: 22
                         text: "Control Center"
                     }
 
@@ -86,7 +82,7 @@ BaseDrawer {
                 }
             }
 
-            // ── Animated Loader ───────────────────────────────────────────
+            // ── Animated Loader ────────────────────────────────────
             AnimLoader {
                 id: animLoader
                 width: parent.width

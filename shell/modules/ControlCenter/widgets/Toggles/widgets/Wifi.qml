@@ -11,6 +11,6 @@ ControlButton {
     title: "Wi-Fi"
     visible: NetworkService.hasWifi
 
-    onClicked: NetworkService.toggleWifi()
+    onClicked: NetworkService.wifi.toggle()
     onMoreClicked: pageStack.currentIndex = 1
 }

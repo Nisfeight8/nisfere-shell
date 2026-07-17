@@ -17,111 +17,38 @@ Item {
 
     ColumnLayout {
         id: mainColumn
-        width: parent.width   // top-down, ΟΧΙ anchors.fill!
+        width: parent.width
         spacing: 16
 
-        // ── Header ───────────────────────────────────────────────────────
-        RowLayout {
+        // ── Header ───────────────────────────────────────────────
+        PageHeader {
             Layout.fillWidth: true
-            spacing: 12
+            title: "Wi-Fi"
+            onBackRequested: root.backRequested()
 
-            Rectangle {
-                Layout.preferredWidth: 32   // ✓
-                Layout.preferredHeight: 32  // ✓
-                Layout.alignment: Qt.AlignVCenter
-                radius: 16
-                color: backMouse.containsMouse ? Theme.backgroundAlt : "transparent"
-                border.color: Theme.borderColor
-                border.width: 1
-
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "arrow-left"
-                    size: 16
-                    color: Theme.foreground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.backRequested()
-                }
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: "Wi-Fi"
-                color: Theme.foreground
-                font.bold: true
-                font.pixelSize: 18
-                verticalAlignment: Text.AlignVCenter
-            }
-
-            // Toggle switch
-            Rectangle {
-                Layout.preferredWidth: 44   // ✓
-                Layout.preferredHeight: 24  // ✓
-                Layout.alignment: Qt.AlignVCenter
-                radius: 12
-                color: NetworkService.wifiEnabled ? Theme.selected : Theme.backgroundAlt
-                border.color: Theme.borderColor
-                border.width: NetworkService.wifiEnabled ? 0 : 1
-
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                    }
-                }
-
-                Rectangle {
-                    width: 18
-                    height: 18
-                    radius: 9
-                    color: Theme.foreground
-                    y: 3
-                    x: NetworkService.wifiEnabled ? 23 : 3
-
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 200
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: NetworkService.wifi.toggle()
-                }
+            ToggleSwitch {
+                checked: NetworkService.wifiEnabled
+                onToggled: NetworkService.wifi.toggle()
             }
         }
 
-        // ── Network List (WiFi ON) ────────────────────────────────────────
+        // ── Network List (WiFi ON) ────────────────────────────────
         ScrollView {
             id: scrollView
             Layout.fillWidth: true
-            // Cap: content ύψος ή 400px max — ΟΧΙ fillHeight ✓
             Layout.preferredHeight: Math.min(networksColumn.implicitHeight, 400)
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             visible: NetworkService.wifiEnabled && root.wifiDevice !== null
 
             ColumnLayout {
-                id: networksColumn   // ← id για το implicitHeight
+                id: networksColumn
                 width: scrollView.availableWidth
                 spacing: 6
 
-                Text {
+                SectionLabel {
                     Layout.bottomMargin: 6
-                    text: "AVAILABLE NETWORKS"
-                    color: Theme.foreground
-                    font.pixelSize: 12
-                    font.bold: true
-                    font.letterSpacing: 1.0
-                    opacity: 0.45
+                    title: "Available Networks"
                 }
 
                 Repeater {
@@ -135,7 +62,6 @@ Item {
                         property string localError: ""
                         readonly property bool hasError: localError !== ""
 
-                        // implicitHeight: per card — σωστό ✓
                         implicitHeight: expanded ? (hasError ? 138 : 116) : 70
                         clip: true
 
@@ -163,7 +89,7 @@ Item {
                             onTriggered: netCard.localError = ""
                         }
 
-                        // ── Info row — anchors OK γιατί GlassCard έχει explicit implicitHeight
+                        // ── Info row ────────────────────────────────
                         RowLayout {
                             id: infoRow
                             anchors {
@@ -218,10 +144,15 @@ Item {
                                 visible: model.security !== WifiSecurityType.Open && !model.connected && !model.known
                             }
 
-                            // Action button — μέσα σε RowLayout → Layout.preferred ✓
+                            // Per-network action button — custom multi-state
+                            // logic (connected/expanded/hover intersect in
+                            // ways that don't map cleanly onto IconButton's
+                            // simpler idle/hover/active model), kept bespoke
+                            // but using AnimColor for consistency.
                             Rectangle {
-                                Layout.preferredWidth: 30   // ✓
-                                Layout.preferredHeight: 30  // ✓
+                                id: actionBtn
+                                Layout.preferredWidth: 30
+                                Layout.preferredHeight: 30
                                 Layout.alignment: Qt.AlignVCenter
                                 radius: Theme.radius
                                 border.width: 1
@@ -231,10 +162,9 @@ Item {
                                         return (model.connected && !netCard.expanded) ? Theme.color1 : "transparent";
                                     return Theme.selected;
                                 }
-
                                 Behavior on color {
-                                    ColorAnimation {
-                                        duration: 100
+                                    AnimColor {
+                                        type: Anim.FastEffects
                                     }
                                 }
 
@@ -249,6 +179,11 @@ Item {
                                         return Theme.selected;
                                     }
                                     icon: Icons.getWifiActionIcon(netCard.expanded, model.connected)
+                                    Behavior on color {
+                                        AnimColor {
+                                            type: Anim.FastEffects
+                                        }
+                                    }
                                 }
 
                                 MouseArea {
@@ -274,7 +209,7 @@ Item {
                             }
                         }
 
-                        // ── Password row
+                        // ── Password row ───────────────────────────
                         RowLayout {
                             id: passwordRow
                             anchors {
@@ -288,7 +223,6 @@ Item {
                             height: 38
                             spacing: 8
                             opacity: netCard.expanded ? 1.0 : 0.0
-
                             Behavior on opacity {
                                 NumberAnimation {
                                     duration: 160
@@ -313,10 +247,9 @@ Item {
                                     border.width: Theme.widgetBorderWidth
                                     color: Theme.backgroundAlt
                                     radius: Theme.radius
-
                                     Behavior on border.color {
-                                        ColorAnimation {
-                                            duration: 150
+                                        AnimColor {
+                                            type: Anim.FastEffects
                                         }
                                     }
                                 }
@@ -327,41 +260,27 @@ Item {
                                 }
                             }
 
-                            // Confirm button — μέσα σε RowLayout → Layout.preferred ✓
-                            Rectangle {
-                                Layout.preferredWidth: 34   // ✓
-                                Layout.preferredHeight: 34  // ✓
-                                Layout.alignment: Qt.AlignVCenter
-                                radius: Theme.radius
-                                color: confirmMouse.containsMouse ? Qt.lighter(Theme.selected, 1.15) : Theme.selected
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 100
-                                    }
-                                }
-
-                                LucideIcon {
-                                    anchors.centerIn: parent
-                                    size: 16
-                                    color: Theme.background
-                                    icon: "check"
-                                }
-
-                                MouseArea {
-                                    id: confirmMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        netCard.localError = "";
-                                        NetworkService.wifi.connectTo(model.name, passwordInput.text);
-                                    }
+                            // Confirm button — fits IconButton cleanly:
+                            // constant selected bg, lightens on hover.
+                            IconButton {
+                                Layout.preferredWidth: 34
+                                Layout.preferredHeight: 34
+                                icon: "check"
+                                size: 34
+                                iconSize: 16
+                                normalColor: Theme.selected
+                                hoverColor: Qt.lighter(Theme.selected, 1.15)
+                                hoverSolid: true
+                                fixedIconColor: Theme.background
+                                dimWhenIdle: false
+                                onTapped: {
+                                    netCard.localError = "";
+                                    NetworkService.wifi.connectTo(model.name, passwordInput.text);
                                 }
                             }
                         }
 
-                        // ── Error text
+                        // ── Error text ──────────────────────────────
                         Text {
                             anchors {
                                 top: passwordRow.bottom
@@ -376,7 +295,6 @@ Item {
                             font.pixelSize: 11
                             opacity: netCard.hasError ? 1.0 : 0.0
                             visible: opacity > 0
-
                             Behavior on opacity {
                                 NumberAnimation {
                                     duration: 150
@@ -388,32 +306,13 @@ Item {
             }
         }
 
-        // ── WiFi Off State ────────────────────────────────────────────────
-        Item {
+        // ── WiFi Off State ─────────────────────────────────────────
+        DisabledStateCard {
             Layout.fillWidth: true
-            implicitHeight: 150   // ✓ fixed
+            implicitHeight: 150
             visible: !NetworkService.wifiEnabled
-
-            ColumnLayout {
-                anchors.centerIn: parent   // actual positioning ✓
-                spacing: 10
-
-                LucideIcon {
-                    Layout.alignment: Qt.AlignHCenter
-                    color: Theme.foreground
-                    size: 52
-                    opacity: 0.2
-                    icon: "wifi-off"
-                }
-
-                Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    color: Theme.foreground
-                    font.pixelSize: 13
-                    opacity: 0.45
-                    text: "Wi-Fi is turned off"
-                }
-            }
+            icon: "wifi-off"
+            message: "Wi-Fi is turned off"
         }
     }
 }

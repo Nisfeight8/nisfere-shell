@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell.Io
 import qs.core
 import qs.services
@@ -39,7 +38,7 @@ BaseDrawer {
 
     Timer {
         id: resetQuickActionTimer
-        interval: 350   // matches the close-slide duration
+        interval: 100
         onTriggered: ShellState.quickAction = ""
     }
     onToggleRequest: {
@@ -83,7 +82,7 @@ BaseDrawer {
                 }
             }
 
-            Keys.onEscapePressed: ShellState.quickActionsOpened = false
+            Keys.onEscapePressed: root.closeRequest()
 
             // ── Page components ─────────────────────────────────────
             Component {

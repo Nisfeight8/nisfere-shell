@@ -2,8 +2,14 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 
-// Icon+label navigation tile — for grids of "go somewhere" actions
-// (as opposed to IconButton, which is icon-only for compact toolbars).
+// Icon+label navigation tile — for grids/rows of "go somewhere" or
+// "select this" actions (IconButton is the icon-only equivalent).
+//
+// Consistent state pattern used across the shell from here on:
+//   idle    → backgroundAlt bg, foreground text/icon
+//   hover   → tinted hoverColor bg (15%), hoverColor text/icon, hoverColor border
+//   active  → SOLID activeColor bg, backgroundAlt text/icon (contrast)
+//
 // Usage:
 //   NavTile {
 //       Layout.fillWidth: true
@@ -26,14 +32,27 @@ Rectangle {
 
     signal tapped
 
-    height: 36
+    // implicitHeight (not height!) — lets a consumer override via
+    // Layout.preferredHeight (e.g. a more compact scan-button instance)
+    // while still defaulting to 36 everywhere else.
+    implicitHeight: 36
     radius: Theme.radius
 
-    color: !ready ? Theme.backgroundAlt : isActive ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.15) : isHovered ? Qt.rgba(hoverColor.r, hoverColor.g, hoverColor.b, 0.15) : Theme.backgroundAlt
+    color: !ready ? Theme.backgroundAlt : isActive ? activeColor : isHovered ? Qt.rgba(hoverColor.r, hoverColor.g, hoverColor.b, 0.15) : Theme.backgroundAlt
     border.width: 1
     border.color: !ready ? Theme.borderColor : isActive ? activeColor : isHovered ? hoverColor : Theme.borderColor
     opacity: ready ? 1.0 : 0.55
 
+    Behavior on color {
+        AnimColor {
+            type: Anim.FastEffects
+        }
+    }
+    Behavior on border.color {
+        AnimColor {
+            type: Anim.FastEffects
+        }
+    }
 
     RowLayout {
         anchors.centerIn: parent
@@ -42,7 +61,8 @@ Rectangle {
         LucideIcon {
             icon: root.icon
             size: 15
-            color: root.isActive ? root.activeColor : root.isHovered && root.ready ? root.hoverColor : Theme.foreground
+            visible: root.icon !== ""
+            color: root.isActive ? Theme.backgroundAlt : root.isHovered && root.ready ? root.hoverColor : Theme.foreground
             Behavior on color {
                 AnimColor {
                     type: Anim.FastEffects
@@ -54,9 +74,10 @@ Rectangle {
             spacing: 0
             Text {
                 text: root.label
-                color: root.isActive ? root.activeColor : root.isHovered && root.ready ? root.hoverColor : Theme.foreground
+                color: root.isActive ? Theme.backgroundAlt : root.isHovered && root.ready ? root.hoverColor : Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 13
+                font.bold: root.isActive
                 Behavior on color {
                     AnimColor {
                         type: Anim.FastEffects

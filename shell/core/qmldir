@@ -28,6 +28,11 @@ IconButton 1.0 IconButton.qml
 NavTile 1.0 NavTile.qml
 SidebarTabs 1.0 SidebarTabs.qml
 
+ToggleSwitch 1.0 ToggleSwitch.qml
+ActionButton 1.0 ActionButton.qml
+InfoRow 1.0 InfoRow.qml
+InfoDivider 1.0 InfoDivider.qml
+
 singleton Theme 1.0 Theme.qml
 singleton Icons 1.0 Icons.qml
 singleton AnimTokens 1.0 AnimTokens.qml

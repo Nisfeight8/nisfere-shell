@@ -267,6 +267,30 @@ class ThemeManager:
 
     # ── Public API ───────────────────────────────────────────────────────────
 
+    def toggle_mode(self):
+        state = self.get_state()
+        if not state:
+            return {"success": False, "error": "No state found"}
+
+        current_mode = state.get("mode", "dark")
+        new_mode = "light" if current_mode == "dark" else "dark"
+
+        logger.info(
+            "[ThemeManager] Toggling mode from %s to %s", current_mode, new_mode
+        )
+
+        wp = state.get("wallpaper")
+        source_type = state.get("source_type")
+        source_name = state.get("source_name")
+
+        success = False
+        if source_type == "static" and source_name:
+            success = self.set_colors(source_name, new_mode)
+        elif wp:
+            success = self.set_wallpaper(wp, True, new_mode)
+
+        return {"success": success, "mode": new_mode}
+
     def preview_wallpaper(self, wallpaper_path: str) -> None:
         subprocess.run(
             ["awww", "img", wallpaper_path, "--transition-type", "none"],

@@ -53,9 +53,8 @@ QtObject {
     // Gives the QuickActions drawer time to finish its close-slide
     // animation before grim actually fires — otherwise "Full screen" and
     // "Window" modes catch the drawer itself mid-close in the screenshot.
-    // 400ms comfortably exceeds BaseDrawer's close animation (350ms).
     property Timer _pendingCaptureTimer: Timer {
-        interval: 400
+        interval: 300
         property string pendingCmd: ""
         onTriggered: root._run(pendingCmd)
     }

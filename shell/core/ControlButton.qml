@@ -17,80 +17,114 @@ GlassCard {
     Layout.fillWidth: true
     Layout.preferredHeight: 70
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+    readonly property bool isHovered: cardHover.hovered
 
-        onClicked: root.clicked()
+    // Whole-card hover tint — safe to span the full area since hover is
+    // a continuous visual state (both zones lighting up together is
+    // fine), unlike TAP which we zone-split below to avoid double-firing.
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radius
+        color: root.isActive ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.07) : root.isHovered ? Qt.rgba(Theme.foreground.r, Theme.foreground.g, Theme.foreground.b, 0.04) : "transparent"
+        Behavior on color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
     }
+    HoverHandler {
+        id: cardHover
+        cursorShape: root.isHovered ? Qt.PointingHandCursor : Qt.ArrowCursor
+    }
+
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 12
+        anchors.margins: 14
         spacing: 12
 
-        Rectangle {
-            border.color: root.isActive ? "transparent" : Theme.borderColor
-            border.width: root.isActive ? 0 : 1
-            color: root.isActive ? Theme.selected : "transparent"
-            height: 40
-            radius: 20
-            width: 40
-
-            LucideIcon {
-                anchors.centerIn: parent
-                color: root.isActive ? Theme.background : Theme.foreground
-                size: 18 
-                icon: root.iconText
-            }
-        }
-        ColumnLayout {
+        // ── Main clickable zone — icon badge + text ONLY. Does not
+        // extend under the chevron, so there's zero pixel overlap with
+        // its TapHandler — no double-fire possible, regardless of any
+        // PointerHandler grab semantics (which don't block ancestors
+        // the way old MouseArea bubbling did).
+        RowLayout {
+            id: mainZone
             Layout.fillWidth: true
-            spacing: 2
+            spacing: 12
 
-            Text {
-                Layout.fillWidth: true
-                color: Theme.foreground
-                elide: Text.ElideRight
-                font.bold: true
-                font.pixelSize: 14
-                text: root.title
+            TapHandler {
+                onTapped: root.clicked()
             }
-            Text {
-                Layout.fillWidth: true
-                color: Theme.foreground
-                elide: Text.ElideRight
-                font.pixelSize: 11
-                opacity: 0.6
-                text: root.subtitle
-            }
-        }
-        Rectangle {
-            Layout.alignment: Qt.AlignVCenter
-            color: moreMouseArea.containsMouse ? Theme.background : "transparent"
-            height: 30
-            radius: 15
-            visible: root.hasMore
-            width: 30
 
-            LucideIcon {
-                anchors.centerIn: parent
-                color: Theme.foreground
-                size: 22
-                opacity: 0.7
-                icon: "chevron-right"
-            }
-            MouseArea {
-                id: moreMouseArea
+            Rectangle {
+                width: 42
+                height: 42
+                radius: 21
+                color: root.isActive ? Theme.selected : Theme.backgroundAlt
+                border.width: root.isActive ? 0 : 1
+                border.color: Theme.borderColor
+                Behavior on color {
+                    AnimColor {
+                        type: Anim.FastEffects
+                    }
+                }
+                Behavior on border.color {
+                    AnimColor {
+                        type: Anim.FastEffects
+                    }
+                }
 
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-
-                onClicked: mouse => {
-                    mouse.accepted = true;
-                    root.moreClicked();
+                LucideIcon {
+                    anchors.centerIn: parent
+                    icon: root.iconText
+                    size: 19
+                    color: root.isActive ? Theme.background : Theme.foreground
+                    Behavior on color {
+                        AnimColor {
+                            type: Anim.FastEffects
+                        }
+                    }
                 }
             }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 3
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.title
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 14
+                    font.bold: true
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: root.subtitle
+                    color: root.isActive ? Theme.selected : Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 11
+                    opacity: root.isActive ? 0.85 : 0.55
+                    elide: Text.ElideRight
+                    Behavior on color {
+                        AnimColor {
+                            type: Anim.FastEffects
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── More chevron — separate, non-overlapping zone ─────────
+        IconButton {
+            visible: root.hasMore
+            icon: "chevron-right"
+            size: 30
+            iconSize: 17
+            normalColor: "transparent"
+            onTapped: root.moreClicked()
         }
     }
 }

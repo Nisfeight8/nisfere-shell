@@ -29,20 +29,17 @@ Item {
 
     RowLayout {
         id: content
-
         anchors.fill: parent
         spacing: root.rowSpacing
 
         Item {
             id: artWrapper
-
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredHeight: root.ringOuter
             Layout.preferredWidth: root.ringOuter
 
             Rectangle {
                 id: glow
-
                 anchors.centerIn: parent
                 color: Theme.selected
                 height: root.artSize + 20
@@ -52,17 +49,17 @@ Item {
                 width: height
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 120
+                    Anim {
+                        type: Anim.FastEffects
                     }
                 }
                 Behavior on scale {
-                    NumberAnimation {
-                        duration: 80
-                        easing.type: Easing.OutQuint
+                    Anim {
+                        type: Anim.FastEffects
                     }
                 }
             }
+
             Item {
                 anchors.centerIn: parent
                 height: root.artSize
@@ -77,7 +74,6 @@ Item {
                 }
                 Rectangle {
                     id: circleMask
-
                     anchors.fill: parent
                     color: "black"
                     radius: width / 2
@@ -115,12 +111,13 @@ Item {
                 }
             }
         }
+
         ColumnLayout {
             id: rightCol
-
             Layout.preferredWidth: root.ringOuter * 1.6
             spacing: Math.max(6, root.ringOuter * 0.06)
 
+            // ── Player switcher ────────────────────────────────────
             Item {
                 Layout.alignment: Qt.AlignCenter
                 height: 30
@@ -128,14 +125,12 @@ Item {
 
                 RowLayout {
                     id: contentRow
-
                     anchors.centerIn: parent
                     opacity: playerMouse.containsMouse || playerDropdown.opened ? 1.0 : 0.7
                     spacing: 8
-
                     Behavior on opacity {
-                        NumberAnimation {
-                            duration: 150
+                        Anim {
+                            type: Anim.FastEffects
                         }
                     }
 
@@ -162,25 +157,18 @@ Item {
                         visible: MediaService.list.length > 1
                     }
                 }
+
                 MouseArea {
                     id: playerMouse
-
                     anchors.fill: parent
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                     enabled: MediaService.list.length > 1
                     hoverEnabled: true
-
-                    onClicked: {
-                        if (playerDropdown.opened) {
-                            playerDropdown.close();
-                        } else {
-                            playerDropdown.open();
-                        }
-                    }
+                    onClicked: playerDropdown.opened ? playerDropdown.close() : playerDropdown.open()
                 }
+
                 Popup {
                     id: playerDropdown
-
                     padding: 5
                     width: 160
                     x: (parent.width - width)
@@ -203,6 +191,11 @@ Item {
                                 color: dropMouse.containsMouse ? Theme.selected : "transparent"
                                 height: 32
                                 radius: 6
+                                Behavior on color {
+                                    AnimColor {
+                                        type: Anim.FastEffects
+                                    }
+                                }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -212,14 +205,17 @@ Item {
                                     font.letterSpacing: 1.5
                                     font.pixelSize: 11
                                     text: MediaService.getIdentity(modelData).toUpperCase()
+                                    Behavior on color {
+                                        AnimColor {
+                                            type: Anim.FastEffects
+                                        }
+                                    }
                                 }
                                 MouseArea {
                                     id: dropMouse
-
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
                                     hoverEnabled: true
-
                                     onClicked: {
                                         MediaService.selectPlayer(index);
                                         playerDropdown.close();
@@ -230,6 +226,8 @@ Item {
                     }
                 }
             }
+
+            // ── Title + artist ──────────────────────────────────────
             ColumnLayout {
                 Layout.alignment: Qt.AlignCenter
                 Layout.fillWidth: true
@@ -237,7 +235,7 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 0   // ✅ ΝΕΟ — δεν επηρεάζει implicit width του rightCol
+                    Layout.preferredWidth: 0
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.bold: true
@@ -250,7 +248,7 @@ Item {
                 }
                 Text {
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 0   // ✅ ΝΕΟ
+                    Layout.preferredWidth: 0
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.family: Theme.fontName
@@ -260,6 +258,8 @@ Item {
                     text: MediaService.artist !== "" ? MediaService.artist : "Unknown Artist"
                 }
             }
+
+            // ── Time ─────────────────────────────────────────────────
             RowLayout {
                 Layout.alignment: Qt.AlignCenter
                 spacing: 8
@@ -286,71 +286,59 @@ Item {
                     text: root.formatTime(MediaService.length)
                 }
             }
+
             MediaSlider {
                 id: bigMediaSlider
-
                 Layout.fillWidth: true
             }
+
+            // ── Transport controls ──────────────────────────────────
             RowLayout {
                 Layout.alignment: Qt.AlignCenter
                 Layout.topMargin: Math.max(4, root.ringOuter * 0.06)
                 spacing: Math.max(14, root.ringOuter * 0.16)
 
-                LucideIcon {
+                IconButton {
                     icon: "skip-back"
+                    flat: true
                     size: Math.max(20, root.ringOuter * 0.10)
-                    color: Theme.foreground
-                    opacity: btnPrev.containsMouse ? 1.0 : 0.6
-
-                    MouseArea {
-                        id: btnPrev
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: MediaService.previous()
-                    }
+                    iconSize: Math.max(20, root.ringOuter * 0.10)
+                    fixedIconColor: Theme.foreground
+                    idleOpacity: 0.6
+                    onTapped: MediaService.previous()
                 }
-                Rectangle {
-                    property real size: Math.min(65, Math.max(45, root.ringOuter * 0.35))
-                    color: Theme.selected
-                    height: size
-                    radius: size / 2
-                    scale: btnPlay.pressed ? 0.9 : 1.0
-                    width: size
 
+                // Big play/pause — solid circle, uses IconButton's exposed
+                // `pressed` state for the same press-scale effect as
+                // MiniMedia's play button.
+                IconButton {
+                    id: bigPlayBtn
+                    readonly property real btnSize: Math.min(65, Math.max(45, root.ringOuter * 0.35))
+
+                    icon: Icons.getPlayPauseIcon(MediaService.isPlaying)
+                    size: btnSize
+                    iconSize: btnSize * 0.45
+                    radius: btnSize / 2
+                    // normalColor: Theme.selected
+                    activeSolid: true
+                    isActive: true
+                    scale: pressed ? 0.9 : 1.0
                     Behavior on scale {
-                        NumberAnimation {
-                            duration: 100
+                        Anim {
+                            type: Anim.FastEffects
                         }
                     }
-
-                    LucideIcon {
-                        anchors.centerIn: parent
-                        icon: Icons.getPlayPauseIcon(MediaService.isPlaying)
-                        size: parent.width * 0.45
-                        color: Theme.background
-                    }
-
-                    MouseArea {
-                        id: btnPlay
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: MediaService.togglePlayPause()
-                    }
+                    onTapped: MediaService.togglePlayPause()
                 }
-                LucideIcon {
-                    icon: "skip-forward"
-                    size: Math.max(20, root.ringOuter * 0.10)
-                    color: Theme.foreground
-                    opacity: btnNext.containsMouse ? 1.0 : 0.6
 
-                    MouseArea {
-                        id: btnNext
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: MediaService.next()
-                    }
+                IconButton {
+                    icon: "skip-forward"
+                    flat: true
+                    size: Math.max(20, root.ringOuter * 0.10)
+                    iconSize: Math.max(20, root.ringOuter * 0.10)
+                    fixedIconColor: Theme.foreground
+                    idleOpacity: 0.6
+                    onTapped: MediaService.next()
                 }
             }
         }

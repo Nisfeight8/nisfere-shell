@@ -119,7 +119,14 @@ async def handle_command(action: str, payload: dict, sock) -> None:
                         "payload": state or {},
                     }
                 )
-
+            case "toggle_mode":
+                result = await asyncio.to_thread(theme_manager.toggle_mode)
+                await sock.send(
+                    {
+                        "type": "theme_mode_toggled",
+                        "payload": result,
+                    }
+                )
             case _:
                 logger.warning("Unknown theme action: '%s'", action)
 

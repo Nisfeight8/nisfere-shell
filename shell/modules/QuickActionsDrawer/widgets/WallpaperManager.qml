@@ -88,6 +88,7 @@ Item {
                 Layout.fillWidth: true
             }
 
+            // ── Light / Dark mode toggle ───────────────────────────
             RowLayout {
                 spacing: 6
                 visible: root.applyDynamicColors
@@ -112,50 +113,9 @@ Item {
                     }
                 }
 
-                Rectangle {
-                    width: 40
-                    height: 22
-                    radius: 11
-                    color: root.selectedMode === "dark" ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.85) : Theme.backgroundAlt
-                    border.color: root.selectedMode === "dark" ? Theme.selected : Theme.borderColor
-                    border.width: 1
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 160
-                        }
-                    }
-                    Behavior on border.color {
-                        ColorAnimation {
-                            duration: 160
-                        }
-                    }
-
-                    Rectangle {
-                        width: 16
-                        height: 16
-                        radius: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        x: root.selectedMode === "dark" ? parent.width - width - 3 : 3
-                        color: "white"
-                        opacity: root.selectedMode === "dark" ? 1.0 : 0.55
-                        Behavior on x {
-                            NumberAnimation {
-                                duration: 160
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: 160
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.selectedMode = root.selectedMode === "dark" ? "light" : "dark"
-                    }
+                ToggleSwitch {
+                    checked: root.selectedMode === "dark"
+                    onToggled: root.selectedMode = root.selectedMode === "dark" ? "light" : "dark"
                 }
 
                 Text {
@@ -180,6 +140,7 @@ Item {
                 }
             }
 
+            // ── Dynamic colors toggle ──────────────────────────────
             Text {
                 text: "Dynamic colors"
                 color: Theme.foreground
@@ -189,50 +150,9 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
 
-            Rectangle {
-                width: 44
-                height: 24
-                radius: 12
-                color: root.applyDynamicColors ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9) : Theme.backgroundAlt
-                border.color: root.applyDynamicColors ? Theme.selected : Theme.borderColor
-                border.width: 1
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 160
-                    }
-                }
-
-                Rectangle {
-                    width: 18
-                    height: 18
-                    radius: 9
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: root.applyDynamicColors ? parent.width - width - 3 : 3
-                    color: "white"
-                    opacity: root.applyDynamicColors ? 1.0 : 0.55
-                    Behavior on x {
-                        NumberAnimation {
-                            duration: 160
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 160
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.applyDynamicColors = !root.applyDynamicColors
-                }
+            ToggleSwitch {
+                checked: root.applyDynamicColors
+                onToggled: root.applyDynamicColors = !root.applyDynamicColors
             }
         }
 
@@ -250,10 +170,7 @@ Item {
             id: wallpaperList
 
             Layout.fillWidth: true
-            // ✅ Explicit literal — σπάει το bottom-up chain εδώ, ίδιο
-            // σκεπτικό με το AppLauncher's implicitHeight: 480
             Layout.preferredHeight: root.cardHeight
-
             orientation: ListView.Horizontal
             spacing: 10
             clip: true
@@ -319,28 +236,27 @@ Item {
                 property bool isCurrent: wallpaperList.currentIndex === index
                 property bool isConfirmed: DynamicColors.wallpaper === itemPath
 
-                // ✅ Card size από τα νέα root properties — σταθερό 16:9 aspect
                 width: root.cardWidth
                 height: wallpaperList.height
-
+                
                 Rectangle {
                     id: card
                     anchors.fill: parent
-                    anchors.margins: 4
+                    anchors.margins: 6
                     radius: Theme.radius
                     color: "transparent"
+                    clip: false
 
-                    border.width: isConfirmed || isHovered || isCurrent ? 2 : 1
-                    border.color: isConfirmed ? Theme.selected : (isHovered || isCurrent ? Qt.rgba(Theme.foreground.r, Theme.foreground.g, Theme.foreground.b, 0.5) : Theme.borderColor)
-
+                    // Border now ONLY reflects the persistently confirmed
+                    // wallpaper — hover/keyboard-current feedback is
+                    // entirely handled by the image scaling up below
+                    // instead of an additional colored ring, which felt
+                    // redundant with the scale effect.
+                    border.width: isConfirmed ? 2 : 1
+                    border.color: isConfirmed ? Theme.selected : Theme.borderColor
                     Behavior on border.color {
-                        ColorAnimation {
-                            duration: 200
-                        }
-                    }
-                    Behavior on border.width {
-                        NumberAnimation {
-                            duration: 150
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
 
@@ -353,13 +269,14 @@ Item {
                         cache: false
                         asynchronous: true
                         visible: false
-                        scale: (isHovered || isCurrent) ? 1.04 : 1.0
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: 220
-                                easing.type: Easing.OutCubic
-                            }
-                        }
+                        // NOTE: scale lives on OpacityMask below, not here.
+                        // This Image is only visible:false — used purely as
+                        // a texture source for OpacityMask's shader. Scaling
+                        // a hidden item that feeds a ShaderEffectSource
+                        // doesn't reliably grow the rendered output (the
+                        // texture capture uses the item's static bounds),
+                        // so the zoom has to be applied to the actually
+                        // visible item instead.
                     }
 
                     Rectangle {
@@ -370,9 +287,20 @@ Item {
                     }
 
                     OpacityMask {
+                        id: maskedImage
                         anchors.fill: sourceImage
                         source: sourceImage
                         maskSource: imgMask
+                        // Bigger zoom on hover/current now that the border
+                        // ring is gone — this alone carries the "focused"
+                        // feedback.
+                        scale: (isHovered || isCurrent) ? 1.10 : 1.0
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: 220
+                                easing.type: Easing.OutCubic
+                            }
+                        }
                     }
 
                     Rectangle {

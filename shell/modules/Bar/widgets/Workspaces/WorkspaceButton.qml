@@ -1,97 +1,115 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Hyprland
 import qs.core
 
 Item {
     id: wsItem
 
-    readonly property bool isFocused: Hyprland.focusedWorkspace != null && Hyprland.focusedWorkspace.id === modelData.id
-    required property var modelData
-    property var myWindows: Hyprland.toplevels.values.filter(w => {
-        return w.workspace && w.workspace.id === wsItem.modelData.id;
-    })
-    readonly property var windowsCount: myWindows.length
+    required property var modelData   // HyprlandWorkspace
 
-    height: 24
-    width: 24
+    // Native `focused` property — correctly accounts for multi-monitor
+    // (active on its monitor AND that monitor is focused), instead of
+    // manually comparing IDs against Hyprland.focusedWorkspace.
+    readonly property bool isFocused: modelData.focused
 
-    Text {
-        id: wsText
+    // HyprlandWorkspace already exposes its own toplevels directly —
+    // no need to manually filter Hyprland.toplevels.values by workspace id.
+    readonly property var myWindows: modelData.toplevels.values
+    readonly property int windowsCount: myWindows.length
 
-        anchors.centerIn: parent
-        color: isFocused ? Theme.selected : Theme.foreground
-        font.family: Theme.fontName
-        font.pixelSize: isFocused ? 24 : 16
-        text: {
-            if (isFocused)
-                return "󰮯";
+    implicitWidth: content.implicitWidth + 16
+    implicitHeight: widgetHeight
 
-            if (windowsCount > 0)
-                return "󰊠";
-
-            return "";
-        }
-
-        Behavior on font.pixelSize {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutBack
-            }
-        }
-    }
-    MouseArea {
-        id: wsMouseArea
-
+    Rectangle {
         anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        hoverEnabled: true
-
-        onClicked: Hyprland.dispatch("workspace " + modelData.name)
+        radius: Theme.radius
+        color: wsItem.isFocused ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : hover.hovered ? Theme.backgroundAlt : "transparent"
+        border.width: wsItem.isFocused ? 1 : 0
+        border.color: Theme.selected
+        Behavior on color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
+        Behavior on border.color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
     }
-    BarPopup {
-        id: previewPopup
 
-        showPopup: wsMouseArea.containsMouse
-        targetItem: wsItem
+    RowLayout {
+        id: content
+        anchors.centerIn: parent
+        spacing: 6
 
-        ColumnLayout {
-            spacing: 6
-
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                color: Theme.selected
-                font.bold: true
-                font.family: Theme.fontName
-                font.pixelSize: 14
-                text: "Workspace " + (modelData.name !== undefined ? modelData.name : "?")
+        // ── Workspace indicator glyph ─────────────────────────────
+        Text {
+            color: wsItem.isFocused ? Theme.selected : Theme.foreground
+            font.family: Theme.fontName
+            font.pixelSize: wsItem.isFocused ? 24 : 16
+            text: {
+                if (wsItem.isFocused)
+                    return "󰮯";
+                if (wsItem.windowsCount > 0)
+                    return "󰊠";
+                return "";
             }
-            Text {
-                Layout.alignment: Qt.AlignHCenter
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 12
-                opacity: 0.8
-                text: windowsCount === 1 ? "1 Window" : windowsCount + " Windows"
-            }
-            Row {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 4
-                spacing: 8
-
-                Repeater {
-                    model: wsItem.myWindows
-
-                    delegate: Text {
-                        required property var modelData
-
-                        color: Theme.selected
-                        font.family: Theme.fontName
-                        font.pixelSize: 16
-                        text: Icons.getAppIcon(modelData.lastIpcObject ? modelData.lastIpcObject.class : "")
-                    }
+            Behavior on font.pixelSize {
+                NumberAnimation {
+                    duration: 150
+                    easing.type: Easing.OutBack
                 }
             }
         }
+
+        // ── App icons — real icons, always visible ────────────────
+        Row {
+            visible: wsItem.windowsCount > 0
+            spacing: 5
+
+            Repeater {
+                model: wsItem.myWindows   // HyprlandToplevel[]
+
+                delegate: Text {
+                    id: iconWrap
+                    required property var modelData   // HyprlandToplevel
+
+                    // Prefer the Wayland toplevel's appId (standard
+                    // protocol field, populated as soon as the window's
+                    // address is reported — fast). Fall back to
+                    // Hyprland's own IPC-derived class field.
+                    readonly property string appClass: {
+                        if (modelData.wayland && modelData.wayland.appId)
+                            return modelData.wayland.appId;
+                        if (modelData.lastIpcObject && modelData.lastIpcObject.class)
+                            return modelData.lastIpcObject.class;
+                        return "";
+                    }
+
+                    // appId/WM_CLASS doesn't always match the .desktop
+                    // file's actual Icon= field (casing, suffixes, aliases
+                    // like "firefox" vs "firefox-esr"). heuristicLookup()
+                    // fuzzy-matches against installed .desktop entries and
+                    // gives us the canonical icon name from the match,
+                    // falling back to the raw appClass if nothing matched.
+                    color: Theme.selected
+                    font.family: Theme.fontName
+                    font.pixelSize: 16
+                    text: Icons.getAppIcon(appClass)
+                }
+            }
+        }
+    }
+
+    HoverHandler {
+        id: hover
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        // HyprlandWorkspace.activate() handles dispatch internally —
+        // no manual "workspace " + name string building, so there's
+        // nothing that can break on an undefined name.
+        onTapped: wsItem.modelData.activate()
     }
 }

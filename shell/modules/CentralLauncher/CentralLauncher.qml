@@ -11,7 +11,7 @@ PanelWindow {
 
     // ── State ─────────────────────────────────────────────────────
     property int activeTab: 0
-    property string activeTool: ""   // "" = home, "docker" = docker manager, etc.
+    property string activeTool: ""
 
     signal toolRequested(string panel)
 

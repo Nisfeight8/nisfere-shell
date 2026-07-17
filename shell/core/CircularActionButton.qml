@@ -1,11 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import qs.core
 
 // Generic circular icon button with label underneath, hover/active states,
 // tooltip, and an optional pulsing ring (e.g. for "recording" indicators).
 // Knows nothing about what it triggers — purely presentational.
+//
+// Consistent state pattern used across the shell:
+//   idle    → background bg, foreground text/icon
+//   hover   → tinted hoverColor bg (15%), hoverColor text/icon
+//   active  → SOLID activeColor bg, backgroundAlt text/icon (contrast)
 ColumnLayout {
     id: root
 
@@ -22,7 +26,7 @@ ColumnLayout {
     property int iconSize: 20
 
     readonly property bool isHovered: hover.hovered
-    readonly property color _stateColor: root.isActive ? root.activeColor : root.isHovered ? root.hoverColor : Theme.foreground
+    readonly property color _stateColor: root.isActive ? Theme.backgroundAlt : root.isHovered ? root.hoverColor : Theme.foreground
 
     signal tapped
 
@@ -35,18 +39,18 @@ ColumnLayout {
         height: root.diameter
         radius: width / 2
 
-        color: root.isActive ? Qt.rgba(root.activeColor.r, root.activeColor.g, root.activeColor.b, 0.22) : root.isHovered ? Qt.rgba(root.hoverColor.r, root.hoverColor.g, root.hoverColor.b, 0.15) : Theme.background
-        border.width: 1
+        color: root.isActive ? root.activeColor : root.isHovered ? Qt.rgba(root.hoverColor.r, root.hoverColor.g, root.hoverColor.b, 0.25) : Theme.background
+        border.width: Theme.widgetBorderWidth
         border.color: root.isActive ? root.activeColor : root.isHovered ? root.hoverColor : Theme.borderColor
 
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            AnimColor {
+                type: Anim.FastEffects
             }
         }
         Behavior on border.color {
-            ColorAnimation {
-                duration: 150
+            AnimColor {
+                type: Anim.FastEffects
             }
         }
 
@@ -57,8 +61,8 @@ ColumnLayout {
             color: root._stateColor
             opacity: root.isActive ? 1.0 : root.isHovered ? 0.95 : 0.65
             Behavior on color {
-                ColorAnimation {
-                    duration: 150
+                AnimColor {
+                    type: Anim.FastEffects
                 }
             }
             Behavior on opacity {
@@ -107,15 +111,15 @@ ColumnLayout {
 
     Text {
         Layout.alignment: Qt.AlignHCenter
-        visible: root.showLabel   // excluded from layout entirely when false
+        visible: root.showLabel
         text: root.label
-        color: root._stateColor
+        color: root.isActive ? root.activeColor : root.isHovered ? root.hoverColor : Theme.foreground
         font.family: Theme.fontName
         font.pixelSize: 10
         opacity: root.isActive ? 1.0 : root.isHovered ? 0.9 : 0.6
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            AnimColor {
+                type: Anim.FastEffects
             }
         }
         Behavior on opacity {

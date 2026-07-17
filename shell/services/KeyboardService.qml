@@ -35,8 +35,7 @@ QtObject {
             }
         }
     }
-    property Process _switcherProc: Process {
-    }
+    property Process _switcherProc: Process {}
     property var availableLayouts: []
     property string currentLayout: ""
     readonly property var layoutMap: {
@@ -64,6 +63,9 @@ QtObject {
 
     function changeLayout(index) {
         _switcherProc.exec(["hyprctl", "switchxkblayout", "current", index.toString()]);
+    }
+    function toggleLayout() {
+        _switcherProc.exec(["hyprctl", "switchxkblayout", "current", "next"]);
     }
     function getFull(code) {
         return layoutMap[code]?.full || code.toUpperCase();

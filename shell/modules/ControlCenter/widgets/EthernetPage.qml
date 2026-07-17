@@ -10,56 +10,24 @@ Item {
 
     signal backRequested
 
-    // Bottom-up: ColumnLayout → root → pageStack → BaseDrawer ✓
     implicitHeight: mainColumn.implicitHeight
 
     ColumnLayout {
         id: mainColumn
-        width: parent.width   // top-down (width μόνο, ΟΧΙ anchors.fill!)
+        width: parent.width
         spacing: 20
 
-        // ── Header ───────────────────────────────────────────────────────
-        RowLayout {
+        // ── Header ───────────────────────────────────────────────
+        PageHeader {
             Layout.fillWidth: true
-            spacing: 15
-
-            Rectangle {
-                border.color: Theme.borderColor
-                border.width: 1
-                color: backMouse.containsMouse ? Theme.backgroundAlt : "transparent"
-                Layout.preferredHeight: 36   // ✓
-                Layout.preferredWidth: 36    // ✓
-                radius: 18
-
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "arrow-left"
-                    size: 16
-                    color: Theme.foreground
-                }
-
-                MouseArea {
-                    id: backMouse
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-                    onClicked: root.backRequested()
-                }
-            }
-
-            Text {
-                Layout.fillWidth: true
-                color: Theme.foreground
-                font.bold: true
-                font.pixelSize: 20
-                text: "Ethernet Settings"
-            }
+            title: "Ethernet Settings"
+            onBackRequested: root.backRequested()
         }
 
-        // ── Info Card ─────────────────────────────────────────────────────
+        // ── Info Card ──────────────────────────────────────────────
         GlassCard {
             Layout.fillWidth: true
-            implicitHeight: infoLayout.implicitHeight + 30   // ✓
+            implicitHeight: infoLayout.implicitHeight + 30
 
             ColumnLayout {
                 id: infoLayout
@@ -67,115 +35,49 @@ Item {
                 anchors.margins: 20
                 spacing: 12
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        Layout.fillWidth: true
-                        color: Theme.foreground
-                        opacity: 0.7
-                        font.pixelSize: 13
-
-                        text: "Status"
-                    }
-                    Text {
-                        color: (root.ethDevice && root.ethDevice.connected) ? Theme.selected : Theme.foreground
-                        font.bold: true
-                        font.pixelSize: 13
-
-                        text: {
-                            if (!root.ethDevice)
-                                return "Not available";
-                            if (!root.ethDevice.hasLink)
-                                return "Cable Disconnected";
-                            return root.ethDevice.connected ? "Connected" : "Disconnected";
-                        }
+                InfoRow {
+                    label: "Status"
+                    valueColor: (root.ethDevice && root.ethDevice.connected) ? Theme.selected : Theme.foreground
+                    value: {
+                        if (!root.ethDevice)
+                            return "Not available";
+                        if (!root.ethDevice.hasLink)
+                            return "Cable Disconnected";
+                        return root.ethDevice.connected ? "Connected" : "Disconnected";
                     }
                 }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1   // ✓ fix
-                    color: Theme.borderColor
-                    opacity: 0.5
+                InfoDivider {}
+
+                InfoRow {
+                    label: "Interface"
+                    value: root.ethDevice ? root.ethDevice.name : "N/A"
                 }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        Layout.fillWidth: true
-                        color: Theme.foreground
-                        opacity: 0.7
-                        font.pixelSize: 13
+                InfoDivider {}
 
-                        text: "Interface"
-                    }
-                    Text {
-                        color: Theme.foreground
-                        font.bold: true
-                        font.pixelSize: 13
-
-                        text: root.ethDevice ? root.ethDevice.name : "N/A"
-                    }
+                InfoRow {
+                    label: "MAC Address"
+                    valueBold: false
+                    value: root.ethDevice ? root.ethDevice.address : "00:00:00:00:00:00"
                 }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1   // ✓ fix
-                    color: Theme.borderColor
-                    opacity: 0.5
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        Layout.fillWidth: true
-                        color: Theme.foreground
-                        opacity: 0.7
-                        font.pixelSize: 13
-
-                        text: "MAC Address"
-                    }
-                    Text {
-                        color: Theme.foreground
-                        font.pixelSize: 13
-                        text: root.ethDevice ? root.ethDevice.address : "00:00:00:00:00:00"
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1   // ✓ fix
-                    color: Theme.borderColor
-                    opacity: 0.5
+                InfoDivider {
                     visible: root.ethDevice && root.ethDevice.hasLink
                 }
 
-                RowLayout {
-                    Layout.fillWidth: true
+                InfoRow {
                     visible: root.ethDevice && root.ethDevice.hasLink
-
-                    Text {
-                        Layout.fillWidth: true
-                        color: Theme.foreground
-                        opacity: 0.7
-                        font.pixelSize: 13
-                        text: "Connection Speed"
-                    }
-                    Text {
-                        color: Theme.foreground
-                        font.bold: true
-                        font.pixelSize: 13
-
-                        text: (root.ethDevice && root.ethDevice.linkSpeed > 0) ? (root.ethDevice.linkSpeed + " Mbps") : "Unknown"
-                    }
+                    label: "Connection Speed"
+                    value: (root.ethDevice && root.ethDevice.linkSpeed > 0) ? (root.ethDevice.linkSpeed + " Mbps") : "Unknown"
                 }
             }
         }
 
-        // ── Actions Card ──────────────────────────────────────────────────
+        // ── Actions Card ───────────────────────────────────────────
         GlassCard {
             Layout.fillWidth: true
-            implicitHeight: actionsLayout.implicitHeight + 30   // ✓
+            implicitHeight: actionsLayout.implicitHeight + 30
             visible: root.ethDevice !== null
 
             ColumnLayout {
@@ -189,74 +91,36 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        color: Theme.foreground
-                        font.bold: true
-                        font.pixelSize: 16
                         text: "Automatic Connect"
+                        color: Theme.foreground
+                        font.family: Theme.fontName
+                        font.pixelSize: 16
+                        font.bold: true
                     }
 
-                    Rectangle {
-                        Layout.preferredWidth: 44    // ✓
-                        Layout.preferredHeight: 24   // ✓
+                    ToggleSwitch {
                         Layout.alignment: Qt.AlignVCenter
-                        border.color: Theme.borderColor
-                        border.width: (root.ethDevice && root.ethDevice.autoconnect) ? 0 : 1
-                        color: (root.ethDevice && root.ethDevice.autoconnect) ? Theme.selected : Theme.backgroundAlt
-                        radius: 12
-
-                        Rectangle {
-                            color: Theme.foreground
-                            height: 18
-                            radius: 9
-                            width: 18
-                            x: (root.ethDevice && root.ethDevice.autoconnect) ? 23 : 3
-                            y: 3
-
-                            Behavior on x {
-                                NumberAnimation {
-                                    duration: 200
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.ethDevice)
-                                    root.ethDevice.autoconnect = !root.ethDevice.autoconnect;
-                            }
+                        checked: root.ethDevice ? root.ethDevice.autoconnect : false
+                        onToggled: {
+                            if (root.ethDevice)
+                                root.ethDevice.autoconnect = !root.ethDevice.autoconnect;
                         }
                     }
                 }
 
-                Rectangle {
+                ActionButton {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 40   // ✓ fix
                     Layout.topMargin: 10
-                    color: (root.ethDevice && root.ethDevice.connected) ? Theme.color1 : Theme.selected
-                    radius: 8
                     visible: root.ethDevice && root.ethDevice.hasLink
-
-                    Text {
-                        anchors.centerIn: parent
-                        color: Theme.background
-                        font.bold: true
-                        text: (root.ethDevice && root.ethDevice.connected) ? "Disconnect" : "Connect"
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (!root.ethDevice)
-                                return;
-                            if (root.ethDevice.connected)
-                                NetworkService.ethernet.disconnect();
-                            else
-                                NetworkService.ethernet.connect();
-                        }
+                    label: (root.ethDevice && root.ethDevice.connected) ? "Disconnect" : "Connect"
+                    baseColor: (root.ethDevice && root.ethDevice.connected) ? Theme.color1 : Theme.selected
+                    onTapped: {
+                        if (!root.ethDevice)
+                            return;
+                        if (root.ethDevice.connected)
+                            NetworkService.ethernet.disconnect();
+                        else
+                            NetworkService.ethernet.connect();
                     }
                 }
             }

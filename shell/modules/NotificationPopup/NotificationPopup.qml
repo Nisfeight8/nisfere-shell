@@ -18,7 +18,6 @@ BaseDrawer {
     readonly property bool hasActions: hasNotif && currentNotif.actions && currentNotif.actions.length > 0
 
     // ── BaseDrawer config ─────────────────────────────────────────────────
-    asynchronousLoad: false
     WlrLayershell.layer: WlrLayer.Overlay
 
     edge: Qt.TopEdge
