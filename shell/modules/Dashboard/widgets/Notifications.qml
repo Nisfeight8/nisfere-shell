@@ -243,7 +243,6 @@ Item {
                             size: 28
                             iconSize: 14
                             normalColor: Theme.backgroundAlt
-                            activeSolid: true
                             radius: Theme.radius
                             hoverColor: Theme.color1
                             onTapped: NotificationService.close(index)

@@ -319,9 +319,10 @@ Item {
                     size: btnSize
                     iconSize: btnSize * 0.45
                     radius: btnSize / 2
-                    // normalColor: Theme.selected
+                    normalColor: Theme.selected
                     activeSolid: true
                     isActive: true
+                    contrastColor: Theme.background
                     scale: pressed ? 0.9 : 1.0
                     Behavior on scale {
                         Anim {

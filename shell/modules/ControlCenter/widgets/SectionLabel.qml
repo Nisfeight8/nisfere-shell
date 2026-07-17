@@ -27,14 +27,6 @@ RowLayout {
 
     spacing: 10
 
-    IconButton {
-        icon: "chevron-left"
-        size: 32
-        iconSize: 18
-        normalColor: Theme.backgroundAlt
-        onTapped: root.backRequested()
-    }
-
     PageTitle {
         Layout.fillWidth: true
         text: root.title

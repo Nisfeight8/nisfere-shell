@@ -28,7 +28,33 @@ Item {
                 onToggled: BluetoothService.toggle()
             }
         }
+        // Sub-header + Scan button
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.bottomMargin: 5
 
+            SectionLabel {
+                Layout.fillWidth: true
+                title: "Available & Saved Devices"
+            }
+
+            NavTile {
+                Layout.preferredWidth: 90
+                Layout.preferredHeight: 28
+                icon: BluetoothService.isScanning ? "refresh-cw" : "search"
+                label: BluetoothService.isScanning ? "Scan..." : "Scan"
+                isActive: BluetoothService.isScanning
+                activeColor: Theme.color1
+                onTapped: BluetoothService.toggleScan()
+            }
+        }
+        DisabledStateCard {
+            Layout.fillWidth: true
+            implicitHeight: 150
+            visible: BluetoothService.isEnabled && Bluetooth.devices.values.length < 1
+            icon: "bluetooth"
+            message: "Scan to find available devices"
+        }
         // ── Device List (BT ON) ───────────────────────────────────
         ScrollView {
             id: scrollView
@@ -36,33 +62,12 @@ Item {
             Layout.preferredHeight: Math.min(devicesColumn.implicitHeight, 400)
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             clip: true
-            visible: BluetoothService.isEnabled
+            visible: BluetoothService.isEnabled && Bluetooth.devices.values.length > 0
 
             ColumnLayout {
                 id: devicesColumn
                 spacing: 10
                 width: scrollView.availableWidth
-
-                // Sub-header + Scan button
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: 5
-
-                    SectionLabel {
-                        Layout.fillWidth: true
-                        title: "Available & Saved Devices"
-                    }
-
-                    NavTile {
-                        Layout.preferredWidth: 90
-                        Layout.preferredHeight: 28
-                        icon: BluetoothService.isScanning ? "refresh-cw" : "search"
-                        label: BluetoothService.isScanning ? "Scan..." : "Scan"
-                        isActive: BluetoothService.isScanning
-                        activeColor: Theme.color1
-                        onTapped: BluetoothService.toggleScan()
-                    }
-                }
 
                 // Device cards
                 Repeater {
@@ -140,18 +145,22 @@ Item {
                             // IconButton cleanly: isActive=connected (solid
                             // color1), hoverSolid=selected, spinning=pairing.
                             IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                icon: model.pairing ? "refresh-cw" : (model.connected ? "x" : "check")
-                                size: 36
-                                iconSize: 16
-                                normalColor: Theme.backgroundAlt
-                                isActive: model.connected
-                                activeColor: Theme.color1
-                                activeSolid: true
-                                hoverColor: Theme.selected
                                 hoverSolid: true
-                                enabled: !model.pairing
-                                spinning: model.pairing
+                                alwaysBorder: true
+                                borderColor: model.connected ? Theme.color1 : Theme.selected
+                                contrastColor: Theme.background
+                                hoverColor: model.connected ? Theme.color1 : Theme.selected
+                                tooltipText: {
+                                    if (model.connected)
+                                        "Disconnect";
+                                    else if (model.paired) {
+                                        "Trust";
+                                    } else {
+                                        "Connect";
+                                    }
+                                }
+                                icon: model.pairing ? "refresh-cw" : (model.connected ? "x" : "check")
+
                                 onTapped: {
                                     if (model.connected)
                                         modelData.connected = false;

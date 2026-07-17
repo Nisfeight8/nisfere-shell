@@ -31,7 +31,10 @@ Item {
                 onToggled: NetworkService.wifi.toggle()
             }
         }
-
+        SectionLabel {
+            Layout.bottomMargin: 6
+            title: "Available Networks"
+        }
         // ── Network List (WiFi ON) ────────────────────────────────
         ScrollView {
             id: scrollView
@@ -45,11 +48,6 @@ Item {
                 id: networksColumn
                 width: scrollView.availableWidth
                 spacing: 6
-
-                SectionLabel {
-                    Layout.bottomMargin: 6
-                    title: "Available Networks"
-                }
 
                 Repeater {
                     model: root.wifiDevice ? root.wifiDevice.networks.values : null
@@ -149,61 +147,28 @@ Item {
                             // ways that don't map cleanly onto IconButton's
                             // simpler idle/hover/active model), kept bespoke
                             // but using AnimColor for consistency.
-                            Rectangle {
+                            IconButton {
                                 id: actionBtn
-                                Layout.preferredWidth: 30
-                                Layout.preferredHeight: 30
                                 Layout.alignment: Qt.AlignVCenter
-                                radius: Theme.radius
-                                border.width: 1
-                                border.color: Theme.borderColor
-                                color: {
-                                    if (!btnMouse.containsMouse)
-                                        return (model.connected && !netCard.expanded) ? Theme.color1 : "transparent";
-                                    return Theme.selected;
-                                }
-                                Behavior on color {
-                                    AnimColor {
-                                        type: Anim.FastEffects
-                                    }
-                                }
-
-                                LucideIcon {
-                                    anchors.centerIn: parent
-                                    size: 16
-                                    color: {
-                                        if (btnMouse.containsMouse)
-                                            return Theme.backgroundAlt;
-                                        if (netCard.expanded || model.connected)
-                                            return Theme.foreground;
-                                        return Theme.selected;
-                                    }
-                                    icon: Icons.getWifiActionIcon(netCard.expanded, model.connected)
-                                    Behavior on color {
-                                        AnimColor {
-                                            type: Anim.FastEffects
-                                        }
-                                    }
-                                }
-
-                                MouseArea {
-                                    id: btnMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (netCard.expanded) {
-                                            root.activeSsidPrompt = "";
-                                            passwordInput.text = "";
-                                            netCard.localError = "";
-                                        } else if (model.connected) {
-                                            NetworkService.wifi.disconnect();
-                                        } else if (model.known || model.security === WifiSecurityType.Open) {
-                                            NetworkService.wifi.connectTo(model.name);
-                                        } else {
-                                            root.activeSsidPrompt = model.name;
-                                            Qt.callLater(() => passwordInput.forceActiveFocus());
-                                        }
+                                hoverSolid: true
+                                alwaysBorder: true
+                                borderColor: (model.connected || netCard.expanded) ? Theme.color1 : Theme.selected
+                                contrastColor: Theme.background
+                                icon: Icons.getWifiActionIcon(netCard.expanded, model.connected)
+                                hoverColor: (model.connected || netCard.expanded) ? Theme.color1 : Theme.selected
+                                tooltipText: model.connected ? "Disconnect" : netCard.expanded ? "Cancel" : "Connect"
+                                onTapped: {
+                                    if (netCard.expanded) {
+                                        root.activeSsidPrompt = "";
+                                        passwordInput.text = "";
+                                        netCard.localError = "";
+                                    } else if (model.connected) {
+                                        NetworkService.wifi.disconnect();
+                                    } else if (model.known || model.security === WifiSecurityType.Open) {
+                                        NetworkService.wifi.connectTo(model.name);
+                                    } else {
+                                        root.activeSsidPrompt = model.name;
+                                        Qt.callLater(() => passwordInput.forceActiveFocus());
                                     }
                                 }
                             }
@@ -237,13 +202,13 @@ Item {
                                 color: Theme.foreground
                                 echoMode: TextInput.Password
                                 placeholderText: "Password…"
-                                placeholderTextColor: netCard.hasError ? Qt.alpha(Theme.color1, 0.6) : Theme.borderColor
+                                placeholderTextColor: netCard.hasError ? Qt.alpha(Theme.color1, 0.6) : Theme.selected
                                 font.pixelSize: 13
                                 leftPadding: 10
                                 rightPadding: 10
 
                                 background: Rectangle {
-                                    border.color: netCard.hasError ? Theme.color1 : Theme.borderColor
+                                    border.color: netCard.hasError ? Theme.color1 : Theme.selected
                                     border.width: Theme.widgetBorderWidth
                                     color: Theme.backgroundAlt
                                     radius: Theme.radius
@@ -263,16 +228,13 @@ Item {
                             // Confirm button — fits IconButton cleanly:
                             // constant selected bg, lightens on hover.
                             IconButton {
-                                Layout.preferredWidth: 34
-                                Layout.preferredHeight: 34
                                 icon: "check"
-                                size: 34
-                                iconSize: 16
-                                normalColor: Theme.selected
-                                hoverColor: Qt.lighter(Theme.selected, 1.15)
                                 hoverSolid: true
-                                fixedIconColor: Theme.background
-                                dimWhenIdle: false
+                                alwaysBorder: true
+                                borderColor: Theme.selected
+                                contrastColor: Theme.background
+                                hoverColor: Theme.selected
+                                tooltipText: "Connect"
                                 onTapped: {
                                     netCard.localError = "";
                                     NetworkService.wifi.connectTo(model.name, passwordInput.text);

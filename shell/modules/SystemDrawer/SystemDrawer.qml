@@ -6,7 +6,6 @@ import qs.services
 import "widgets"
 
 BaseDrawer {
-    
     id: root
     cornerMode: true
     anchors.top: true
@@ -56,7 +55,19 @@ BaseDrawer {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                     }
+                    // ── Divider ────────────────────────────────────────
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 1
+                        color: Theme.borderColor
+                        opacity: 0.35
+                    }
+                    // ── Battery ─────────────────────────────────────
 
+                    BatteryCard {
+                        Layout.fillWidth: true
+                        visible: BatteryService.hasBattery
+                    }
                     // ── Divider ────────────────────────────────────────
                     Rectangle {
                         Layout.fillWidth: true
@@ -78,7 +89,6 @@ BaseDrawer {
                         color: Theme.borderColor
                         opacity: 0.35
                     }
-
                     // ── Appearance ─────────────────────────────────────
                     SystemDrawerAppearance {
                         Layout.fillWidth: true

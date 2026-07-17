@@ -23,9 +23,12 @@ Rectangle {
     property bool hoverSolid: false   // true: solid hoverColor fill on hover
     // (instead of the default tint)
     property bool alwaysBorder: false  // true: static Theme.borderColor border,
+
+
     // ignoring hover/active (e.g. clear-all button)
 
     // ── Colors ───────────────────────────────────────────────────
+    property color borderColor: Theme.foreground
     property color normalColor: "transparent"
     property color hoverColor: Theme.selected
     property color activeColor: Theme.selected
@@ -61,7 +64,7 @@ Rectangle {
         return normalColor;
     }
     border.width: flat ? 0 : alwaysBorder ? Theme.widgetBorderWidth : ((isActive || isHovered) ? 1 : 0)
-    border.color: alwaysBorder ? Theme.borderColor : (isActive ? activeColor : hoverColor)
+    border.color: alwaysBorder ? borderColor : (isActive ? activeColor : hoverColor)
 
     Behavior on color {
         ColorAnimation {
@@ -98,6 +101,8 @@ Rectangle {
                 return root.activeColor;
             if (root.isHovered)
                 return root.hoverColor;
+            if (root.borderColor)
+                return root.borderColor
             return Theme.foreground;
         }
         opacity: {

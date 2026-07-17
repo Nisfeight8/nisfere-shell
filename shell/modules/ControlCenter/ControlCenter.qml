@@ -52,12 +52,6 @@ BaseDrawer {
                         Layout.fillWidth: true
                     }
 
-                    BatteryCard {
-                        Layout.fillWidth: true
-                    }
-                    // SystemStatsCard{
-                    //     Layout.fillWidth: true
-                    // }
                 }
             }
 

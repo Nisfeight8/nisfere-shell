@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import qs.core
 import qs.services
 
-GlassCard {
+Item {
     id: batteryCard
     Layout.fillWidth: true
     implicitHeight: batteryRow.implicitHeight + 30
@@ -49,7 +49,7 @@ GlassCard {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 6  // ← fix: ColumnLayout τώρα "βλέπει" το ύψος
                 radius: 3
-                color: Theme.background
+                color: Theme.backgroundAlt
 
                 Rectangle {
                     color: (BatteryService.percentage <= 20 && !BatteryService.isCharging)
