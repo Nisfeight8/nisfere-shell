@@ -58,37 +58,7 @@ QtObject {
         function onEthernetDisconnected() {
             root.send("Ethernet", "Disconnected", "network-wired-offline", "low");
         }
-    }
-
-    // ── Battery ───────────────────────────────────────────────────
-    property Connections batteryCon: Connections {
-        target: BatteryService
-
-        property bool _wasCharging: false
-
-        function onIsChargingChanged() {
-            if (!root._ready)
-                return;
-            if (BatteryService.isCharging && !_wasCharging)
-                root.send("Battery", "Charging · " + BatteryService.percentage + "%", "battery-good-charging");
-            else if (!BatteryService.isCharging && _wasCharging)
-                root.send("Battery", BatteryService.timeText, "battery-good");
-            _wasCharging = BatteryService.isCharging;
-        }
-
-        // Notify at 20%, 10%, 5% thresholds only
-        function onPercentageChanged() {
-            if (!root._ready || BatteryService.isCharging || !BatteryService.hasBattery)
-                return;
-            let p = BatteryService.percentage;
-            if (p === 20)
-                root.send("Low Battery", p + "% · " + BatteryService.timeText, "battery-caution");
-            else if (p === 10)
-                root.send("Low Battery", p + "% · " + BatteryService.timeText, "battery-low", "critical");
-            else if (p === 5)
-                root.send("Critical Battery", p + "% — plug in now!", "battery-empty", "critical");
-        }
-    }
+    }   
 
     // ── Bluetooth — watch connectedDevicesCount ───────────────────
     property Connections bluetoothCon: Connections {
