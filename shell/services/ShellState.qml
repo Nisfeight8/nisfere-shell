@@ -40,9 +40,10 @@ Singleton {
     property string quickAction: ""
     property bool quickActionsOpened: false
 
+    property int workspacesPerMonitor: ThemeState.shared.workspacesPerMonitor
     property bool overviewOpen: false
     property int overviewRows: 2
-    property int overviewColumns: 4
+    property int overviewColumns: workspacesPerMonitor / overviewRows
     property bool overviewPreviewsEnabled: true
     property bool overviewLivePreviews: false
 

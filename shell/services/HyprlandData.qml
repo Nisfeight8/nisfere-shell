@@ -64,9 +64,13 @@ Singleton {
         target: Hyprland
         function onRawEvent(event) {
             const name = `${event?.name ?? ""}`;
+
             if (["openwindow", "closewindow", "movewindow", "movewindowv2", "windowtitle", "fullscreen"].includes(name)) {
                 root.scheduleUpdate(true, true, false);
-            } else if (name.startsWith("workspace") || name === "focusedmon" || name === "focusedmonv2") {
+            } else if (name === "focusedmon" || name === "focusedmonv2") {
+                root.scheduleUpdate(false, true, true);
+                // ΠΡΟΣΘΗΚΗ: Όλα τα events που αφορούν τη δομή των workspaces!
+            } else if (name.startsWith("workspace") || ["createworkspace", "destroyworkspace", "moveworkspace", "renameworkspace"].includes(name)) {
                 root.scheduleUpdate(false, true, false);
             } else if (name.startsWith("monitor") || name === "configreloaded") {
                 root.scheduleUpdate(true, true, true);
@@ -99,7 +103,10 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    root.allWorkspaces = JSON.parse(text);
+                    let parsed = JSON.parse(text);
+                    parsed.sort((a, b) => a.id - b.id);
+
+                    root.allWorkspaces = parsed;
                     root.workspaceIds = root.allWorkspaces.filter(ws => ws.id >= 1 && ws.id <= 100).map(ws => ws.id);
                 } catch (e) {
                     console.warn("HyprlandData: failed to parse workspaces:", e);

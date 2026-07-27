@@ -57,6 +57,38 @@ Variants {
             readonly property int activeWorkspaceId: _monitorData?.activeWorkspace?.id ?? -1
             readonly property bool hasFullscreen: HyprlandData.windowList.some(w => (w.workspace?.id ?? -1) === activeWorkspaceId && (w.fullscreen ?? 0) > 0)
 
+            // ── Adjacent-monitor detection ─────────────────────────────
+            // Moving the cursor between two side-by-side monitors passes
+            // straight through the shared boundary — e.g. eDP-1 at 0x0
+            // and HDMI-A-1 at 1920x0 means crossing from one to the
+            // other goes right through eDP-1's right edge into
+            // HDMI-A-1's left edge. Any hover-triggered drawer sitting
+            // on that shared edge (SystemDrawer, on the left) would
+            // pop open just from passing through, not a deliberate
+            // hover. Only suppress hover-OPEN on edges that actually
+            // border another monitor — outer/physical edges of the
+            // whole desktop still work normally.
+            function _yOverlaps(other) {
+                if (!_monitorData || !other)
+                    return false;
+                const aTop = _monitorData.y, aBottom = _monitorData.y + _monitorData.height;
+                const bTop = other.y, bBottom = other.y + other.height;
+                return aTop < bBottom && bTop < aBottom;
+            }
+            function _xOverlaps(other) {
+                if (!_monitorData || !other)
+                    return false;
+                const aLeft = _monitorData.x, aRight = _monitorData.x + _monitorData.width;
+                const bLeft = other.x, bRight = other.x + other.width;
+                return aLeft < bRight && bLeft < aRight;
+            }
+            readonly property bool hasMonitorToLeft: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs((m.x + m.width) - _monitorData.x) < 2 && _yOverlaps(m)) : false
+            readonly property bool hasMonitorToRight: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs(m.x - (_monitorData.x + _monitorData.width)) < 2 && _yOverlaps(m)) : false
+            readonly property bool hasMonitorAbove: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs((m.y + m.height) - _monitorData.y) < 2 && _xOverlaps(m)) : false
+            readonly property bool hasMonitorBelow: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs(m.y - (_monitorData.y + _monitorData.height)) < 2 && _xOverlaps(m)) : false
+            Component.onCompleted: {
+                console.log(screen.name)
+            }
             WlrLayershell.keyboardFocus: isAnyUIOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             WlrLayershell.layer: (isAnyUIOpen || osd.shown || notificationPopup.shown) ? WlrLayer.Overlay : WlrLayer.Top
 
@@ -113,7 +145,7 @@ Variants {
                 id: appLauncherLoader
                 z: 50
                 anchors.fill: parent
-                shouldBeActive: ShellState.appLauncherOpened && ShellState.activeScreenName === screen.name
+                shouldBeActive: ShellState.appLauncherOpened && ShellState.activeScreenName === visualWindow.screen.name
                 sourceComponent: Component {
                     CentralLauncher {}
                 }
@@ -122,9 +154,11 @@ Variants {
                 id: overviewLoader
                 z: 50
                 anchors.fill: parent
-                shouldBeActive: ShellState.overviewOpen && ShellState.activeScreenName === screen.name
+                shouldBeActive: ShellState.overviewOpen && ShellState.activeScreenName === visualWindow.screen.name
                 sourceComponent: Component {
-                    WorkspaceOverview {}
+                    WorkspaceOverview {
+                        screen: visualWindow.screen
+                    }
                 }
             }
 
@@ -170,19 +204,19 @@ Variants {
                 function onTopHoveredChanged() {
                     if (borderBezels.topHovered && !dashboardDrawer.toggleOnHover)
                         return; // dashboard uses toggleOnHover:false, ignore hover-open here
-                    if (borderBezels.topHovered)
+                    if (borderBezels.topHovered && !visualWindow.hasMonitorAbove)
                         ShellState.openDashboard(visualWindow.screen.name);
                 }
                 function onBottomHoveredChanged() {
-                    if (borderBezels.bottomHovered && quickActionsDrawer.toggleOnHover)
+                    if (borderBezels.bottomHovered && quickActionsDrawer.toggleOnHover && !visualWindow.hasMonitorBelow)
                         ShellState.openQuickActions(visualWindow.screen.name);
                 }
                 function onLeftHoveredChanged() {
-                    if (borderBezels.leftHovered && systemDrawer.toggleOnHover)
+                    if (borderBezels.leftHovered && systemDrawer.toggleOnHover && !visualWindow.hasMonitorToLeft)
                         ShellState.openSystemDrawer(visualWindow.screen.name);
                 }
                 function onRightHoveredChanged() {
-                    if (borderBezels.rightHovered && controlCenterDrawer.toggleOnHover)
+                    if (borderBezels.rightHovered && controlCenterDrawer.toggleOnHover && !visualWindow.hasMonitorToRight)
                         ShellState.openControlCenter(visualWindow.screen.name);
                 }
             }

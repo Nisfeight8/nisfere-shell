@@ -41,7 +41,7 @@ Item {
             text: {
                 if (wsItem.isFocused)
                     return "󰮯";
-                if (wsItem.windowsCount > 0)
+                else
                     return "󰊠";
                 return "";
             }

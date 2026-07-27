@@ -46,5 +46,9 @@ return {
     ------------------
     ---- FONT --------
     ------------------
-    fontName              = "Arimo Nerd Font"
+    fontName              = "Arimo Nerd Font",
+    ------------------
+    ---- GENERAL SETTINGS --------
+    ------------------
+    workspacesPerMonitor              = 8
 }

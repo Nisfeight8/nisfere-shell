@@ -76,12 +76,12 @@ BarWidget {
     TapHandler {
         parent: clockWidget
         onTapped: {
-            if (!ShellState.dashboardOpened) {
-                if (NotificationService.notifications.length > 0) {
-                    ShellState.currentDashboardTab = 3;
-                }
+            const screenName = QsWindow.window?.screen?.name ?? "";
+            const isOpenHere = ShellState.dashboardOpened && ShellState.activeScreenName === screenName;
+            if (!isOpenHere && NotificationService.notifications.length > 0) {
+                ShellState.currentDashboardTab = 3;
             }
-            ShellState.dashboardOpened = !ShellState.dashboardOpened;
+            ShellState.toggleDashboard(screenName);
         }
     }
 }

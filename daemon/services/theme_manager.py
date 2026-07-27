@@ -32,6 +32,7 @@ _DEFAULT_SETTINGS: dict = {
     "shared": {
         "radius": 20,
         "fontName": "Arimo Nerd Font",
+        "workspacesPerMonitor": 10
     },
     "shell": {
         "enableWidgetBorders": True,

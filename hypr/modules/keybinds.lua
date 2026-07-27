@@ -110,12 +110,16 @@ hl.bind(mainMod .. " + SHIFT + Minus", hl.dsp.window.resize({ x = 0, y = -10 }),
 hl.bind(mainMod .. " + SHIFT + Equal", hl.dsp.window.resize({ x = 0, y = 10 }), { repeating = true })
 
 -- ═══════════════════════════════════════════════════════════════════
--- WORKSPACES 1-10 + move window to workspace
+-- WORKSPACES 1-workspacesPerMonitor + move window to workspace
 -- ═══════════════════════════════════════════════════════════════════
+local vars = require("modules.variables")
+local script_path = "bash $HOME/.config/hypr/scripts/smart_workspace.sh"
+local per_mon = vars.workspacesPerMonitor
+
 for i = 1, 10 do
-    local key = i % 10
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+  local key = tostring(i % 10)
+  hl.bind(mainMod .. " + " .. key, hl.dsp.exec_cmd(script_path .. " " .. i .. " focus " .. per_mon))
+  hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.exec_cmd(script_path .. " " .. i .. " movetoworkspace " .. per_mon))
 end
 
 -- next/prev workspace across ALL monitors ("m+1"/"m-1" — matches the

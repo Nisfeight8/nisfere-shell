@@ -1,17 +1,24 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import Quickshell
 import Quickshell.Wayland
+
 import qs.core
 
 BarWidget {
     id: root
 
-    readonly property var activeWin: ToplevelManager.activeToplevel
+    readonly property string screenName: QsWindow.window?.screen?.name ?? ""
+
+    readonly property var activeWin: {
+        return ToplevelManager.toplevels.values.find(t => t.activated && t.screens.some(s => s.name === root.screenName)) ?? null;
+    }
+
     readonly property bool hasWindow: activeWin !== null
-    readonly property string iconName: hasWindow && windowClass !== "" ? Icons.getAppIcon(windowClass) : Icons.getAppIcon("desktop")
     readonly property string windowClass: hasWindow ? activeWin.appId : ""
     readonly property string windowTitle: hasWindow ? activeWin.title : "Desktop"
+    readonly property string iconName: hasWindow && windowClass !== "" ? Icons.getAppIcon(windowClass) : Icons.getAppIcon("desktop")
     useGradient: true
 
     readonly property bool isHovered: winHover.hovered

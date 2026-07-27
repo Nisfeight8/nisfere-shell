@@ -8,6 +8,9 @@ import qs.services
 
 Item {
     id: root
+    property var screen: null
+    readonly property string screenName: screen?.name ?? ""
+
     anchors.fill: parent
     focus: true
     Component.onCompleted: {
@@ -18,7 +21,6 @@ Item {
         target: ShellState
         function onOverviewOpenChanged() {
             if (ShellState.overviewOpen) {
-                root.groupOverride = -1;
                 forceActiveFocus();
             }
         }
@@ -35,34 +37,23 @@ Item {
     property int draggingFromWorkspace: -1
 
     // ── Monitor Context ────────────────────────────────────────────────────
-    // Was `visualWindow.monitor` — worked today only because
-    // AnimatedContentLoader's created context happens to chain up to
-    // shell.qml's PanelWindow (Loader children get a context parented
-    // under wherever the Loader itself lives, and id lookup walks that
-    // chain) — not because of anything guaranteed by this file. Once
-    // ScreenBorder is duplicated per-screen (the actual plan), which
-    // specific "visualWindow" that chain resolves to for a given
-    // instance becomes ambiguous. QsWindow.window (same attached
-    // property BarPopup/BarTooltip already rely on, since standard
-    // Qt's Window.window gives an incompatible "ProxiedWindow" here)
-    // always reflects the ACTUAL Quickshell window THIS SPECIFIC item
-    // ends up in, however many parallel copies of ScreenBorder exist.
-    readonly property var _qsWindow: QsWindow.window
-    readonly property var currentScreen: _qsWindow ? _qsWindow.screen : null
-    readonly property HyprlandMonitor monitor: currentScreen ? Hyprland.monitorFor(currentScreen) : null
-    readonly property var monitorData: HyprlandData.monitors.find(m => m.id === monitor?.id)
+    readonly property HyprlandMonitor monitor: {
+        if (!monitorData) return null;
+        return Hyprland.monitors.values.find(m => m.id === monitorData.id) ?? null;
+    }
+    readonly property var monitorData: HyprlandData.monitors.find(m => m.name === root.screenName)
 
-    // ── Μεγέθη & Υπολογισμοί ──────────────────────────────────────────────
+    // ── Sizes & Calculations (Per-Monitor Isolation) ──────────────────────
     readonly property var reserved: monitorData?.reserved ?? [0, 0, 0, 0]
     readonly property real availWidth: root.width - reserved[0] - reserved[2]
     readonly property real availHeight: root.height - reserved[1] - reserved[3]
 
-    readonly property int workspacesShown: root.rows * root.columns
+    readonly property int workspacesShown: ShellState.workspacesPerMonitor
     readonly property int currentWorkspaceId: monitor?.activeWorkspace?.id ?? 1
-    readonly property int autoGroup: Math.floor((currentWorkspaceId - 1) / workspacesShown)
 
-    property int groupOverride: -1
-    readonly property int effectiveGroup: groupOverride >= 0 ? groupOverride : autoGroup
+    // The block size of workspaces per monitor
+    readonly property int monitorBlockSize: ShellState.workspacesPerMonitor
+    readonly property int baseWorkspaceId: Math.floor((currentWorkspaceId - 1) / monitorBlockSize) * monitorBlockSize + 1
 
     readonly property real contentWidth: Math.min(availWidth * 0.75, 1020)
     readonly property real tileWidth: (contentWidth - (root.columns + 1) * root.tileGap) / root.columns
@@ -72,23 +63,23 @@ Item {
     // ── Scrim Background ──────────────────────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.4) // Σκοτεινό φόντο
+        color: Qt.rgba(0, 0, 0, 0.4)
 
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: ShellState.overviewOpen = false
-            onWheel: wheel => {
-                if (wheel.angleDelta.y > 0)
-                    root.groupOverride = Math.max(0, root.effectiveGroup - 1);
-                else
-                    root.groupOverride = root.effectiveGroup + 1;
-            }
         }
     }
 
     // ── Χειρισμός Πληκτρολογίου (Arrows/Vim bindings) ─────────────────────
+    Keys.onShortcutOverride: event => {
+        if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
+            event.accepted = true;
+        }
+    }
+
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Escape || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             ShellState.overviewOpen = false;
@@ -96,9 +87,7 @@ Item {
             return;
         }
 
-        const currentId = root.monitor?.activeWorkspace?.id ?? 1;
-        const total = root.rows * root.columns;
-        const idxInGroup = ((currentId - 1) % total + total) % total;
+        const idxInGroup = root.currentWorkspaceId - root.baseWorkspaceId;
 
         let row = Math.floor(idxInGroup / root.columns);
         let col = idxInGroup % root.columns;
@@ -111,19 +100,11 @@ Item {
             row = (row - 1 + root.rows) % root.rows;
         } else if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
             row = (row + 1) % root.rows;
-        } else if (event.key === Qt.Key_PageUp) {
-            root.groupOverride = Math.max(0, root.effectiveGroup - 1);
-            event.accepted = true;
-            return;
-        } else if (event.key === Qt.Key_PageDown) {
-            root.groupOverride = root.effectiveGroup + 1;
-            event.accepted = true;
-            return;
         } else {
             return;
         }
 
-        const targetId = root.effectiveGroup * total + row * root.columns + col + 1;
+        const targetId = root.baseWorkspaceId + (row * root.columns) + col;
         Hyprland.dispatch(`hl.dsp.focus({ workspace = "${targetId}" })`);
         event.accepted = true;
     }
@@ -136,13 +117,6 @@ Item {
     }
 
     // ── Κεντρικό Container (Grid) ─────────────────────────────────────────
-    // Was ALSO doing its own fade+slide-up reveal (reallyOpen/opacity/
-    // Translate) on top of AnimatedContentLoader's own fade+scale
-    // reveal — the outer loader already owns "content appears
-    // smoothly" as a single concern; doing it again here just layers
-    // two different motions (scale AND translate) on top of each
-    // other. Removed; say the word if you actually want the extra
-    // slide-up back as a deliberate, distinct effect.
     Item {
         id: contentCard
         anchors {
@@ -172,8 +146,8 @@ Item {
                 right: parent.right
                 margins: 10
             }
-            visible: (HyprlandData.workspaceIds?.length ?? 0) > root.workspacesShown || root.effectiveGroup > 0
-            text: (root.effectiveGroup * root.workspacesShown + 1) + "–" + ((root.effectiveGroup + 1) * root.workspacesShown)
+            visible: true
+            text: root.baseWorkspaceId + "–" + (root.baseWorkspaceId + root.workspacesShown - 1)
             color: Theme.foreground
             font.family: Theme.fontName
             font.pixelSize: 11
@@ -193,7 +167,7 @@ Item {
                 Rectangle {
                     id: wsTile
                     required property int index
-                    readonly property int workspaceId: root.effectiveGroup * root.workspacesShown + index + 1
+                    readonly property int workspaceId: root.baseWorkspaceId + index
                     readonly property bool isActive: (root.monitor?.activeWorkspace?.id ?? -1) === workspaceId
 
                     Layout.preferredWidth: root.tileWidth
@@ -257,8 +231,8 @@ Item {
                             windowData: HyprlandData.windowByAddress[address]
                             tileScale: root.tileScale
 
-                            xOffset: -root.reserved[0] * root.tileScale
-                            yOffset: -root.reserved[1] * root.tileScale
+                            xOffset: (-root.reserved[0] - (root.monitorData?.x ?? 0)) * root.tileScale
+                            yOffset: (-root.reserved[1] - (root.monitorData?.y ?? 0)) * root.tileScale
                             previewsEnabled: root.previewsEnabled
                             live: root.livePreviews
 
@@ -282,12 +256,6 @@ Item {
                                 winTile.parent = winTile.homeParent;
 
                                 if (target !== -1 && target !== from) {
-                                    // follow=false — moves the window without
-                                    // also switching your active view to its
-                                    // new workspace (that focus-follow is
-                                    // what was causing the cursor to warp,
-                                    // since you're already looking at the
-                                    // overview, not the destination workspace).
                                     Hyprland.dispatch(`hl.dsp.window.move({ workspace = "${target}", follow = false, window = "address:${winTile.address}" })`);
                                 } else {
                                     winTile.x = winTile.initX;
@@ -314,7 +282,7 @@ Item {
                                     return;
                                 }
 
-                                root.draggingTargetWorkspace = row * root.columns + col + 1;
+                                root.draggingTargetWorkspace = root.baseWorkspaceId + (row * root.columns) + col;
                             }
                         }
                     }

@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 
@@ -20,7 +21,7 @@ BarWidget {
 
     TapHandler {
         parent: root
-        onTapped: ShellState.controlCenterOpened = !ShellState.controlCenterOpened
+        onTapped: ShellState.toggleControlCenter(QsWindow.window?.screen?.name ?? "")
     }
     spacing: 4
 
