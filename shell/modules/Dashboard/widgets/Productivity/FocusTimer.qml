@@ -4,9 +4,16 @@ import qs.core
 import qs.services
 
 Item {
+    id: root
     anchors.fill: parent
+    // Was missing entirely (and this file was also the only tab
+    // without `id: root` at all) — same fix as the rest of the
+    // Dashboard tabs: bottom-up from mainColumn's own implicit size.
+    implicitWidth: mainColumn.implicitWidth
+    implicitHeight: mainColumn.implicitHeight
 
     ColumnLayout {
+        id: mainColumn
         anchors.centerIn: parent
         spacing: 26
 

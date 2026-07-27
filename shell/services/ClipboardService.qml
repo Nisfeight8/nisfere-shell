@@ -1,12 +1,13 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import qs.services
 
 // Clipboard history via cliphist (pacman: cliphist).
 // Requires the cliphist store daemon running in hyprland.conf:
 //   exec-once = wl-paste --watch cliphist store
-QtObject {
+Singleton {
     id: root
 
     property var  entries: []   // [{id, preview, raw}]

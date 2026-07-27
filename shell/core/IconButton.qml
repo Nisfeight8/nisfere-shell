@@ -24,7 +24,6 @@ Rectangle {
     // (instead of the default tint)
     property bool alwaysBorder: false  // true: static Theme.borderColor border,
 
-
     // ignoring hover/active (e.g. clear-all button)
 
     // ── Colors ───────────────────────────────────────────────────
@@ -67,18 +66,18 @@ Rectangle {
     border.color: alwaysBorder ? borderColor : (isActive ? activeColor : hoverColor)
 
     Behavior on color {
-        ColorAnimation {
-            duration: 150
+        AnimColor {
+            type: Anim.FastEffects
         }
     }
     Behavior on border.color {
-        ColorAnimation {
-            duration: 150
+        AnimColor {
+            type: Anim.FastEffects
         }
     }
     Behavior on border.width {
-        NumberAnimation {
-            duration: 150
+        Anim {
+            type: Anim.FastEffects
         }
     }
 
@@ -102,7 +101,7 @@ Rectangle {
             if (root.isHovered)
                 return root.hoverColor;
             if (root.borderColor)
-                return root.borderColor
+                return root.borderColor;
             return Theme.foreground;
         }
         opacity: {
@@ -114,13 +113,13 @@ Rectangle {
         }
 
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            AnimColor {
+                type: Anim.FastEffects
             }
         }
         Behavior on opacity {
-            NumberAnimation {
-                duration: 150
+            Anim {
+                type: Anim.FastEffects
             }
         }
 
@@ -135,6 +134,12 @@ Rectangle {
 
     HoverHandler {
         id: hover
+        // Was missing — without this, hover kept firing (and driving
+        // every color/opacity computation above) even while disabled,
+        // so a "disabled" button still visually reacted to hover, just
+        // without responding to taps. Only cursorShape depended on
+        // `enabled` before; now the handler itself does too.
+        enabled: root.enabled
         cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
     }
     TapHandler {

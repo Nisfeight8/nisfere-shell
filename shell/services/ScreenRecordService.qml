@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 
-QtObject {
+Singleton {
     id: root
 
     // ── State ─────────────────────────────────────────────────────

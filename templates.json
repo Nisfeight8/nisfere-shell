@@ -1,13 +1,52 @@
 {
-  "hyprland-colors.conf": "~/.config/hypr/conf/colors.conf",
-  "alacritty-colors.toml": "~/.config/alacritty/colors.toml",
-  "adw-gtk3.css": ["~/.config/gtk-3.0/gtk.css", "~/.config/gtk-4.0/gtk.css"],
-  "thunar.css": [
-    "~/.config/gtk-3.0/thunar.css",
-    "~/.config/gtk-4.0/thunar.css"
-  ],
-  "bpytop.theme": "~/.config/bpytop/themes/nisfere.theme",
-  "vscode.json": "~/.cache/wallust/colors.json",
-  "vscode": "~/.cache/wallust/colors",
-  "nisfere.colors": "~/.config/qtengine/nisfere.colors"
+  "variables.lua.template": {
+    "targets": [
+      "~/.config/hypr/modules/variables.lua"
+    ],
+    "scope": "hyprland"
+  },
+  "alacritty-colors.toml": {
+    "targets": [
+      "~/.config/alacritty/colors.toml"
+    ],
+    "scope": "shared"
+  },
+  "adw-gtk3.css": {
+    "targets": [
+      "~/.config/gtk-3.0/gtk.css",
+      "~/.config/gtk-4.0/gtk.css"
+    ],
+    "scope": "shell"
+  },
+  "thunar.css": {
+    "targets": [
+      "~/.config/gtk-3.0/thunar.css",
+      "~/.config/gtk-4.0/thunar.css"
+    ],
+    "scope": "shell"
+  },
+  "bpytop.theme": {
+    "targets": [
+      "~/.config/bpytop/themes/nisfere.theme"
+    ],
+    "scope": "shared"
+  },
+  "vscode.json": {
+    "targets": [
+      "~/.cache/wallust/colors.json"
+    ],
+    "scope": "shared"
+  },
+  "vscode": {
+    "targets": [
+      "~/.cache/wallust/colors"
+    ],
+    "scope": "shared"
+  },
+  "nisfere.colors": {
+    "targets": [
+      "~/.config/qtengine/nisfere.colors"
+    ],
+    "scope": "shared"
+  }
 }

@@ -11,20 +11,13 @@ GlassCard {
     readonly property int cardMargin: 15
     implicitWidth: mainLayout.implicitWidth + mainLayout.anchors.margins * 2
     implicitHeight: mainLayout.implicitHeight + mainLayout.anchors.margins * 2
-    
+
     anchors.fill: parent
 
-    SystemClock {
-        id: sysClock
-
-        precision: SystemClock.Seconds
-    }
     ColumnLayout {
         id: mainLayout
 
-        // 3. Create a dynamic reference size based on actual width/height for text scaling
         property real refSize: 250
-        // 2. Fill the card safely with margins
         anchors.fill: parent
         anchors.margins: miniClockCard.cardMargin
         spacing: 10
@@ -38,9 +31,11 @@ GlassCard {
                 color: Theme.selected
                 font.bold: true
                 font.family: Theme.fontName
-                // Scale main time dynamically
                 font.pixelSize: Math.max(20, mainLayout.refSize * 0.20)
-                text: Qt.formatDateTime(sysClock.date, "hh:mm")
+                // Was a local SystemClock — now reads the shared
+                // TimeService singleton (see services/TimeService.qml)
+                // instead of every screen owning its own clock source.
+                text: Qt.formatDateTime(TimeService.date, "hh:mm")
             }
             Text {
                 Layout.alignment: Qt.AlignHCenter
@@ -48,7 +43,7 @@ GlassCard {
                 font.family: Theme.fontName
                 font.pixelSize: Math.max(12, mainLayout.refSize * 0.06)
                 opacity: 0.6
-                text: Qt.formatDateTime(sysClock.date, "dddd, d MMMM")
+                text: Qt.formatDateTime(TimeService.date, "dddd, d MMMM")
             }
         }
         Rectangle {
@@ -66,27 +61,33 @@ GlassCard {
                 Layout.fillWidth: true
 
                 Text {
-                    color: prevMouse.containsMouse ? Theme.selected : Theme.foreground
+                    id: prevArrow
+                    readonly property bool isHovered: prevHover.hovered
+                    color: isHovered ? Theme.selected : Theme.foreground
                     font.family: Theme.fontName
                     font.pixelSize: Math.max(12, mainLayout.refSize * 0.05)
-                    opacity: prevMouse.containsMouse ? 1 : 0.5
+                    opacity: isHovered ? 1 : 0.5
+                    // NOTE: this rendered as an empty string when you
+                    // sent it over — likely a glyph character (e.g. a
+                    // chevron-left from your nerd font) that didn't
+                    // survive copy/paste. Put the real character back
+                    // here; left as-is otherwise.
                     text: ""
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 150
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
 
-                    MouseArea {
-                        id: prevMouse
-
-                        anchors.fill: parent
-                        anchors.margins: -5
+                    HoverHandler {
+                        id: prevHover
+                        margin: 5
                         cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-
-                        onClicked: monthGrid.previousMonth()
+                    }
+                    TapHandler {
+                        margin: 5
+                        onTapped: CalendarService.previousMonth()
                     }
                 }
                 Text {
@@ -99,39 +100,39 @@ GlassCard {
                     text: monthGrid.title
                 }
                 Text {
-                    color: nextMouse.containsMouse ? Theme.selected : Theme.foreground
+                    id: nextArrow
+                    readonly property bool isHovered: nextHover.hovered
+                    color: isHovered ? Theme.selected : Theme.foreground
                     font.family: Theme.fontName
                     font.pixelSize: Math.max(12, mainLayout.refSize * 0.05)
-                    opacity: nextMouse.containsMouse ? 1 : 0.5
+                    opacity: isHovered ? 1 : 0.5
+                    // Same note as prevArrow above.
                     text: ""
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 150
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
 
-                    MouseArea {
-                        id: nextMouse
-
-                        anchors.fill: parent
-                        anchors.margins: -5
+                    HoverHandler {
+                        id: nextHover
+                        margin: 5
                         cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-
-                        onClicked: monthGrid.nextMonth()
+                    }
+                    TapHandler {
+                        margin: 5
+                        onTapped: CalendarService.nextMonth()
                     }
                 }
             }
             DayOfWeekRow {
                 Layout.fillWidth: true
-                // Ensure this row doesn't eat up the space needed by the grid
                 Layout.preferredHeight: Math.max(15, mainLayout.refSize * 0.08)
                 locale: monthGrid.locale
 
                 delegate: Text {
                     required property string shortName
-
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
@@ -145,69 +146,65 @@ GlassCard {
             MonthGrid {
                 id: monthGrid
 
-                function nextMonth() {
-                    if (month === 11) {
-                        year++;
-                        month = 0;
-                    } else
-                        month++;
-                }
-                function previousMonth() {
-                    if (month === 0) {
-                        year--;
-                        month = 11;
-                    } else
-                        month--;
-                }
+                // Now sourced from the shared CalendarService instead
+                // of local month/year properties — see
+                // services/CalendarService.qml for why (multi-screen
+                // consistency, same reasoning as TimeService).
+                month: CalendarService.month
+                year: CalendarService.year
+
+                // Computed ONCE here instead of independently in all 42
+                // delegate cells. Every cell has the IDENTICAL size (it's
+                // a uniform 7×6 grid) — the old per-cell binding did the
+                // same Math.min(...) calculation 42 separate times (and
+                // several times over during layout settling), confirmed
+                // via profiler as the #2 hotspot in the whole shell.
+                // Delegates just read this shared value now.
+                readonly property real cellSize: Math.min(width / 7, height / 6) * 0.8
 
                 Layout.fillHeight: true
-
-                // 4. CRITICAL FIX: Tell the grid to stretch dynamically!
-                // It will automatically divide this space by 7 columns and 6 rows.
                 Layout.fillWidth: true
 
                 delegate: Item {
                     required property var model
+                    readonly property bool isHovered: dayHover.hovered
 
                     Rectangle {
-                        // Dynamically scale the hover/selected circles based on the cell's actual size
-                        property real circleSize: Math.min(parent.width, parent.height) * 0.8
-
                         anchors.centerIn: parent
-                        color: model.today ? Theme.selected : (dayMouseArea.containsMouse ? Theme.foreground : "transparent")
-                        height: circleSize
-                        radius: circleSize / 2
-                        width: circleSize
+                        width: monthGrid.cellSize
+                        height: monthGrid.cellSize
+                        radius: monthGrid.cellSize / 2
+                        color: model.today ? Theme.selected : (parent.isHovered ? Theme.foreground : "transparent")
 
+                        // NOTE: this Behavior had no opacity binding to
+                        // react to anywhere in the original — dead code
+                        // (same pattern as BorderBezels' border lines).
+                        // Left in case you had hover-fade plans for
+                        // this that never got wired up; harmless either
+                        // way since opacity never actually changes.
                         Behavior on opacity {
-                            NumberAnimation {
-                                duration: 100
+                            Anim {
+                                type: Anim.FastEffects
                             }
                         }
                     }
                     Text {
                         anchors.centerIn: parent
-                        color: model.today ? Theme.background : (dayMouseArea.containsMouse ? Theme.background : Theme.foreground)
+                        color: model.today ? Theme.background : (parent.isHovered ? Theme.background : Theme.foreground)
                         font.bold: model.today
                         font.family: Theme.fontName
-                        // Scale day numbers based on their cell height
-                        font.pixelSize: Math.max(10, parent.height * 0.4)
+                        font.pixelSize: Math.max(10, monthGrid.cellSize * 0.5)
                         opacity: model.month === monthGrid.month ? 1 : 0.25
                         text: model.day
                     }
-                    MouseArea {
-                        id: dayMouseArea
 
-                        anchors.fill: parent
+                    HoverHandler {
+                        id: dayHover
                         cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
                     }
                 }
 
-                Component.onCompleted: {
-                    month = sysClock.date.getMonth();
-                    year = sysClock.date.getFullYear();
-                }
+                Component.onCompleted: CalendarService.ensureInitialized(TimeService.date)
             }
         }
     }

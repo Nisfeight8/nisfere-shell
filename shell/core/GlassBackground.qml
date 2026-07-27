@@ -15,14 +15,19 @@ Item {
         opacity: 0.65
     }
 
-    // ✅ Native Rectangle gradient 
+    // ✅ Native Rectangle gradient
     Rectangle {
         anchors.fill: parent
         radius: root.bgRadius
         gradient: Gradient {
-            GradientStop { position: 0.0;  color: Qt.alpha(Theme.backgroundAlt, 0.2) }
+            // Was Qt.alpha(color, alpha) — not a real Qt Quick function
+            // (Qt only exposes rgba/hsla/hsva/lighter/darker/tint), so
+            // this threw at runtime. Same Qt.rgba(r,g,b,a) pattern
+            // already used everywhere else in the shell (ActionButton,
+            // ControlButton, IconButton, ...).
+            GradientStop { position: 0.0;  color: Qt.rgba(Theme.backgroundAlt.r, Theme.backgroundAlt.g, Theme.backgroundAlt.b, 0.2) }
             GradientStop { position: 0.55; color: "transparent" }
-            GradientStop { position: 1.0;  color: Qt.alpha(Theme.selected, 0.08) }
+            GradientStop { position: 1.0;  color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.08) }
         }
     }
 

@@ -7,11 +7,33 @@ BarWidget {
     id: root
 
     visible: BatteryService.hasBattery
-    bgColor: "transparent"
     spacing: 8
-
+    useGradient: false
     readonly property bool isCritical: !BatteryService.isCharging && BatteryService.percentage <= 15
     readonly property color statusColor: BatteryService.isCharging ? Theme.selected : (isCritical ? Theme.color1 : Theme.foreground)
+
+    // Same hover-gap debounce as ActiveWindow.qml — showPopup was
+    // bound directly to hover.hovered, so moving the mouse from the
+    // widget toward the popup (e.g. to read "time remaining") briefly
+    // leaves BOTH regions and instantly closes it. See ActiveWindow.qml
+    // for the full explanation.
+    property bool popupOpen: false
+    property bool popupContentHovered: false
+    readonly property bool anyHovered: hover.hovered || root.popupContentHovered
+
+    onAnyHoveredChanged: {
+        if (anyHovered) {
+            closeTimer.stop();
+            popupOpen = true;
+        }
+    }
+
+    Timer {
+        id: closeTimer
+        interval: 150
+        running: !root.anyHovered && root.popupOpen
+        onTriggered: root.popupOpen = false
+    }
 
     // ── Compact bar display — icon + percentage ────────────────────
     LucideIcon {
@@ -58,16 +80,24 @@ BarWidget {
 
     HoverHandler {
         id: hover
+        cursorShape: Qt.PointingHandCursor
     }
 
     // ── Rich detail popup — icon badge, %, status, progress, time ──
     BarPopup {
-        showPopup: hover.hovered
+        showPopup: root.popupOpen
         targetItem: root
 
         contentComponent: Component {
             ColumnLayout {
                 spacing: 12
+
+                // Tracks hover over the popup itself — see
+                // ActiveWindow.qml for why this writes to root's
+                // property instead of using its own id.
+                HoverHandler {
+                    onHoveredChanged: root.popupContentHovered = hovered
+                }
 
                 RowLayout {
                     spacing: 12

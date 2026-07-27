@@ -11,5 +11,5 @@ ControlButton {
     visible: NetworkService.hasEthernet
 
     onClicked: NetworkService.ethernet.toggle()
-    onMoreClicked: pageStack.currentIndex = 3
+    onMoreClicked: ShellState.controlCenterPageIndex = 3
 }

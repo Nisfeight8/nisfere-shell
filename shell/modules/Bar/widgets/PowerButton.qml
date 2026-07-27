@@ -14,11 +14,12 @@ BarWidget {
         icon: "power"
     }
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+    HoverHandler {
         parent: powererBtn
-
-        onClicked: ShellState.powerMenuOpened = !ShellState.powerMenuOpened
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        parent: powererBtn
+        onTapped: ShellState.powerMenuOpened = !ShellState.powerMenuOpened
     }
 }

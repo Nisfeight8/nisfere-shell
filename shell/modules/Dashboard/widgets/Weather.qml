@@ -8,8 +8,13 @@ Item {
     id: root
 
     anchors.fill: parent
-    implicitWidth: parent.width
-    implicitHeight: parent.height
+    // Was `implicitWidth: parent.width` / `implicitHeight: parent.height`
+    // — same backwards implicit-size pattern as Media.qml/Overview.qml.
+    // Now bottom-up from mainColumn, which (per your own "Bubble-up
+    // implicit size" comments below) already correctly computes its own
+    // implicit size from its children.
+    implicitWidth: mainColumn.implicitWidth
+    implicitHeight: mainColumn.implicitHeight
 
     function getDayName(dateString, index) {
         if (index === 0)

@@ -11,5 +11,7 @@ ControlButton {
     visible: BluetoothService.hasBluetooth
 
     onClicked: BluetoothService.toggle()
-    onMoreClicked: pageStack.currentIndex = 2
+    // Was `pageStack.currentIndex = 2` — same cross-file scope bug as
+    // Wifi.qml; see ControlCenterContent.qml/ShellState.qml.
+    onMoreClicked: ShellState.controlCenterPageIndex = 2
 }

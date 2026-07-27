@@ -1,9 +1,10 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell
 import Quickshell.Bluetooth
 
-QtObject {
+Singleton {
     id: root
 
     property string connectedDeviceName: ""

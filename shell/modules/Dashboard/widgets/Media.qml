@@ -9,17 +9,33 @@ Item {
     id: root
 
     anchors.fill: parent
-    implicitWidth: parent.width
-    implicitHeight: parent.height
+    // Was `implicitWidth: parent.width` / `implicitHeight: parent.height`
+    // — same backwards implicit-size pattern as Overview.qml (implicit
+    // bound to the PARENT's actual size instead of flowing from this
+    // item's own content). Now bottom-up from `content`'s own natural
+    // size, which is what actually makes a per-tab custom drawer size
+    // possible once DashboardContent.qml's own wrapper forwards this
+    // upward too (that file still needs the matching fix).
+    implicitWidth: content.implicitWidth
+    implicitHeight: content.implicitHeight
 
     property real artSize: ringOuter * 0.6
     property real ringOuter: 290
     property real rowSpacing: 40
-    property real safeHeight: root.height > 0 ? root.height : 300
-    property real safeWidth: root.width > 0 ? root.width : 400
     property real strokeSize: Math.max(6, ringOuter * 0.05)
     property real trackRadius: (ringOuter - strokeSize) / 2
     property bool dropdownOpen: false   // fully self-managed player-switcher dropdown state
+
+    // Closes the dropdown on a tap anywhere else in this tab. Only
+    // active while open, so it never interferes otherwise. Nested
+    // handlers (the switcher button, dropdown items) get first chance
+    // at a tap before it reaches this outer one — see the codebase's
+    // established PointerHandler dispatch-order pattern — so those
+    // keep working normally; only genuinely-outside taps land here.
+    TapHandler {
+        enabled: root.dropdownOpen
+        onTapped: root.dropdownOpen = false
+    }
 
     function formatTime(position) {
         let seconds = (MediaService.length > 10000) ? Math.floor(position / 1000000) : Math.floor(position);
@@ -124,10 +140,13 @@ Item {
                 height: 30
                 width: contentRow.implicitWidth
 
+                readonly property bool switcherEnabled: MediaService.list.length > 1
+                readonly property bool isHovered: playerHover.hovered
+
                 RowLayout {
                     id: contentRow
                     anchors.centerIn: parent
-                    opacity: playerMouse.containsMouse || root.dropdownOpen ? 1.0 : 0.7
+                    opacity: parent.isHovered || root.dropdownOpen ? 1.0 : 0.7
                     spacing: 8
                     Behavior on opacity {
                         Anim {
@@ -159,13 +178,14 @@ Item {
                     }
                 }
 
-                MouseArea {
-                    id: playerMouse
-                    anchors.fill: parent
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    enabled: MediaService.list.length > 1
-                    hoverEnabled: true
-                    onClicked: {
+                HoverHandler {
+                    id: playerHover
+                    enabled: parent.switcherEnabled
+                    cursorShape: parent.switcherEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                }
+                TapHandler {
+                    enabled: parent.switcherEnabled
+                    onTapped: {
                         // Drive open/closed entirely via our OWN boolean —
                         // not by reading playerDropdown.opened — and don't
                         // rely on the Popup's built-in closePolicy at all
@@ -202,8 +222,11 @@ Item {
                             model: MediaService.list
 
                             delegate: Rectangle {
+                                id: playerDelegate
+                                readonly property bool isHovered: dropHover.hovered
+
                                 Layout.fillWidth: true
-                                color: dropMouse.containsMouse ? Theme.selected : "transparent"
+                                color: isHovered ? Theme.selected : "transparent"
                                 height: 32
                                 radius: 6
                                 Behavior on color {
@@ -214,7 +237,7 @@ Item {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    color: dropMouse.containsMouse ? Theme.background : Theme.foreground
+                                    color: playerDelegate.isHovered ? Theme.background : Theme.foreground
                                     font.bold: true
                                     font.family: Theme.fontName
                                     font.letterSpacing: 1.5
@@ -226,12 +249,13 @@ Item {
                                         }
                                     }
                                 }
-                                MouseArea {
-                                    id: dropMouse
-                                    anchors.fill: parent
+
+                                HoverHandler {
+                                    id: dropHover
                                     cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-                                    onClicked: {
+                                }
+                                TapHandler {
+                                    onTapped: {
                                         MediaService.selectPlayer(index);
                                         root.dropdownOpen = false;
                                     }

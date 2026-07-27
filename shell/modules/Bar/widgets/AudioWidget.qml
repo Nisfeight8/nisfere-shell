@@ -6,21 +6,29 @@ import qs.services
 BarWidget {
     id: audioWidget
 
+    property bool popupOpened: false
+
     useGradient: true
 
     RowLayout {
         spacing: 6
         Layout.alignment: Qt.AlignVCenter
         LucideIcon {
+            id: volumeIcon
             color: AudioService.muted ? Theme.color1 : Theme.selected
             size: 16
             icon: Icons.getVolumeIcon(AudioService.volume, AudioService.muted)
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: AudioService.toggleMute()
+            Behavior on color {
+                AnimColor {
+                    type: Anim.FastEffects
+                }
             }
+
+            HoverHandler {
+                cursorShape: Qt.PointingHandCursor
+            }
+            
         }
         Text {
             color: Theme.foreground
@@ -34,10 +42,15 @@ BarWidget {
         Layout.alignment: Qt.AlignVCenter
 
         LucideIcon {
-
             color: AudioService.sourceMuted ? Theme.color1 : Theme.selected
             size: 16
             icon: Icons.getMicIcon(AudioService.sourceMuted)
+
+            Behavior on color {
+                AnimColor {
+                    type: Anim.FastEffects
+                }
+            }
         }
 
         Text {
@@ -47,29 +60,44 @@ BarWidget {
             text: Math.round(AudioService.sourceVolume * 100) + "%"
         }
     }
-    MouseArea {
-        id: audioMouseArea
 
-        property bool popupOpened: false
-
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        hoverEnabled: true
+    // Was a single MouseArea handling click (open popup) + wheel
+    // (volume step) + cursor, reparented on top of the whole widget —
+    // very likely swallowing clicks meant for the small mute-toggle
+    // icon above (MouseArea hit-testing follows raw paint/z-order, and
+    // this one painted on top of everything after reparenting). Split
+    // into separate PointerHandlers: a TapHandler on a nested item
+    // (the icon) gets first chance at a point before it propagates to
+    // a shallower one, so the icon's own TapHandler can now actually
+    // win instead of always losing to this one.
+    HoverHandler {
         parent: audioWidget
-
-        onClicked: popupOpened = !popupOpened
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        parent: audioWidget
+        onTapped: audioWidget.popupOpened = !audioWidget.popupOpened
+    }
+    // WheelHandler proved unreliable here in practice — falling back
+    // to a plain MouseArea just for wheel scroll (acceptedButtons:
+    // Qt.NoButton so it never competes with the TapHandler above for
+    // clicks; MouseArea.onWheel is the mature, known-working API).
+    MouseArea {
+        parent: audioWidget
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        cursorShape: Qt.PointingHandCursor
         onWheel: wheel => {
-            let step = 0.05;
-            if (wheel.angleDelta.y > 0)
-                AudioService.setVolume(AudioService.volume + step);
-            else
-                AudioService.setVolume(AudioService.volume - step);
+            const step = 0.05;
+            const delta = wheel.angleDelta.y > 0 ? step : -step;
+            AudioService.setVolume(Math.max(0, Math.min(1, AudioService.volume + delta)));
         }
     }
+
     BarPopup {
         id: audioPopup
 
-        showPopup: audioMouseArea.popupOpened
+        showPopup: audioWidget.popupOpened
         targetItem: audioWidget
 
         ColumnLayout {
@@ -115,18 +143,40 @@ BarWidget {
                     spacing: 10
 
                     LucideIcon {
+                        id: outputMuteIcon
                         color: AudioService.muted ? Theme.color1 : Theme.foreground
                         size: 16
                         icon: AudioService.muted ? "volume-x" : "volume-2"
-                        MouseArea {
-                            anchors.fill: parent
+
+                        Behavior on color {
+                            AnimColor {
+                                type: Anim.FastEffects
+                            }
+                        }
+
+                        HoverHandler {
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: AudioService.toggleMute()
+                        }
+                        TapHandler {
+                            onTapped: AudioService.toggleMute()
                         }
                     }
                     CustomSlider {
+                        id: outputSlider
                         Layout.fillWidth: true
-                        value: AudioService.volume
+
+                        // Same fix as SliderRow.qml — a plain `value:`
+                        // binding gets destroyed the first time the
+                        // user drags, so this slider would stop
+                        // following AudioService.volume if it ever
+                        // changed externally (e.g. a hardware key).
+                        Binding {
+                            target: outputSlider
+                            property: "value"
+                            value: AudioService.volume
+                            when: !outputSlider.pressed
+                            restoreMode: Binding.RestoreNone
+                        }
 
                         onMoved: AudioService.setVolume(value)
                     }
@@ -168,17 +218,31 @@ BarWidget {
 
                             icon: Icons.getMicIcon(AudioService.sourceMuted)
 
-                            MouseArea {
-                                anchors.fill: parent
+                            Behavior on color {
+                                AnimColor {
+                                    type: Anim.FastEffects
+                                }
+                            }
+
+                            HoverHandler {
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: AudioService.toggleSourceMute()
+                            }
+                            TapHandler {
+                                onTapped: AudioService.toggleSourceMute()
                             }
                         }
-
                     }
                     CustomSlider {
+                        id: inputSlider
                         Layout.fillWidth: true
-                        value: AudioService.sourceVolume
+
+                        Binding {
+                            target: inputSlider
+                            property: "value"
+                            value: AudioService.sourceVolume
+                            when: !inputSlider.pressed
+                            restoreMode: Binding.RestoreNone
+                        }
 
                         onMoved: AudioService.setSourceVolume(value)
                     }

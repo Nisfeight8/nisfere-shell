@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Singleton {
     id: sysInfo
 
     property string osName: "Loading..."

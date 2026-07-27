@@ -1,13 +1,34 @@
 import QtQuick
-import Quickshell
 import qs.core
 import qs.services
-import "Drawer"
+import "drawer"
 
-PanelWindow {
+Item {
     id: root
 
-    // ── Public API — unchanged from the original BaseDrawer ────────
+    // Which screen this drawer instance belongs to — set explicitly by
+    // whoever instantiates it (ScreenBorder.qml), same pattern as
+    // triggerHovered below. Not every BaseDrawer user needs this
+    // (OSD/NotificationPopup's `opened` has nothing to do with
+    // activeScreenName at all), so it's just a plain fact exposed
+    // here, unused unless a specific drawer's `opened` expression
+    // references it.
+    property var screen: null
+    readonly property string screenName: screen?.name ?? ""
+
+    // Externally, callers set openedRequest (simple — "what makes me
+    // want to open", e.g. `openedRequest: ShellState.dashboardOpened`)
+    // — the actual `opened` below combines that with a screen check,
+    // but ONLY when a screen was actually provided. OSD/NotificationPopup
+    // never set `screen:` (stays null), so their `opened` is just
+    // `openedRequest` unchanged — this centralizes the multi-screen
+    // gating in one place instead of repeating it in every drawer file
+    // that does care about it (Dashboard/ControlCenter/SystemDrawer/
+    // QuickActions).
+    property bool openedRequest: false
+    readonly property bool opened: screen !== null ? (openedRequest && ShellState.activeScreenName === screenName) : openedRequest
+
+    // ── Public API ───────────────────────────────────────────────────
     property int edge: Qt.LeftEdge
     property bool cornerMode: false
     property int cornerSecondaryEdge: Qt.TopEdge
@@ -19,49 +40,44 @@ PanelWindow {
     property real maxPanelHeight: -1
 
     property real screenOffset: 0
-    property bool toggleOnHover: true
     property bool asynchronousLoad: true
     property Component contentComponent
 
-    property bool opened: false
+    property bool _wasHovered: false
 
-    signal openRequest
+    property bool triggerHovered: false
+    property bool toggleOnHover: true
+
     signal closeRequest
-    signal toggleRequest
 
     readonly property bool isHorizontal: geometry.isHorizontal
     readonly property real panelWidth: geometry.panelWidth
     readonly property real panelHeight: geometry.panelHeight
+    readonly property alias panelItem: panelItem
 
-    // ── Open/close animation drives geometry.offset ─────────────────
-    property real offset: 1
+    // Was root's own property, driven by two inline Anim blocks — now
+    // sourced from the shared OpenCloseOffset engine (see
+    // core/anim/OpenCloseOffset.qml). Kept as a readonly alias so any
+    // existing external `.offset` reads keep working unchanged.
+    readonly property alias offset: motion.offset
 
     onOpenedChanged: {
-        if (opened) {
-            closeOffsetAnim.stop();
-            openOffsetAnim.start();
-        } else {
-            openOffsetAnim.stop();
-            closeOffsetAnim.start();
-        }
+        if (opened)
+            _wasHovered = root.triggerHovered || contentHover.hovered;
+        else
+            _wasHovered = false;
     }
 
-    Anim {
-        id: openOffsetAnim
-        target: root
-        property: "offset"
-        to: 0
-        type: Anim.DefaultSpatial
-    }
-    Anim {
-        id: closeOffsetAnim
-        target: root
-        property: "offset"
-        to: 1
-        type: Anim.DefaultSpatial
+    onTriggerHoveredChanged: {
+        if (triggerHovered && root.opened)
+            root._wasHovered = true;
     }
 
-    // ── Geometry ─────────────────────────────────────────────────────
+    OpenCloseOffset {
+        id: motion
+        opened: root.opened
+    }
+
     DrawerGeometry {
         id: geometry
         edge: root.edge
@@ -81,127 +97,84 @@ PanelWindow {
         screenOffset: root.screenOffset
     }
 
-    // ── Window setup ──────────────────────────────────────────────────
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    focusable: root.opened
-    visible: true
+    anchors.fill: parent
 
-    implicitWidth: geometry.windowWidth
-    implicitHeight: geometry.windowHeight
-
-    // Smooths the actual Wayland surface resize request (this is what
-    // the compositor sees). Without this, implicitWidth/Height jump
-    // instantly on tab switches with different content sizes, and the
-    // compositor's resize round-trip lag becomes visible as a brief gap
-    // between the panel and the screen edge. The internal panelItem
-    // stays instant (see below) — only the outer window geometry here
-    // is eased, so content itself never visibly drifts, only reveals/
-    // retracts smoothly as the window's clip region grows/shrinks.
-    // Behavior on implicitWidth {
-    //     Anim {
-    //         type: Anim.DefaultSpatial
-    //     }
-    // }
-    // Behavior on implicitHeight {
-    //     Anim {
-    //         type: Anim.DefaultSpatial
-    //     }
-    // }
-
-    anchors {
-        top: geometry.anchorTop
-        bottom: geometry.anchorBottom
-        left: geometry.anchorLeft
-        right: geometry.anchorRight
-    }
-    margins {
-        top: geometry.marginTop
-        bottom: geometry.marginBottom
-        left: geometry.marginLeft
-        right: geometry.marginRight
+    Timer {
+        id: autoCloseTimer
+        interval: 150
+        running: root.toggleOnHover && root.opened && root._wasHovered && !root.triggerHovered && !contentHover.hovered
+        onTriggered: root.closeRequest()
     }
 
-    // ── Hover-to-open/close ────────────────────────────────────────────
-    // Direct child of the PanelWindow root — matches the original
-    // BaseDrawer hierarchy exactly, avoiding the extra Item-wrapper
-    // layer that caused cursor-shape-change hover flicker.
-    DrawerHoverEdge {
-        enabled: root.toggleOnHover
-        onOpenRequested: root.openRequest()
-        onCloseRequested: root.closeRequest()
-    }
-
-    // ── Panel body: background shape + hosted content ──────────────────
     Item {
-        anchors.fill: parent
+        id: panelItem
+
+        height: (root.isHorizontal && !root.cornerMode) ? parent.height : root.panelHeight
+        width: (!root.isHorizontal && !root.cornerMode) ? root.panelWidth : root.panelWidth
+
         clip: true
+        visible: root.offset < 1
 
-        Item {
-            id: panelItem
-            height: root.isHorizontal ? parent.height : root.panelHeight
-            width: root.isHorizontal ? root.panelWidth : parent.width
+        x: {
+            if (root.edge === Qt.LeftEdge)
+                return root.edgeMargin - geometry.slideDistanceH;
+            if (root.edge === Qt.RightEdge)
+                return parent.width - width - root.edgeMargin + geometry.slideDistanceH;
 
-            // NOTE: intentionally NO Behavior on height/width here.
-            // The slide open/close animation is driven entirely by
-            // `offset` → margins (see DrawerGeometry), not by resizing
-            // this Item. If content-driven size changes (e.g. switching
-            // tabs inside a drawer) were animated here too, the container
-            // and the AnimLoader's fade would run on independent timelines,
-            // causing centered content to visibly drift sideways/vertically
-            // while the container was mid-resize. Keeping this instant means
-            // any resize happens in a single frame — invisible in practice
-            // since it's paired with the content fade in the AnimLoader used
-            // inside contentComponent (see the "resize while invisible"
-            // pattern in AnimLoader.qml).
-
-            // Position computed directly from geometry's INSTANT target
-            // values (geometry.windowWidth/windowHeight) — NOT from
-            // parent.width/height, which now tracks the ANIMATING outer
-            // window size (see the Behavior on implicitWidth/Height above).
-            // Using parent.* here would make panelItem's position
-            // recalculate every frame as the window animates, while its
-            // size stays instant — causing visible drift/flicker in the
-            // shrink direction especially. Binding to geometry's stable
-            // instant values means panelItem's position AND size both
-            // settle in the same frame; only the outer window's clip
-            // region grows/shrinks around it, giving a clean reveal
-            // with zero internal motion.
-            x: {
-                if (geometry.anchorLeft)
-                    return root.isHorizontal ? root.edgeMargin : 0;
-                if (geometry.anchorRight)
-                    return geometry.windowWidth - width - (root.isHorizontal ? root.edgeMargin : 0);
-                return 0;
-            }
-            y: {
-                if (geometry.anchorTop)
-                    return root.isHorizontal ? 0 : root.edgeMargin;
-                if (geometry.anchorBottom)
-                    return geometry.windowHeight - height - (root.isHorizontal ? 0 : root.edgeMargin);
-                return 0;
+            if (root.cornerMode) {
+                if (root.cornerSecondaryEdge === Qt.LeftEdge)
+                    return root.edgeMargin;
+                if (root.cornerSecondaryEdge === Qt.RightEdge)
+                    return parent.width - width - root.edgeMargin;
             }
 
-            DrawerBackground {
-                anchors.fill: parent
-                edge: root.edge
-                cornerMode: root.cornerMode
-                opened: root.opened
-                bgColor: Theme.background
+            return (parent.width - width) / 2;
+        }
+
+        y: {
+            if (root.edge === Qt.TopEdge)
+                return root.screenOffset - geometry.slideDistanceV;
+            if (root.edge === Qt.BottomEdge)
+                return parent.height - height - root.edgeMargin + geometry.slideDistanceV;
+
+            if (root.cornerMode) {
+                if (root.cornerSecondaryEdge === Qt.TopEdge)
+                    return root.screenOffset;
+                if (root.cornerSecondaryEdge === Qt.BottomEdge)
+                    return parent.height - height - root.edgeMargin;
             }
 
-            DrawerContentHost {
-                id: contentHost
-                anchors.fill: parent
-                contentComponent: root.contentComponent
-                opened: root.opened
-                asynchronousLoad: root.asynchronousLoad
+            return (parent.height - height) / 2;
+        }
 
-                marginTop: geometry._mTop
-                marginBottom: geometry._mBottom
-                marginLeft: geometry._mLeft
-                marginRight: geometry._mRight
+        HoverHandler {
+            id: contentHover
+            onHoveredChanged: {
+                if (hovered && root.opened)
+                    root._wasHovered = true;
             }
+        }
+
+        DrawerBackground {
+            anchors.fill: parent
+            edge: root.edge
+            cornerMode: root.cornerMode
+            cornerSecondaryEdge: root.cornerSecondaryEdge
+            opened: root.opened
+            bgColor: Theme.background
+        }
+
+        DrawerContentHost {
+            id: contentHost
+            anchors.fill: parent
+            contentComponent: root.contentComponent
+            opened: root.opened
+            asynchronousLoad: root.asynchronousLoad
+
+            marginTop: geometry._mTop
+            marginBottom: geometry._mBottom
+            marginLeft: geometry._mLeft
+            marginRight: geometry._mRight
         }
     }
 }

@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 
-QtObject {
+Singleton {
     id: root
 
     property bool dndEnabled: false

@@ -23,8 +23,8 @@ IntensityAmount=0
 IntensityEffect=0
 
 [Colors:Button]
-BackgroundAlternate={{border_color|rgb}}
-BackgroundNormal={{background_alt|rgb}}
+BackgroundAlternate={{borderColor|rgb}}
+BackgroundNormal={{backgroundAlt|rgb}}
 DecorationFocus={{color5|rgb}}
 DecorationHover={{color5|rgb}}
 ForegroundActive={{color5|rgb}}
@@ -52,7 +52,7 @@ ForegroundVisited={{background|rgb}}
 
 [Colors:Tooltip]
 BackgroundAlternate={{background|rgb}}
-BackgroundNormal={{background_alt|rgb}}
+BackgroundNormal={{backgroundAlt|rgb}}
 DecorationFocus={{color5|rgb}}
 DecorationHover={{color5|rgb}}
 ForegroundActive={{color5|rgb}}
@@ -65,7 +65,7 @@ ForegroundPositive={{color2|rgb}}
 ForegroundVisited={{color13|rgb}}
 
 [Colors:View]
-BackgroundAlternate={{background_alt|rgb}}
+BackgroundAlternate={{backgroundAlt|rgb}}
 BackgroundNormal={{background|rgb}}
 DecorationFocus={{color5|rgb}}
 DecorationHover={{color5|rgb}}
@@ -79,7 +79,7 @@ ForegroundPositive={{color2|rgb}}
 ForegroundVisited={{color13|rgb}}
 
 [Colors:Window]
-BackgroundAlternate={{background_alt|rgb}}
+BackgroundAlternate={{backgroundAlt|rgb}}
 BackgroundNormal={{background|rgb}}
 DecorationFocus={{color5|rgb}}
 DecorationHover={{color5|rgb}}

@@ -18,7 +18,8 @@ Rectangle {
     property color baseColor: Theme.selected
 
     readonly property bool isHovered: hover.hovered
-
+    readonly property int _horizontalPadding: 16
+    implicitWidth: label.implicitWidth + _horizontalPadding * 2
     height: 40
     radius: Theme.radius
     color: isHovered ? baseColor : "transparent"

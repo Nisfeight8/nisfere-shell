@@ -6,6 +6,13 @@ import qs.services
 Item {
     id: root
     anchors.fill: parent
+    // Was missing entirely — rowLayout already correctly computes its
+    // own implicit size bottom-up from its children (SideMenu's fixed
+    // implicitWidth, the divider, and AnimLoader's own forwarded
+    // content size), it just never reached root. Same fix as
+    // Media.qml/Weather.qml, for the same reason (per-tab custom size).
+    implicitWidth: rowLayout.implicitWidth
+    implicitHeight: rowLayout.implicitHeight
 
     Component {
         id: tasksComp
@@ -17,6 +24,7 @@ Item {
     }
 
     RowLayout {
+        id: rowLayout
         anchors.fill: parent
         spacing: 12
 

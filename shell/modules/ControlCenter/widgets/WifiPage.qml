@@ -31,9 +31,12 @@ Item {
                 onToggled: NetworkService.wifi.toggle()
             }
         }
+        // Was `title: "Available Networks"` — SectionLabel is a plain
+        // Text (see SectionLabel.qml), not PageHeader; it only has the
+        // native `text` property, no `title`.
         SectionLabel {
             Layout.bottomMargin: 6
-            title: "Available Networks"
+            text: "Available Networks"
         }
         // ── Network List (WiFi ON) ────────────────────────────────
         ScrollView {
@@ -64,9 +67,8 @@ Item {
                         clip: true
 
                         Behavior on implicitHeight {
-                            NumberAnimation {
-                                duration: 220
-                                easing.type: Easing.OutCubic
+                            Anim {
+                                type: Anim.FastToggle
                             }
                         }
 
@@ -189,8 +191,8 @@ Item {
                             spacing: 8
                             opacity: netCard.expanded ? 1.0 : 0.0
                             Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 160
+                                Anim {
+                                    type: Anim.FastEffects
                                 }
                             }
 
@@ -202,7 +204,12 @@ Item {
                                 color: Theme.foreground
                                 echoMode: TextInput.Password
                                 placeholderText: "Password…"
-                                placeholderTextColor: netCard.hasError ? Qt.alpha(Theme.color1, 0.6) : Theme.selected
+                                // Was Qt.alpha(Theme.color1, 0.6) — not a
+                                // real Qt Quick function (same bug we
+                                // already fixed once in GlassBackground.qml).
+                                // Qt.rgba(r,g,b,a) is the established pattern
+                                // used everywhere else in the shell.
+                                placeholderTextColor: netCard.hasError ? Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.6) : Theme.selected
                                 font.pixelSize: 13
                                 leftPadding: 10
                                 rightPadding: 10
@@ -258,8 +265,8 @@ Item {
                             opacity: netCard.hasError ? 1.0 : 0.0
                             visible: opacity > 0
                             Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 150
+                                Anim {
+                                    type: Anim.FastEffects
                                 }
                             }
                         }

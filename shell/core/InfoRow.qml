@@ -10,8 +10,8 @@ RowLayout {
 
     property string label: ""
     property string value: ""
-    property color  valueColor: Theme.foreground
-    property bool   valueBold: true
+    property color valueColor: Theme.foreground
+    property bool valueBold: true
 
     Layout.fillWidth: true
 
@@ -29,5 +29,15 @@ RowLayout {
         font.family: Theme.fontName
         font.pixelSize: 13
         font.bold: root.valueBold
+
+        // Was missing — EthernetPage (and presumably Wifi/Bluetooth)
+        // swap valueColor based on connection state (Theme.selected vs
+        // Theme.foreground); without this it snapped instantly instead
+        // of matching the smooth transitions everywhere else.
+        Behavior on color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
     }
 }

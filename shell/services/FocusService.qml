@@ -1,8 +1,9 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import qs.services
 
-QtObject {
+Singleton {
     id: root
 
     // Durations are adjustable now — these are just the starting

@@ -27,13 +27,25 @@ Item {
     implicitWidth: 120
 
     Behavior on animatedValue {
-        NumberAnimation {
-            duration: 800
-            easing.type: Easing.OutCubic
+        id: valueBehavior
+        Anim {
+            type: Anim.DataReveal
         }
     }
 
     onValueChanged: animatedValue = value
+
+    Component.onCompleted: {
+        // Skip the fill-from-zero reveal on initial mount — only
+        // animate genuine value CHANGES afterwards. Otherwise every
+        // time this gauge gets lazily re-loaded (e.g. inside a panel
+        // that opens/closes via a Loader), it replays the same "count
+        // up from zero" animation even when the value hasn't changed
+        // at all since the last time it was visible.
+        valueBehavior.enabled = false;
+        animatedValue = value;
+        valueBehavior.enabled = true;
+    }
 
     Shape {
         anchors.fill: parent

@@ -33,9 +33,11 @@ Item {
             Layout.fillWidth: true
             Layout.bottomMargin: 5
 
+            // Was `title: "..."` — SectionLabel is a plain Text (see
+            // SectionLabel.qml), only has the native `text` property.
             SectionLabel {
                 Layout.fillWidth: true
-                title: "Available & Saved Devices"
+                text: "Available & Saved Devices"
             }
 
             NavTile {
@@ -86,6 +88,12 @@ Item {
                                 color: model.connected ? Theme.selected : Theme.foreground
                                 size: 20
                                 icon: model.batteryAvailable ? "headphones" : "bluetooth"
+
+                                Behavior on color {
+                                    AnimColor {
+                                        type: Anim.FastEffects
+                                    }
+                                }
                             }
 
                             ColumnLayout {
@@ -115,6 +123,12 @@ Item {
                                             if (model.paired)
                                                 return "Saved";
                                             return "Available";
+                                        }
+
+                                        Behavior on color {
+                                            AnimColor {
+                                                type: Anim.FastEffects
+                                            }
                                         }
                                     }
 
@@ -150,14 +164,21 @@ Item {
                                 borderColor: model.connected ? Theme.color1 : Theme.selected
                                 contrastColor: Theme.background
                                 hoverColor: model.connected ? Theme.color1 : Theme.selected
+                                // Was bare expression-statements with no
+                                // `return` inside an if/else block — relies
+                                // on JS completion-value semantics to
+                                // implicitly "return" whichever branch ran.
+                                // Probably works, but every other multi-
+                                // branch text binding in this codebase uses
+                                // explicit `return` — made consistent (and
+                                // immune to breaking if a line is ever added
+                                // after the if/else later).
                                 tooltipText: {
                                     if (model.connected)
-                                        "Disconnect";
-                                    else if (model.paired) {
-                                        "Trust";
-                                    } else {
-                                        "Connect";
-                                    }
+                                        return "Disconnect";
+                                    if (model.paired)
+                                        return "Trust";
+                                    return "Connect";
                                 }
                                 icon: model.pairing ? "refresh-cw" : (model.connected ? "x" : "check")
 

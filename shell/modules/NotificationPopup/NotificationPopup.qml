@@ -1,13 +1,18 @@
 import QtQuick
-import QtQuick.Layouts
-import Quickshell.Wayland
 import qs.core
 import qs.services
 
-BaseDrawer {
-    id: popupWindow
+// Same two-mode approach as OSD.qml — see that file's comments for
+// the full reasoning.
+Item {
+    id: root
+    anchors.fill: parent
 
-    // ── State ────────────────────────────────────────────────────────────
+    property bool hasFullscreen: false
+
+    readonly property Item panelItem: modeLoader.item ? modeLoader.item.panelItem : null
+
+    // ── State (shared by both modes) ──────────────────────────────────────
     property var currentNotif: null
     property real notifProgress: 1.0
 
@@ -17,27 +22,14 @@ BaseDrawer {
     readonly property bool hasAppIcon: hasNotif && currentNotif.nAppIcon !== ""
     readonly property bool hasActions: hasNotif && currentNotif.actions && currentNotif.actions.length > 0
 
-    // ── BaseDrawer config ─────────────────────────────────────────────────
-    WlrLayershell.layer: WlrLayer.Overlay
+    property bool shown: hasNotif
 
-    edge: Qt.TopEdge
-    edgeMargin: 0
-    screenOffset: Theme.barHeight
-    toggleOnHover: false
-
-    minPanelWidth: 500
-    maxPanelWidth: 500
-
-    opened: hasNotif
-    onCloseRequest: currentNotif = null
-
-    // ── Notification service ──────────────────────────────────────────────
     Connections {
         target: NotificationService
         function onShowPopup(notifData) {
-            popupWindow.currentNotif = notifData;
+            root.currentNotif = notifData;
             hideTimer.restart();
-            popupWindow.notifProgress = 1.0;
+            root.notifProgress = 1.0;
             progressAnim.restart();
         }
     }
@@ -45,12 +37,12 @@ BaseDrawer {
     Timer {
         id: hideTimer
         interval: 5000
-        onTriggered: popupWindow.currentNotif = null
+        onTriggered: root.currentNotif = null
     }
 
     NumberAnimation {
         id: progressAnim
-        target: popupWindow
+        target: root
         property: "notifProgress"
         from: 1.0
         to: 0.0
@@ -58,214 +50,95 @@ BaseDrawer {
         easing.type: Easing.Linear
     }
 
-    // ── Content ───────────────────────────────────────────────────────────
-    contentComponent: Component {
+    // ── Mode switch — only ONE of these is ever instantiated ──────────────
+    Loader {
+        id: modeLoader
+        anchors.fill: parent
+        sourceComponent: root.hasFullscreen ? popupModeComp : drawerModeComp
+    }
+
+    // ── Mode 1: NOT fullscreen — BaseDrawer, cornerMode bottom-right ──────
+    Component {
+        id: drawerModeComp
+        BaseDrawer {
+            cornerMode: true
+            edge: Qt.RightEdge
+            cornerSecondaryEdge: Qt.BottomEdge
+            toggleOnHover: false
+            openedRequest: root.shown
+
+            contentComponent: Component {
+                NotificationContent {
+                    currentNotif: root.currentNotif
+                    notifProgress: root.notifProgress
+                    isCritical: root.isCritical
+                    hasImage: root.hasImage
+                    hasAppIcon: root.hasAppIcon
+                    hasActions: root.hasActions
+
+                    onDismissRequested: root.currentNotif = null
+                    onActionInvoked: action => {
+                        action.invoke();
+                        root.currentNotif = null;
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Mode 2: fullscreen — simple floating popup, no drawer chrome ─────
+    Component {
+        id: popupModeComp
         Item {
-            id: mainContainer
-            implicitHeight: mainColumn.implicitHeight + 30
-            width: parent.width
+            id: popupWrapper
+            anchors.fill: parent
+            readonly property alias panelItem: card
 
-            ColumnLayout {
-                id: mainColumn
+            Rectangle {
+                id: card
                 anchors {
-                    fill: parent
-                    margins: 15
+                    bottom: parent.bottom
+                    right: parent.right
+                    bottomMargin: Theme.panelBorderSize + 20
+                    rightMargin: Theme.panelBorderSize + 20
                 }
-                spacing: 12
+                width: 450
+                // FIX — same bug as OSD.qml had: no explicit height
+                // means this Rectangle defaults to 0, so with
+                // anchors.bottom it renders squashed against the very
+                // bottom edge with virtually nothing visible. Bind to
+                // the content's own implicitHeight instead.
+                height: contentInner.implicitHeight
+                radius: Theme.radius
+                clip: true
+                color: Theme.background
+                border.color: Theme.borderColor
+                border.width: Theme.widgetBorderWidth
 
-                // ── Progress bar ──────────────────────────────────────────
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 3
-
-                    Rectangle {
-                        anchors {
-                            left: parent.left
-                            top: parent.top
-                            bottom: parent.bottom
-                        }
-                        color: Theme.selected
-                        width: parent.width * popupWindow.notifProgress
+                opacity: root.shown ? 1.0 : 0.0
+                transform: Translate {
+                    y: root.shown ? 0 : 30
+                }
+                Behavior on opacity {
+                    Anim {
+                        type: Anim.DefaultEffects
                     }
                 }
 
-                // ── Main row: icon + text ─────────────────────────────────
-                RowLayout {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.fillWidth: true
-                    spacing: 13
+                NotificationContent {
+                    id: contentInner
+                    anchors.fill: parent
+                    currentNotif: root.currentNotif
+                    notifProgress: root.notifProgress
+                    isCritical: root.isCritical
+                    hasImage: root.hasImage
+                    hasAppIcon: root.hasAppIcon
+                    hasActions: root.hasActions
 
-                    Rectangle {
-                        readonly property int _size: popupWindow.hasImage ? 120 : 56
-
-                        Layout.alignment: Qt.AlignTop
-                        Layout.preferredWidth: _size
-                        Layout.preferredHeight: _size
-                        border.color: Theme.borderColor
-                        border.width: Theme.widgetBorderWidth
-                        color: Theme.backgroundAlt
-                        radius: Theme.radius * 1.2
-
-                        LucideIcon {
-                            anchors.centerIn: parent
-                            icon: popupWindow.isCritical ? "alert-triangle" : "bell"
-                            color: popupWindow.isCritical ? Theme.color1 : Theme.selected
-                            size: 24
-                            visible: !popupWindow.hasAppIcon && !popupWindow.hasImage
-                        }
-
-                        Image {
-                            anchors {
-                                fill: parent
-                                margins: popupWindow.hasImage ? 0 : 8
-                            }
-                            fillMode: Image.PreserveAspectCrop
-                            source: {
-                                if (popupWindow.hasAppIcon)
-                                    return popupWindow.currentNotif.nAppIcon;
-                                if (popupWindow.hasImage)
-                                    return popupWindow.currentNotif.nImage;
-                                return "";
-                            }
-                            sourceSize.width: parent._size
-                            sourceSize.height: parent._size
-                            visible: source !== ""
-                        }
-                    }
-
-                    // Text content
-                    ColumnLayout {
-                        Layout.alignment: Qt.AlignTop
-                        Layout.fillWidth: true
-                        spacing: 4
-
-                        // Header row: app name + time + close
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Text {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: popupWindow.hasNotif ? popupWindow.currentNotif.nAppName.toUpperCase() : ""
-                                color: popupWindow.isCritical ? Theme.color1 : Theme.selected
-                                font.bold: true
-                                font.family: Theme.fontName
-                                font.pixelSize: 12
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: popupWindow.hasNotif ? popupWindow.currentNotif.timeReceived : ""
-                                color: Theme.foreground
-                                font.family: Theme.fontName
-                                font.pixelSize: 11
-                                opacity: 0.6
-                            }
-
-                            // Close button — hover-solid, matches NotificationCenter style
-                            IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.leftMargin: 4
-                                icon: "x"
-                                size: 24
-                                iconSize: 14
-                                radius: 12
-                                hoverSolid: true
-                                hoverColor: Theme.color1
-                                contrastColor: Theme.background
-                                fixedIconColor: Theme.foreground
-                                idleOpacity: 0.6
-                                onTapped: {
-                                    if (popupWindow.hasNotif)
-                                        NotificationService.dismissNotification(popupWindow.currentNotif);
-                                    popupWindow.currentNotif = null;
-                                }
-                            }
-                        }
-
-                        // Summary
-                        Text {
-                            Layout.fillWidth: true
-                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nSummary : ""
-                            color: Theme.foreground
-                            elide: Text.ElideRight
-                            font.bold: true
-                            font.family: Theme.fontName
-                            font.pixelSize: 15
-                        }
-
-                        // Body
-                        Text {
-                            Layout.fillWidth: true
-                            text: popupWindow.hasNotif ? popupWindow.currentNotif.nBody : ""
-                            color: Theme.foreground
-                            elide: Text.ElideRight
-                            font.family: Theme.fontName
-                            font.pixelSize: 13
-                            maximumLineCount: 3
-                            opacity: 0.8
-                            wrapMode: Text.Wrap
-                        }
-                    }
-                }
-
-                // ── Actions ───────────────────────────────────────────────
-                // Kept as Rectangle — these are full-width text-label buttons,
-                // a different shape than the icon-only IconButton component.
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-                    visible: popupWindow.hasActions
-
-                    Repeater {
-                        model: popupWindow.hasActions ? popupWindow.currentNotif.actions : []
-
-                        delegate: Rectangle {
-                            id: actionBtn
-                            property bool isHovered: false
-
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 36
-                            radius: Theme.radius
-                            border.width: 1
-                            border.color: Theme.borderColor
-                            color: isHovered ? Theme.selected : "transparent"
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 120
-                                }
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData.text
-                                color: actionBtn.isHovered ? Theme.background : Theme.foreground
-                                font.bold: true
-                                font.family: Theme.fontName
-                                font.pixelSize: 12
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 120
-                                    }
-                                }
-                            }
-
-                            HoverHandler {
-                                cursorShape: Qt.PointingHandCursor
-                                onHoveredChanged: actionBtn.isHovered = hovered
-                            }
-                            TapHandler {
-                                onTapped: {
-                                    if (popupWindow.hasNotif)
-                                        NotificationService.dismissNotification(popupWindow.currentNotif);
-                                    modelData.invoke();
-                                    popupWindow.currentNotif = null;
-                                }
-                            }
-                        }
+                    onDismissRequested: root.currentNotif = null
+                    onActionInvoked: action => {
+                        action.invoke();
+                        root.currentNotif = null;
                     }
                 }
             }

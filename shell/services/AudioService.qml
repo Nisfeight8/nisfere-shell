@@ -1,8 +1,9 @@
 pragma Singleton
 import QtQuick
 import Quickshell.Services.Pipewire
+import Quickshell
 
-Item {
+Singleton {
     id: root
 
     readonly property bool muted: !!sink?.audio?.muted

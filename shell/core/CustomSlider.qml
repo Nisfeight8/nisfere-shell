@@ -40,8 +40,8 @@ Slider {
         y: control.topPadding + control.availableHeight / 2 - height / 2
 
         Behavior on color {
-            ColorAnimation {
-                duration: 150
+            AnimColor {
+                type: Anim.FastEffects
             }
         }
     }

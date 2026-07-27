@@ -17,10 +17,16 @@ Item {
 
         LucideIcon {
             Layout.alignment: Qt.AlignVCenter
-            color: (BatteryService.percentage <= 20 && !BatteryService.isCharging)
+            color: (BatteryService.percentage <= 15 && !BatteryService.isCharging)
                 ? Theme.color1 : Theme.selected
             size: 34
             icon: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
+
+            Behavior on color {
+                AnimColor {
+                    type: Anim.FastEffects
+                }
+            }
         }
 
         ColumnLayout {
@@ -47,7 +53,7 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 6 
+                Layout.preferredHeight: 6
                 radius: 3
                 color: Theme.backgroundAlt
 
@@ -59,9 +65,13 @@ Item {
                     width: parent.width * (BatteryService.percentage / 100)
 
                     Behavior on width {
-                        NumberAnimation {
-                            duration: 300
-                            easing.type: Easing.OutCubic
+                        Anim {
+                            type: Anim.DefaultEffects
+                        }
+                    }
+                    Behavior on color {
+                        AnimColor {
+                            type: Anim.FastEffects
                         }
                     }
                 }

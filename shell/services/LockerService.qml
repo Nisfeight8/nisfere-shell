@@ -1,8 +1,9 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Services.Pam
 
-QtObject {
+Singleton {
     id: root
     signal unlocked
     signal failed(string errorMessage)

@@ -22,31 +22,34 @@ BarWidget {
             height: 20
             width: 20
 
+            readonly property bool isHovered: iconHover.hovered
+
             Image {
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 source: modelData.icon
-            }
-            MouseArea {
-                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-                opacity: containsMouse ? 0.7 : 1.0
+                opacity: isHovered ? 0.7 : 1.0
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 150
+                    Anim {
+                        type: Anim.FastEffects
                     }
                 }
+            }
 
-                onClicked: mouse => {
-                    if (mouse.button === Qt.LeftButton) {
+            HoverHandler {
+                id: iconHover
+                cursorShape: Qt.PointingHandCursor
+            }
+            TapHandler {
+                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                onTapped: (eventPoint, button) => {
+                    if (button === Qt.LeftButton) {
                         modelData.activate();
-                    } else if (mouse.button === Qt.MiddleButton) {
+                    } else if (button === Qt.MiddleButton) {
                         modelData.secondaryActivate();
-                    } else if (mouse.button === Qt.RightButton) {
+                    } else if (button === Qt.RightButton) {
                         if (modelData.hasMenu) {
                             if (trayWidget.activeMenuHandle === modelData.menu) {
                                 trayWidget.activeMenuHandle = null;
@@ -56,8 +59,17 @@ BarWidget {
                         }
                     }
                 }
+            }
+            // WheelHandler proved unreliable in AudioWidget — same
+            // fallback here: plain MouseArea just for wheel scroll,
+            // acceptedButtons: Qt.NoButton so it never competes with
+            // the TapHandler above for clicks.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                cursorShape: Qt.PointingHandCursor
                 onWheel: wheel => {
-                    let delta = wheel.angleDelta.y > 0 ? 1 : -1;
+                    const delta = wheel.angleDelta.y > 0 ? 1 : -1;
                     modelData.scroll(delta, false);
                 }
             }
@@ -76,18 +88,36 @@ BarWidget {
 
         ListView {
             id: menuList
-
+            // Was `width: 200` — a raw actual-size assignment on the
+            // direct content of PopupContainer, which now wraps its
+            // content in a WrapperItem (see PopupContainer.qml). Per
+            // the Quickshell docs' own WrapperItem warning, the child
+            // must expose implicitWidth/implicitHeight, never set its
+            // own actual width/height directly — WrapperItem manages
+            // that FOR it, based on implicit size. With a raw `width:`
+            // here, implicitWidth stayed 0, so WrapperItem sized (and
+            // overrode) this down to ~nothing, cutting off every
+            // menu item's text. implicitWidth is the fix.
+            implicitWidth: 200
             implicitHeight: contentHeight
             interactive: false
             model: menuOpener.children
             spacing: 4
-            width: 200
 
             delegate: Rectangle {
-                color: modelData.isSeparator ? Theme.backgroundAlt : (itemMouseArea.containsMouse ? Theme.backgroundAlt : "transparent")
+                id: menuDelegate
+                readonly property bool isHovered: itemHover.hovered
+
+                color: modelData.isSeparator ? Theme.backgroundAlt : (isHovered ? Theme.backgroundAlt : "transparent")
                 height: modelData.isSeparator ? 1 : 30
                 radius: 6
                 width: menuList.width
+
+                Behavior on color {
+                    AnimColor {
+                        type: Anim.FastEffects
+                    }
+                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -111,15 +141,15 @@ BarWidget {
                         text: modelData.text || ""
                     }
                 }
-                MouseArea {
-                    id: itemMouseArea
 
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                HoverHandler {
+                    id: itemHover
                     enabled: !modelData.isSeparator
-                    hoverEnabled: !modelData.isSeparator
-
-                    onClicked: {
+                    cursorShape: Qt.PointingHandCursor
+                }
+                TapHandler {
+                    enabled: !modelData.isSeparator
+                    onTapped: {
                         modelData.triggered();
                         trayWidget.activeMenuHandle = null;
                     }

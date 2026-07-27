@@ -1,48 +1,55 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import qs.core
 import "widgets"
 import "widgets/Workspaces"
 import "widgets/InternalTrayWidget"
 
-PanelWindow {
+Item {
     id: myBar
 
-    color: Theme.background
-    implicitHeight: Theme.barHeight
-
     anchors {
-        left: true
-        right: true
-        top: true
+        left: parent.left
+        right: parent.right
+        top: parent.top
+    }
+    implicitHeight: Theme.barHeight
+    height: Theme.barHeight
+
+    // Item has no color property of its own — explicit background
+    // rect where the window used to just set `color:` directly.
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.background
     }
 
     Item {
         anchors.fill: parent
 
-        LauncherButton {
-            id: launcherButton
+        // Was individual anchor-chaining (left: previousWidget.right,
+        // separate leftMargin per widget) — fragile to reordering, and
+        // any widget that becomes invisible (e.g. TrayWidget when
+        // trayRepeater.count === 0) leaves a gap instead of closing up,
+        // since anchors don't know about visibility. RowLayout handles
+        // both for free, and matches the right cluster's pattern —
+        // one consistent way to arrange bar widgets, not two.
+        RowLayout {
+            id: leftCluster
             anchors {
                 left: parent.left
                 leftMargin: 20
                 verticalCenter: parent.verticalCenter
             }
-        }
-        Workspaces {
-            id: workspacesWidget
-            anchors {
-                left: launcherButton.right
-                leftMargin: 15
-                verticalCenter: parent.verticalCenter
+            spacing: 15
+
+            LauncherButton {
+                id: launcherButton
             }
-        }
-        ActiveWindow {
-            id: activeWindowWidget
-            anchors {
-                left: workspacesWidget.right
-                leftMargin: 15
-                verticalCenter: parent.verticalCenter
+            Workspaces {
+                id: workspacesWidget
+            }
+            ActiveWindow {
+                id: activeWindowWidget
             }
         }
 
@@ -51,13 +58,6 @@ PanelWindow {
             anchors.centerIn: parent
         }
 
-        // ── Right-side cluster ────────────────────────────────────
-        // RowLayout instead of manual anchor chains — conditionally
-        // visible widgets (BatteryWidget on desktops with no battery,
-        // and any future opt-in widgets like a recording indicator or
-        // now-playing widget) collapse their gap automatically here,
-        // rather than leaving a dead 15px+width hole the way anchored
-        // `right: X.left` chains do when X.visible turns false.
         RowLayout {
             id: rightCluster
             anchors {
@@ -67,6 +67,12 @@ PanelWindow {
             }
             spacing: 15
 
+            RecordingIndicator {
+                id: recordingIndicator
+            }
+            SystemStatsWidget {
+                id: systemStats
+            }
             TrayWidget {
                 id: sysTrayWidget
             }

@@ -14,11 +14,13 @@ BarWidget {
         font.pixelSize: 18
         text: "󰣇"
     }
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        parent: launcherBtn
 
-        onClicked: ShellState.appLauncherOpened = !ShellState.appLauncherOpened
+    HoverHandler {
+        parent: launcherBtn
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        parent: launcherBtn
+        onTapped: ShellState.appLauncherOpened = !ShellState.appLauncherOpened
     }
 }

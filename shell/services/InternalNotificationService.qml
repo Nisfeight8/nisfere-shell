@@ -1,9 +1,10 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import qs.services
 
-QtObject {
+Singleton {
     id: root
 
     // Guards — prevent firing on initial property load at startup
@@ -25,7 +26,7 @@ QtObject {
 
     // ── Theme & Wallpaper ─────────────────────────────────────────
     property Connections themeCon: Connections {
-        target: ThemeService
+        target: ThemeActions
 
         function onWallpaperSet(success, path) {
             if (!success)
@@ -38,7 +39,7 @@ QtObject {
         function onThemeSet(success, name) {
             if (!success)
                 return;
-            root.send("Theme", name + "  ·  " + DynamicColors.mode, "preferences-desktop-theme");
+            root.send("Theme", name + "  ·  " + Colors.mode, "preferences-desktop-theme");
         }
     }
 

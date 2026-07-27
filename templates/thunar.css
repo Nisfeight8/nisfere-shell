@@ -14,7 +14,7 @@
 /* Base text color — prevents inheriting wrong color in light mode */
 .thunar {
     color: {{foreground}};
-    background-color: {{background_alt}};
+    background-color: {{backgroundAlt}};
 }
 
 /* =============================================================================
@@ -22,7 +22,7 @@
    ============================================================================= */
 
 .thunar.background {
-    background: {{background_alt}};
+    background: {{backgroundAlt}};
 }
 
 .thunar .titlebar {
@@ -40,7 +40,7 @@
 
 .thunar toolbar,
 .thunar .toolbar {
-    background-color: {{background_alt}};
+    background-color: {{backgroundAlt}};
     color: {{foreground}};
     border: none;
     box-shadow: none;
@@ -221,7 +221,7 @@
 
 .thunar searchbar,
 .thunar .search-bar {
-    background-color: {{background_alt}};
+    background-color: {{backgroundAlt}};
     color: {{foreground}};
     border: none;
     box-shadow: none;

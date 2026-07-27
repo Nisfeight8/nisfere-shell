@@ -10,7 +10,7 @@ Item {
     property alias spacing: contentRow.spacing
     property bool useGradient: false
 
-    property int widgetHeight: 32
+    property int widgetHeight: Theme.barHeight - 15
 
     implicitHeight: bgRect.implicitHeight
     implicitWidth: bgRect.implicitWidth

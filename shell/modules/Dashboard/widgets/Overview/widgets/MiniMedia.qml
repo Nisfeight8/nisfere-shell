@@ -104,9 +104,10 @@ GlassCard {
                     fixedIconColor: Theme.selected
                     dimWhenIdle: false   // always full opacity — this is the primary action
                     scale: pressed ? 0.9 : 1.0
+                    
                     Behavior on scale {
-                        NumberAnimation {
-                            duration: 100
+                        Anim {
+                            type: Anim.FastEffects
                         }
                     }
                     onTapped: MediaService.togglePlayPause()

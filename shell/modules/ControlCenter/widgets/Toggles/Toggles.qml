@@ -3,6 +3,7 @@ import QtQuick.Layouts
 
 import qs.core
 import qs.services
+import "widgets"
 
 GridLayout {
     id: grid
@@ -13,38 +14,79 @@ GridLayout {
 
     property var activeWidgets: []
 
+    // Was `source: "widgets/Ethernet.qml"` (a raw string path) — the
+    // only place in the whole project loading QML this way instead of
+    // sourceComponent + a real import. Raw string-path Loader.source
+    // means these 8 files were never validated at parse/compile time,
+    // only whenever that specific Loader happened to activate — same
+    // class of issue the Quickshell docs warn about for "root
+    // imports" breaking LSP tooling. Proper Component references
+    // instead, via a normal "widgets" import.
+    Component {
+        id: ethernetComp
+        Ethernet {}
+    }
+    Component {
+        id: wifiComp
+        Wifi {}
+    }
+    Component {
+        id: bluetoothComp
+        Bluetooth {}
+    }
+    Component {
+        id: themeToggleComp
+        ThemeToggle {}
+    }
+    Component {
+        id: keyboardToggleComp
+        KeyboardToggle {}
+    }
+    Component {
+        id: dndComp
+        Dnd {}
+    }
+    Component {
+        id: nightLightComp
+        NightLight {}
+    }
+    Component {
+        id: powerProfileComp
+        PowerProfile {}
+    }
+
     function updateWidgets() {
         var items = [
             {
-                source: "widgets/Ethernet.qml",
+                comp: ethernetComp,
                 active: NetworkService.hasEthernet
             },
             {
-                source: "widgets/Wifi.qml",
+                comp: wifiComp,
                 active: NetworkService.hasWifi
             },
             {
-                source: "widgets/Bluetooth.qml",
+                comp: bluetoothComp,
                 active: BluetoothService.hasBluetooth
             },
             {
-                source: "widgets/ThemeToggle.qml",
+                comp: themeToggleComp,
                 active: true
             },
             {
-                source: "widgets/KeyboardToggle.qml",
+                comp: keyboardToggleComp,
                 active: KeyboardService.availableLayouts.length > 1
             },
             {
-                source: "widgets/Dnd.qml",
+                comp: dndComp,
                 active: true
             },
             {
-                source: "widgets/NightLight.qml",
+                comp: nightLightComp,
                 active: true
             },
             {
-                source: "widgets/PowerProfile.qml",
+                comp: powerProfileComp,
                 active: true
             }
         ];
@@ -87,7 +129,7 @@ GridLayout {
         Loader {
             active: true
             asynchronous: false
-            source: modelData.source
+            sourceComponent: modelData.comp
             Layout.fillWidth: true
             Layout.preferredHeight: 80
         }

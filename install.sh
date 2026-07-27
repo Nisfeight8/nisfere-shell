@@ -133,7 +133,6 @@ else
     cat > "$HOME/.config/nisfere/templates.json" << 'JSON'
 {
   "alacritty-colors.toml": "~/.config/alacritty/colors.toml",
-  "hyprland-colors.conf":  "~/.config/hypr/conf/colors.conf",
   "adw-gtk3.css": [
     "~/.config/gtk-3.0/gtk.css",
     "~/.config/gtk-4.0/gtk.css"

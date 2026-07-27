@@ -44,14 +44,13 @@ Slider {
         y: control.topPadding + control.availableHeight / 2 - height / 2
 
         Behavior on opacity {
-            NumberAnimation {
-                duration: 150
+            Anim {
+                type: Anim.FastEffects
             }
         }
         Behavior on scale {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutCubic
+            Anim {
+                type: Anim.FastEffects
             }
         }
     }

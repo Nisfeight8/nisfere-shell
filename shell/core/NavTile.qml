@@ -56,6 +56,13 @@ Rectangle {
 
     RowLayout {
         anchors.centerIn: parent
+        // Was anchors.centerIn: parent with no width limit at all —
+        // fine while the tile is wide, but nothing stopped a long
+        // label from pushing this RowLayout (and the Text inside it)
+        // wider than the tile itself. Clamping to the tile's own
+        // width (minus a little breathing room) is what makes the
+        // elide below actually able to kick in.
+        width: Math.max(0, Math.min(implicitWidth, root.width - 16))
         spacing: 7
 
         LucideIcon {
@@ -72,12 +79,16 @@ Rectangle {
 
         ColumnLayout {
             spacing: 0
+            Layout.fillWidth: true
+
             Text {
+                Layout.fillWidth: true
                 text: root.label
                 color: root.isActive ? Theme.backgroundAlt : root.isHovered && root.ready ? root.hoverColor : Theme.foreground
                 font.family: Theme.fontName
                 font.pixelSize: 13
                 font.bold: root.isActive
+                elide: Text.ElideRight
                 Behavior on color {
                     AnimColor {
                         type: Anim.FastEffects
@@ -85,12 +96,14 @@ Rectangle {
                 }
             }
             Text {
+                Layout.fillWidth: true
                 visible: !root.ready && root.subLabel !== ""
                 text: root.subLabel
                 color: Theme.foreground
                 font.family: Theme.fontName
                 font.pixelSize: 9
                 opacity: 0.5
+                elide: Text.ElideRight
             }
         }
     }

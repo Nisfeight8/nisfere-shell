@@ -44,9 +44,8 @@ Rectangle {
         color: root.checked ? Theme.background : Theme.foreground
 
         Behavior on x {
-            NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutCubic
+            Anim {
+                type: Anim.FastToggle
             }
         }
         Behavior on color {

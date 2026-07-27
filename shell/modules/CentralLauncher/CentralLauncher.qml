@@ -1,61 +1,48 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
 import qs.core
 import qs.services
 import "widgets"
-import "DockerManager"
+import "widgets/LauncherAppsPanel"
+import "modules/DockerManager"
+import "modules"
 
-PanelWindow {
+Item {
     id: root
+    anchors.fill: parent
+    focus: true
 
-    // ── State ─────────────────────────────────────────────────────
-    property int activeTab: 0
-    property string activeTool: ""
+    Connections {
+        target: ShellState
+        function onAppLauncherOpenedChanged() {
+            if (ShellState.appLauncherOpened) {
+                searchBar.text = "";
 
-    signal toolRequested(string panel)
-
-    anchors.bottom: true
-    anchors.left: true
-    anchors.right: true
-
-    // Fullscreen transparent overlay
-    anchors.top: true
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    focusable: ShellState.appLauncherOpened
-    visible: ShellState.appLauncherOpened
-
-    onActiveTabChanged: {
-        searchInput.text = "";
-        searchInput.forceActiveFocus();
-    }
-    onActiveToolChanged: {
-        if (activeTool === "")
-            searchInput.forceActiveFocus();
-    }
-    onVisibleChanged: {
-        if (visible) {
-            searchInput.forceActiveFocus();
-            searchInput.text = "";
-        }
-    }
-
-    // ── Dim background ────────────────────────────────────────────
-    Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.55)
-        opacity: ShellState.appLauncherOpened ? 1.0 : 0.0
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 200
+                if (ShellState.pendingLauncherTool !== "") {
+                    ShellState.launcherActiveTab = 1;
+                    ShellState.launcherActiveTool = ShellState.pendingLauncherTool;
+                    ShellState.pendingLauncherTool = "";
+                }
             }
         }
 
+        function onLauncherActiveTabChanged() {
+            searchBar.text = "";
+            searchBar.input.forceActiveFocus();
+        }
+        function onLauncherActiveToolChanged() {
+            if (ShellState.launcherActiveTool === "")
+                searchBar.input.forceActiveFocus();
+        }
+    }
+
+    // ── Dim background (Scrim) ────────────────────────────────────
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.4)
+
         MouseArea {
             anchors.fill: parent
-
             onClicked: ShellState.appLauncherOpened = false
         }
     }
@@ -63,78 +50,68 @@ PanelWindow {
     // ── Centered dialog ───────────────────────────────────────────
     Item {
         anchors.centerIn: parent
-        height: 580
         width: 760
+        height: 580
 
-        // Glass background
         Rectangle {
             anchors.fill: parent
-            border.color: Theme.borderColor
-            border.width: 1
-            color: Theme.background
             radius: Theme.radius
+            color: Theme.background
+            border.width: 1
+            border.color: Theme.borderColor
 
-            // Subtle top gradient
             Rectangle {
-                height: parent.height * 0.4
-                radius: Theme.radius
-
-                gradient: Gradient {
-                    GradientStop {
-                        color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.04)
-                        position: 0.0
-                    }
-                    GradientStop {
-                        color: "transparent"
-                        position: 1.0
-                    }
-                }
-
                 anchors {
+                    top: parent.top
                     left: parent.left
                     right: parent.right
-                    top: parent.top
+                }
+                height: parent.height * 0.4
+                radius: Theme.radius
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.04)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "transparent"
+                    }
                 }
             }
         }
-        ColumnLayout {
-            spacing: 12
 
+        ColumnLayout {
             anchors {
                 fill: parent
                 margins: 16
             }
+            spacing: 12
 
-            // ── Tool header (back + title) — shown when a tool is open ──
             Rectangle {
                 Layout.fillWidth: true
-                border.color: Theme.borderColor
-                border.width: 1
-                color: Theme.backgroundAlt
                 height: 44
-                radius: Theme.radius
-                visible: root.activeTool !== ""
+                radius: 10
+                color: Theme.backgroundAlt
+                border.width: 1
+                border.color: Theme.borderColor
+                visible: ShellState.launcherActiveTool !== ""
 
                 RowLayout {
-                    spacing: 8
-
                     anchors {
                         fill: parent
                         leftMargin: 8
                         rightMargin: 14
                     }
+                    spacing: 8
 
-                    // Back button
                     Rectangle {
                         id: backBtn
-
                         property bool isHovered: false
-
-                        color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : "transparent"
-                        height: 32
-                        radius: Theme.radius
                         width: 32
-
+                        height: 32
+                        radius: 8
+                        color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : "transparent"
                         Behavior on color {
                             ColorAnimation {
                                 duration: 120
@@ -143,10 +120,9 @@ PanelWindow {
 
                         LucideIcon {
                             anchors.centerIn: parent
-                            color: backBtn.isHovered ? Theme.selected : Theme.foreground
                             icon: "arrow-left"
                             size: 16
-
+                            color: backBtn.isHovered ? Theme.selected : Theme.foreground
                             Behavior on color {
                                 ColorAnimation {
                                     duration: 120
@@ -155,175 +131,117 @@ PanelWindow {
                         }
                         HoverHandler {
                             cursorShape: Qt.PointingHandCursor
-
                             onHoveredChanged: backBtn.isHovered = hovered
                         }
                         TapHandler {
-                            onTapped: root.activeTool = ""
+                            onTapped: ShellState.launcherActiveTool = ""
                         }
                     }
+
                     LucideIcon {
-                        color: Theme.selected
                         icon: {
-                            switch (root.activeTool) {
+                            switch (ShellState.launcherActiveTool) {
                             case "docker":
                                 return "container";
                             case "git":
                                 return "git-branch";
                             case "ssh":
                                 return "key";
+                            case "sysmon":
+                                return "monitor";
                             default:
                                 return "wrench";
                             }
                         }
                         size: 16
+                        color: Theme.selected
                     }
+
                     Text {
-                        Layout.fillWidth: true
-                        color: Theme.foreground
-                        font.bold: true
-                        font.family: Theme.fontName
-                        font.pixelSize: 15
                         text: {
-                            switch (root.activeTool) {
+                            switch (ShellState.launcherActiveTool) {
                             case "docker":
                                 return "Docker Manager";
                             case "git":
                                 return "Git Manager";
                             case "ssh":
                                 return "SSH Manager";
+                            case "sysmon":
+                                return "System Monitor";
                             default:
-                                return root.activeTool;
+                                return ShellState.launcherActiveTool;
                             }
                         }
+                        color: Theme.foreground
+                        font.family: Theme.fontName
+                        font.pixelSize: 15
+                        font.bold: true
+                        Layout.fillWidth: true
                     }
 
-                    // Escape hint
                     Text {
+                        text: "Esc"
                         color: Theme.foreground
                         font.family: Theme.fontName
                         font.pixelSize: 11
                         opacity: 0.35
-                        text: "Esc"
                     }
                 }
             }
 
-            // ── Search bar ────────────────────────────────────────
-            Rectangle {
+            SearchBar {
+                id: searchBar
+                visible: ShellState.launcherActiveTool === ""
                 Layout.fillWidth: true
-                border.color: searchInput.activeFocus ? Theme.selected : Theme.borderColor
-                border.width: 1
-                color: Theme.backgroundAlt
-                height: 44
-                radius: Theme.radius
-                visible: root.activeTool === ""
+                placeholderText: ["Search apps...", "Search tools..."][ShellState.launcherActiveTab] ?? "Search..."
 
-                Behavior on border.color {
-                    ColorAnimation {
-                        duration: 150
+                onKeyPressed: e => {
+                    switch (e.key) {
+                    case Qt.Key_Escape:
+                        if (ShellState.launcherActiveTool !== "")
+                            ShellState.launcherActiveTool = "";
+                        else
+                            ShellState.appLauncherOpened = false;
+                        e.accepted = true;
+                        break;
+                    case Qt.Key_Up:
+                        if (ShellState.launcherActiveTab === 0)
+                            appsPanel.navigate(-appsPanel.columns);
+                        e.accepted = true;
+                        break;
+                    case Qt.Key_Down:
+                        if (ShellState.launcherActiveTab === 0)
+                            appsPanel.navigate(appsPanel.columns);
+                        e.accepted = true;
+                        break;
+                    case Qt.Key_Left:
+                        if (input.cursorPosition === 0 && ShellState.launcherActiveTab === 0)
+                            appsPanel.navigate(-1);
+                        break;
+                    case Qt.Key_Right:
+                        if (input.cursorPosition === text.length && ShellState.launcherActiveTab === 0)
+                            appsPanel.navigate(1);
+                        break;
+                    case Qt.Key_Tab:
+                        ShellState.launcherActiveTab = (ShellState.launcherActiveTab + 1) % 2;
+                        e.accepted = true;
+                        break;
                     }
                 }
-
-                RowLayout {
-                    spacing: 10
-
-                    anchors {
-                        fill: parent
-                        leftMargin: 14
-                        rightMargin: 14
-                    }
-                    LucideIcon {
-                        color: Theme.foreground
-                        icon: "search"
-                        opacity: 0.5
-                        size: 16
-                    }
-                    TextInput {
-                        id: searchInput
-
-                        Layout.fillWidth: true
-                        clip: true
-                        color: Theme.foreground
-                        font.family: Theme.fontName
-                        font.pixelSize: 15
-                        selectByMouse: true
-
-                        Keys.onPressed: function (e) {
-                            switch (e.key) {
-                            case Qt.Key_Escape:
-                                if (root.activeTool !== "")
-                                    root.activeTool = "";
-                                else
-                                    ShellState.appLauncherOpened = false;
-                                e.accepted = true;
-                                break;
-                            case Qt.Key_Up:
-                                if (root.activeTab === 0)
-                                    appsPanel.navigate(-appsPanel.columns);
-                                e.accepted = true;
-                                break;
-                            case Qt.Key_Down:
-                                if (root.activeTab === 0)
-                                    appsPanel.navigate(appsPanel.columns);
-                                e.accepted = true;
-                                break;
-                            case Qt.Key_Left:
-                                if (cursorPosition === 0 && root.activeTab === 0)
-                                    appsPanel.navigate(-1);
-                                break;
-                            case Qt.Key_Right:
-                                if (cursorPosition === text.length && root.activeTab === 0)
-                                    appsPanel.navigate(1);
-                                break;
-                            case Qt.Key_Return:
-                            case Qt.Key_Enter:
-                                if (root.activeTab === 0 && appsPanel.launchSelected())
-                                    ShellState.appLauncherOpened = false;
-                                e.accepted = true;
-                                break;
-                            case Qt.Key_Tab:
-                                root.activeTab = (root.activeTab + 1) % 3;
-                                e.accepted = true;
-                                break;
-                            }
-                        }
-
-                        // Placeholder
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: Theme.foreground
-                            font.family: Theme.fontName
-                            font.pixelSize: 15
-                            opacity: 0.35
-                            text: ["Search apps...", "Search themes & wallpapers...", "Search tools..."][root.activeTab] ?? "Search..."
-                            visible: !searchInput.text && !searchInput.activeFocus
-                        }
-                    }
-
-                    // Clear button
-                    LucideIcon {
-                        color: Theme.foreground
-                        icon: "x"
-                        opacity: 0.4
-                        size: 14
-                        visible: searchInput.text.length > 0
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-
-                            onClicked: searchInput.text = ""
-                        }
-                    }
+                onAccepted: {
+                    if (ShellState.launcherActiveTab === 0 && appsPanel.launchSelected())
+                        ShellState.appLauncherOpened = false;
                 }
+
+                // The fix that actually solved the "keyboard only works
+                // after a click" bug — see conversation for details.
+                Component.onCompleted: input.forceActiveFocus()
             }
 
-            // ── Tab bar ───────────────────────────────────────────
             RowLayout {
+                visible: ShellState.launcherActiveTool === ""
                 Layout.fillWidth: true
                 spacing: 6
-                visible: root.activeTool === ""
 
                 Repeater {
                     model: [
@@ -334,132 +252,64 @@ PanelWindow {
                         {
                             icon: "wrench",
                             label: "Tools"
-                        },
+                        }
                     ]
 
-                    Rectangle {
-                        id: tabBtn
-
-                        property bool isActive: root.activeTab === index
-                        property bool isHovered: false
-
+                    NavTile {
                         Layout.fillWidth: true
-                        border.color: isActive ? Theme.selected : "transparent"
-                        border.width: 1
-                        color: isActive ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.18) : (isHovered ? Theme.backgroundAlt : "transparent")
-                        height: 32
-                        radius: Theme.radius
-
-                        Behavior on border.color {
-                            ColorAnimation {
-                                duration: 150
-                            }
-                        }
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 150
-                            }
-                        }
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            LucideIcon {
-                                color: tabBtn.isActive ? Theme.selected : Theme.foreground
-                                icon: modelData.icon
-                                opacity: tabBtn.isActive ? 1.0 : 0.6
-                                size: 13
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 150
-                                    }
-                                }
-                                Behavior on opacity {
-                                    NumberAnimation {
-                                        duration: 150
-                                    }
-                                }
-                            }
-                            Text {
-                                color: tabBtn.isActive ? Theme.selected : Theme.foreground
-                                font.bold: tabBtn.isActive
-                                font.family: Theme.fontName
-                                font.pixelSize: 13
-                                opacity: tabBtn.isActive ? 1.0 : 0.6
-                                text: modelData.label
-
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: 150
-                                    }
-                                }
-                                Behavior on opacity {
-                                    NumberAnimation {
-                                        duration: 150
-                                    }
-                                }
-                            }
-                        }
-                        HoverHandler {
-                            cursorShape: Qt.PointingHandCursor
-
-                            onHoveredChanged: tabBtn.isHovered = hovered
-                        }
-                        TapHandler {
-                            onTapped: {
-                                root.activeTab = index;
-                                searchInput.forceActiveFocus();
-                            }
+                        icon: modelData.icon
+                        label: modelData.label
+                        isActive: ShellState.launcherActiveTab === index
+                        hoverColor: Theme.selected
+                        activeColor: Theme.selected
+                        onTapped: {
+                            ShellState.launcherActiveTab = index;
+                            searchBar.input.forceActiveFocus();
                         }
                     }
                 }
             }
 
-            // Divider
             Rectangle {
                 Layout.fillWidth: true
-                color: Theme.borderColor
                 height: 1
+                color: Theme.borderColor
                 opacity: 0.4
-                visible: root.activeTool === ""
+                visible: ShellState.launcherActiveTool === ""
             }
 
-            // ── Panel content ─────────────────────────────────────
             Item {
-                Layout.fillHeight: true
                 Layout.fillWidth: true
+                Layout.fillHeight: true
 
-                // ── Home panels (visible when no tool is active) ───────
                 LauncherAppsPanel {
                     id: appsPanel
-
                     anchors.fill: parent
-                    searchText: searchInput.text
-                    visible: root.activeTool === "" && root.activeTab === 0
+                    searchText: searchBar.text
+                    visible: ShellState.launcherActiveTool === "" && ShellState.launcherActiveTab === 0
                 }
-                // LauncherAppearancePanel {
-                //     anchors.fill: parent
-                //     searchText: searchInput.text
-                //     visible: root.activeTool === "" && root.activeTab === 1
-                // }
                 LauncherToolsPanel {
                     anchors.fill: parent
-                    searchText: searchInput.text
-                    visible: root.activeTool === "" && root.activeTab === 1
-
-                    onToolRequested: panel => root.activeTool = panel
+                    searchText: searchBar.text
+                    visible: ShellState.launcherActiveTool === "" && ShellState.launcherActiveTab === 1
+                    onToolRequested: panel => ShellState.launcherActiveTool = panel
                 }
 
-                // ── Tool panels ────────────────────────────────────────
                 Loader {
-                    active: root.activeTool === "docker"
                     anchors.fill: parent
+                    active: ShellState.launcherActiveTool === "docker"
                     visible: active
-
                     sourceComponent: Component {
                         DockerManager {}
+                    }
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    active: ShellState.launcherActiveTool === "sysmon"
+                    visible: active
+                    sourceComponent: Component {
+                        SystemMonitorTool {}
                     }
                 }
             }

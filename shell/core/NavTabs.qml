@@ -20,7 +20,7 @@ RowLayout {
         model: root.tabModel
 
         delegate: Item {
-            property bool isHovered: tabMouse.containsMouse
+            property bool isHovered: tabHover.hovered
             property bool isSelected: root.currentIndex === index
 
             Layout.fillWidth: true
@@ -46,8 +46,8 @@ RowLayout {
                         }
                     }
                     Behavior on opacity {
-                        NumberAnimation {
-                            duration: 200
+                        Anim {
+                            type: Anim.FastEffects
                         }
                     }
                 }
@@ -65,8 +65,8 @@ RowLayout {
                         }
                     }
                     Behavior on opacity {
-                        NumberAnimation {
-                            duration: 200
+                        Anim {
+                            type: Anim.FastEffects
                         }
                     }
                 }
@@ -82,10 +82,16 @@ RowLayout {
                 width: isSelected ? parent.width * 0.6 : 0
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 250
+                    Anim {
+                        type: Anim.DefaultEffects
                     }
                 }
+                // Deliberately NOT using Anim here — Easing.OutBack's
+                // overshoot-then-settle "pop" has no equivalent among
+                // our M3 bezier curves (none of them overshoot past
+                // their target), so forcing this through Anim would
+                // lose the underline's distinctive snap. Keep as a
+                // raw NumberAnimation on purpose.
                 Behavior on width {
                     NumberAnimation {
                         duration: 350
@@ -94,12 +100,12 @@ RowLayout {
                 }
             }
 
-            MouseArea {
-                id: tabMouse
-                anchors.fill: parent
+            HoverHandler {
+                id: tabHover
                 cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-                onClicked: root.tabClicked(index)
+            }
+            TapHandler {
+                onTapped: root.tabClicked(index)
             }
         }
     }

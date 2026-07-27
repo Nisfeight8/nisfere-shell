@@ -1,9 +1,11 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell
+
 import Quickshell.Services.UPower
 
-QtObject {
+Singleton {
     id: root
 
     property int currentProfile: PowerProfiles.profile

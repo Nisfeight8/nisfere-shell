@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Io
 import qs.core
 import qs.services
 
@@ -9,13 +8,7 @@ Item {
     implicitWidth: col.implicitWidth
     implicitHeight: col.implicitHeight
 
-    property Process _proc: Process {
-        running: false
-    }
-    function _run(cmd) {
-        _proc.command = cmd;
-        _proc.running = true;
-    }
+    readonly property string _avatarSource: ThemeState.shared.avatarPath ? "file://" + ThemeState.shared.avatarPath : ""
 
     ColumnLayout {
         id: col
@@ -38,14 +31,19 @@ Item {
                     id: avatar
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
-                    source: ""
-                    visible: source !== ""
+                    // Reads from the shared scope's avatarPath setting
+                    // (see services/ThemeState.qml -> .shared) — not
+                    // set by any UI yet, so this stays empty (falling
+                    // back to the icon below) until we build that.
+                    source: root._avatarSource
+                    visible: root._avatarSource !== ""
                 }
                 LucideIcon {
                     anchors.centerIn: parent
                     icon: "user"
                     size: 26
                     color: Theme.selected
+                    visible: root._avatarSource === ""
                 }
             }
 

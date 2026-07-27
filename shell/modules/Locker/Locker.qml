@@ -8,7 +8,7 @@ import qs.services
 WlSessionLock {
     id: sessionLock
     locked: ShellState.isLocked
-    
+
     WlSessionLockSurface {
         color: "black"
 
@@ -24,7 +24,18 @@ WlSessionLock {
                 passwordInput.text = "";
                 errorText.text = errorMessage;
                 errorText.opacity = 1;
-                passwordInput.background.border.color = Theme.color1;
+                // Was a direct `passwordInput.background.border.color =
+                // Theme.color1` assignment — that PERMANENTLY destroys
+                // the declarative binding on border.color (imperative
+                // assignment to an already-bound property replaces the
+                // binding with a static value forever). Every "restore"
+                // afterward was then just another one-off static value,
+                // never a real binding again — so after the FIRST failed
+                // attempt, the border would never again reactively
+                // follow focus changes. Now driven by a plain state flag
+                // instead, with the actual color logic staying inside
+                // the background Rectangle's own binding, permanently.
+                passwordInput.hasError = true;
                 passwordInput.forceActiveFocus();
                 errorTimer.restart();
             }
@@ -35,7 +46,7 @@ WlSessionLock {
             interval: 2500
             onTriggered: {
                 errorText.opacity = 0;
-                passwordInput.background.border.color = passwordInput.activeFocus ? Theme.selected : Theme.borderColor;
+                passwordInput.hasError = false;
             }
         }
 
@@ -67,25 +78,7 @@ WlSessionLock {
                 passwordInput.text = "";
                 errorText.opacity = 0;
                 errorTimer.stop();
-                passwordInput.background.border.color = passwordInput.activeFocus ? Theme.selected : Theme.borderColor;
-            }
-
-            Keys.onPressed: event => {
-                if (!(event.modifiers & Qt.ControlModifier && event.modifiers & Qt.ShiftModifier))
-                    return;
-
-                if (event.key === Qt.Key_L) {
-                    // Toggle log panel
-                    logPanel.visible = !logPanel.visible;
-                    if (logPanel.visible)
-                        logView.positionViewAtEnd();
-                    event.accepted = true;
-                } else if (event.key === Qt.Key_U) {
-                    // Force-unlock without auth (debug only)
-                    LockerService.stop();
-                    ShellState.isLocked = false;
-                    event.accepted = true;
-                }
+                passwordInput.hasError = false;
             }
 
             ColumnLayout {
@@ -138,19 +131,34 @@ WlSessionLock {
                     spacing: 20
 
                     Rectangle {
+                        id: avatarBadge
                         width: 100
                         height: 100
                         radius: 50
                         color: Theme.backgroundAlt
                         border.color: Theme.borderColor
                         border.width: 2
+                        clip: true
                         Layout.alignment: Qt.AlignHCenter
+
+                        // Same pattern as SystemDrawerHeader.qml — reads
+                        // from the shared scope's avatarPath setting,
+                        // falls back to the generic user icon if unset.
+                        readonly property string _avatarSource: ThemeState.shared.avatarPath ? "file://" + ThemeState.shared.avatarPath : ""
+
+                        Image {
+                            anchors.fill: parent
+                            fillMode: Image.PreserveAspectCrop
+                            source: avatarBadge._avatarSource
+                            visible: avatarBadge._avatarSource !== ""
+                        }
 
                         LucideIcon {
                             anchors.centerIn: parent
                             icon: "user"
                             size: 50
                             color: Theme.foreground
+                            visible: avatarBadge._avatarSource === ""
                         }
                     }
 
@@ -171,27 +179,46 @@ WlSessionLock {
 
                         TextField {
                             id: passwordInput
+                            // Was commented out — meant the field stayed
+                            // fully enabled (and visible) WHILE a
+                            // previous authentication attempt was still
+                            // in flight, so you could mash Enter and
+                            // fire off overlapping auth calls.
+                            property bool hasError: false
+
                             anchors.fill: parent
                             echoMode: TextInput.Password
                             passwordCharacter: "•"
-                            placeholderText: "Enter password..."
+                            // Native placeholderText wasn't rendering
+                            // reliably in this surface (possibly a race
+                            // with forceActiveFocus() firing immediately
+                            // on completion, unlike WifiPage's password
+                            // field which only gets focus after a user
+                            // interaction) — using our own overlay Text
+                            // instead, same idiom as Tasks.qml's add-task
+                            // input placeholder.
+                            placeholderText: ""
                             color: Theme.foreground
                             font.family: Theme.fontName
                             font.pixelSize: 16
                             horizontalAlignment: TextInput.AlignHCenter
-                            // enabled: !lockContainer.isAuthenticating
-                            // opacity: lockContainer.isAuthenticating ? 0 : 1
-                            Behavior on opacity {
-                                NumberAnimation {
-                                    duration: 150
-                                }
-                            }
+                            enabled: !lockContainer.isAuthenticating
 
                             background: Rectangle {
                                 color: Theme.backgroundAlt
                                 radius: Theme.radius
-                                border.color: passwordInput.activeFocus ? Theme.selected : Theme.borderColor
+                                // Now a single, permanent declarative
+                                // binding covering both error and focus
+                                // state — nothing ever assigns to this
+                                // imperatively, so it can never break.
+                                border.color: passwordInput.hasError ? Theme.color1 : (passwordInput.activeFocus ? Theme.selected : Theme.borderColor)
                                 border.width: 2
+
+                                Behavior on border.color {
+                                    AnimColor {
+                                        type: Anim.FastEffects
+                                    }
+                                }
                             }
 
                             Rectangle {
@@ -234,6 +261,15 @@ WlSessionLock {
                             }
 
                             Component.onCompleted: forceActiveFocus()
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Enter password..."
+                                color: Qt.rgba(1, 1, 1, 0.4)
+                                font.family: Theme.fontName
+                                font.pixelSize: 16
+                                visible: passwordInput.text.length === 0
+                            }
                         }
                     }
 
@@ -245,9 +281,32 @@ WlSessionLock {
                         font.pixelSize: 13
                         opacity: 0
                         Behavior on opacity {
-                            NumberAnimation {
-                                duration: 200
+                            Anim {
+                                type: Anim.DefaultEffects
                             }
+                        }
+                    }
+
+                    // --- Power actions (reboot / suspend / poweroff) ──
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.topMargin: 10
+                        spacing: 16
+
+                        CircularActionButton {
+                            icon: "rotate-ccw"
+                            label: "Restart"
+                            onTapped: PowerService.reboot()
+                        }
+                        CircularActionButton {
+                            icon: "moon"
+                            label: "Suspend"
+                            onTapped: PowerService.suspend()
+                        }
+                        CircularActionButton {
+                            icon: "power"
+                            label: "Shut Down"
+                            onTapped: PowerService.poweroff()
                         }
                     }
                 }
@@ -320,30 +379,36 @@ WlSessionLock {
                                 icon: "skip-back"
                                 size: 18
                                 color: Theme.foreground
-                                MouseArea {
-                                    anchors.fill: parent
+
+                                HoverHandler {
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: MediaService.previous()
+                                }
+                                TapHandler {
+                                    onTapped: MediaService.previous()
                                 }
                             }
                             LucideIcon {
                                 icon: MediaService.isPlaying ? "pause" : "play"
                                 size: 18
                                 color: Theme.foreground
-                                MouseArea {
-                                    anchors.fill: parent
+
+                                HoverHandler {
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: MediaService.togglePlayPause()
+                                }
+                                TapHandler {
+                                    onTapped: MediaService.togglePlayPause()
                                 }
                             }
                             LucideIcon {
                                 icon: "skip-forward"
                                 size: 18
                                 color: Theme.foreground
-                                MouseArea {
-                                    anchors.fill: parent
+
+                                HoverHandler {
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: MediaService.next()
+                                }
+                                TapHandler {
+                                    onTapped: MediaService.next()
                                 }
                             }
                         }

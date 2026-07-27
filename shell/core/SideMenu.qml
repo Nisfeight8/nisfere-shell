@@ -14,13 +14,21 @@ Item {
         anchors.fill: parent
         model: root.menuModel
         spacing: 5
-        interactive: false
+        clip: true
+        // Was interactive: false (fine when this only ever held a
+        // handful of items, e.g. Productivity's 2 tabs). Now also used
+        // for the launcher's Apps sub-tabs, which can have well over a
+        // dozen entries (All/Favorites/Most Used/Recent + every
+        // category) — needs to actually scroll. Backward compatible:
+        // when content already fits (the original small-list case),
+        // enabling interactive scrolling changes nothing visually.
+        interactive: true
 
         delegate: Item {
             width: ListView.view.width
             height: 45
 
-            property bool isHovered: itemMouse.containsMouse
+            property bool isHovered: itemHover.hovered
             property bool isSelected: root.currentIndex === index
 
             Rectangle {
@@ -29,8 +37,8 @@ Item {
                 opacity: isHovered && !isSelected ? 0.05 : 0
                 radius: Theme.radius
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 200
+                    Anim {
+                        type: Anim.DefaultEffects
                     }
                 }
             }
@@ -47,13 +55,13 @@ Item {
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 200
+                        AnimColor {
+                            type: Anim.DefaultEffects
                         }
                     }
                     Behavior on opacity {
-                        NumberAnimation {
-                            duration: 200
+                        Anim {
+                            type: Anim.DefaultEffects
                         }
                     }
                 }
@@ -65,16 +73,17 @@ Item {
                     font.bold: isSelected
                     font.family: Theme.fontName
                     font.pixelSize: 14
+                    elide: Text.ElideRight
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
 
                     Behavior on color {
-                        ColorAnimation {
-                            duration: 200
+                        AnimColor {
+                            type: Anim.DefaultEffects
                         }
                     }
                     Behavior on opacity {
-                        NumberAnimation {
-                            duration: 200
+                        Anim {
+                            type: Anim.DefaultEffects
                         }
                     }
                 }
@@ -91,10 +100,14 @@ Item {
                 height: isSelected ? parent.height * 0.5 : 0
 
                 Behavior on opacity {
-                    NumberAnimation {
-                        duration: 250
+                    Anim {
+                        type: Anim.DefaultEffects
                     }
                 }
+                // Deliberately NOT using Anim here — same reasoning as
+                // NavTabs' underline: Easing.OutBack's overshoot-then-
+                // settle "pop" has no equivalent among our M3 bezier
+                // curves, so this stays a raw NumberAnimation on purpose.
                 Behavior on height {
                     NumberAnimation {
                         duration: 350
@@ -103,13 +116,12 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: itemMouse
-                anchors.fill: parent
+            HoverHandler {
+                id: itemHover
                 cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-
-                onClicked: root.tabClicked(index)
+            }
+            TapHandler {
+                onTapped: root.tabClicked(index)
             }
         }
     }

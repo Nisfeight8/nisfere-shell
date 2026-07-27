@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import qs.core
 import qs.services
 
@@ -88,6 +87,7 @@ Item {
         // ── Live update log ───────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
+            Layout.preferredHeight: 120
             height: 120
             radius: Theme.radius
             color: Theme.backgroundAlt
@@ -121,6 +121,7 @@ Item {
         // ── Update package list ───────────────────────────────────
         ListView {
             Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(UpdateService.count * 26, 130)
             height: Math.min(UpdateService.count * 26, 130)
             visible: UpdateService.count > 0 && UpdateService.updateLog.length === 0
             model: UpdateService.updates

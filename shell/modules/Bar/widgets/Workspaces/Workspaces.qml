@@ -3,7 +3,7 @@ import Quickshell.Hyprland
 import qs.core
 
 BarWidget {
-    id: workspacesWidget
+    id: root
     useGradient: true
     // bgColor: "transparent"
     paddingX: 0
@@ -11,6 +11,8 @@ BarWidget {
 
     Repeater {
         model: Hyprland.workspaces.values
-        delegate: WorkspaceButton {}
+        delegate: WorkspaceButton {
+            implicitHeight: root.height
+        }
     }
 }

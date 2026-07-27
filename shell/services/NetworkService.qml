@@ -1,8 +1,9 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Networking
 
-QtObject {
+Singleton {
     id: root
 
     // ── Public signals ────────────────────────────────────────────

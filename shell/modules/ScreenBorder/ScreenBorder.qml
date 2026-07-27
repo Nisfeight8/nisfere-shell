@@ -1,208 +1,246 @@
 import QtQuick
-import QtQuick.Shapes
 import Quickshell
+import Quickshell.Wayland
+import Quickshell.Hyprland
+
+import qs.modules.Bar
+import qs.modules.Dashboard
+import qs.modules.ControlCenter
+import qs.modules.SystemDrawer
+import qs.modules.QuickActions
+import qs.modules.CentralLauncher
+import qs.modules.Osd
+import qs.modules.NotificationPopup
+import qs.modules.WorkspaceOverview
+
 import qs.core
 import qs.services
 
-PanelWindow {
-    id: root
+// One instance of everything below per screen (Variants). Each
+// instance gets its own visualWindow + ExclusionZones bound to that
+// specific screen via `screen: modelData`.
+Variants {
+    id: screenVariants
+    model: Quickshell.screens
 
-    property int bezelSize: Theme.panelBorderSize
-    property color bgColor: Theme.background
-    property color borderColor: Theme.borderColor
-    property int cornerRadius: Theme.radius
-    readonly property int topBarHeight: Theme.barHeight
-    property int topBezelHeight: Theme.barHeight
+    Scope {
+        id: rootScope
+        required property var modelData
+        readonly property var screen: modelData
 
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
+        property real bezelSize: Theme.panelBorderSize
+        readonly property real topBarHeight: Theme.barHeight
 
-    mask: Region {
-    }
+        // ---------------------------------------------------------
+        // 1. Ο VISUAL WINDOW (μπάρα, drawers, launcher, overview, bezels)
+        // ---------------------------------------------------------
+        PanelWindow {
+            id: visualWindow
+            screen: rootScope.screen
 
-    anchors {
-        bottom: true
-        left: true
-        right: true
-        top: true
-    }
-    // --- Top Border ---
-    Rectangle {
-        id: topBorderLine
+            color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
 
-        anchors.left: parent.left
-        anchors.leftMargin: root.bezelSize
-        anchors.right: parent.right
-        anchors.rightMargin: root.bezelSize
-        anchors.top: parent.top
-        anchors.topMargin: root.topBarHeight
-        color: Theme.borderColor
-        height: Theme.widgetBorderWidth
-        // opacity: ShellState.dashboardOpened || ShellState.anyPopupOpen ? 0 : 1
+            // Was just the 4 booleans OR'd together — none of them are
+            // screen-aware on their own (appLauncherOpened/overviewOpen
+            // have no per-screen concept at all; dashboardOpened's own
+            // per-screen visibility is handled separately by
+            // BaseDrawer, but doesn't stop THIS window from thinking
+            // "something is open" just because a DIFFERENT screen's
+            // dashboard is). Added the same activeScreenName check so
+            // only the screen that's actually showing something grabs
+            // exclusive keyboard focus / raises its layer.
+            readonly property bool isAnyUIOpen: ShellState.activeScreenName === screen.name && (ShellState.appLauncherOpened || ShellState.quickActionsOpened || ShellState.overviewOpen || (ShellState.dashboardOpened && ShellState.currentDashboardTab == 4 && ShellState.currentProductivityTab === 0))
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
+            // ── Fullscreen detection ──────────────────────────────────
+            readonly property var _monitorData: HyprlandData.monitors.find(m => m.name === screen.name)
+            readonly property int activeWorkspaceId: _monitorData?.activeWorkspace?.id ?? -1
+            readonly property bool hasFullscreen: HyprlandData.windowList.some(w => (w.workspace?.id ?? -1) === activeWorkspaceId && (w.fullscreen ?? 0) > 0)
+
+            WlrLayershell.keyboardFocus: isAnyUIOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+            WlrLayershell.layer: (isAnyUIOpen || osd.shown || notificationPopup.shown) ? WlrLayer.Overlay : WlrLayer.Top
+
+            anchors {
+                bottom: true
+                left: true
+                right: true
+                top: true
+            }
+
+            Bar {
+                id: bar
+                visible: !visualWindow.hasFullscreen
+            }
+
+            // OSD/NotificationPopup — both are BaseDrawer instances
+            // (cornerMode bottom-right). Visibility itself is NOT gated on
+            // hasFullscreen (a volume change or incoming notification
+            // should still show even in a fullscreen app) — only their
+            // screenOffset changes (no bar to avoid when fullscreen, since
+            // Bar/BorderBezels are hidden then anyway).
+            // NOTE: these two are NOT screen-gated (no `screen:` passed) —
+            // they'll show on every screen's instance right now. Whether
+            // that's wanted (e.g. volume OSD showing wherever you are)
+            // or should follow activeScreenName too is worth deciding
+            // once you've tested with a second monitor.
+            OSD {
+                id: osd
+                z: 20
+                hasFullscreen: visualWindow.hasFullscreen
+            }
+            NotificationPopup {
+                id: notificationPopup
+                z: 20
+                hasFullscreen: visualWindow.hasFullscreen
+            }
+
+            // Overview's AnimatedContentLoader lives here (below).
+            // Reasoning for staying a plain-visibility PanelWindow /
+            // AnimatedContentLoader rather than needing any extra
+            // unload-delay: Overview's own window already hides itself
+            // instantly via `visible: ShellState.overviewOpen`, so there's
+            // nothing left rendering/animating by the time a delay would
+            // matter (unlike CentralLauncher, which stays mounted inside
+            // an already-visible host window).
+
+            // Both were `shouldBeActive: ShellState.appLauncherOpened` /
+            // `ShellState.overviewOpen` alone — neither of these loaders
+            // has anything like BaseDrawer's screenName/openedRequest
+            // gating, so without the activeScreenName check added here,
+            // opening the launcher/overview on ONE screen would activate
+            // it on EVERY screen simultaneously.
+            AnimatedContentLoader {
+                id: appLauncherLoader
+                z: 50
+                anchors.fill: parent
+                shouldBeActive: ShellState.appLauncherOpened && ShellState.activeScreenName === screen.name
+                sourceComponent: Component {
+                    CentralLauncher {}
+                }
+            }
+            AnimatedContentLoader {
+                id: overviewLoader
+                z: 50
+                anchors.fill: parent
+                shouldBeActive: ShellState.overviewOpen && ShellState.activeScreenName === screen.name
+                sourceComponent: Component {
+                    WorkspaceOverview {}
+                }
+            }
+
+            // ── Drawers ──────────────────────────────────────────────
+            Dashboard {
+                id: dashboardDrawer
+                screen: visualWindow.screen
+                triggerHovered: borderBezels.topHovered
+            }
+            ControlCenter {
+                id: controlCenterDrawer
+                screen: visualWindow.screen
+                triggerHovered: borderBezels.rightHovered
+            }
+            SystemDrawer {
+                id: systemDrawer
+                screen: visualWindow.screen
+                triggerHovered: borderBezels.leftHovered
+            }
+
+            QuickActions {
+                id: quickActionsDrawer
+                screen: visualWindow.screen
+                triggerHovered: borderBezels.bottomHovered
+            }
+
+            // ── Border bezels + hover detection (decoupled component) ──
+            BorderBezels {
+                id: borderBezels
+                visible: !visualWindow.hasFullscreen
+                bezelSize: rootScope.bezelSize
+                topBarHeight: rootScope.topBarHeight
+            }
+
+            // ── Hover -> open wiring (kept HERE, not inside BorderBezels,
+            // so BorderBezels stays reusable/decoupled from drawer logic).
+            // Goes through ShellState's own open methods, which also
+            // record activeScreenName — this is what makes the whole
+            // per-screen gating above actually work correctly: whichever
+            // screen's bezel you hover sets itself as the active one. ──
+            Connections {
+                target: borderBezels
+                function onTopHoveredChanged() {
+                    if (borderBezels.topHovered && !dashboardDrawer.toggleOnHover)
+                        return; // dashboard uses toggleOnHover:false, ignore hover-open here
+                    if (borderBezels.topHovered)
+                        ShellState.openDashboard(visualWindow.screen.name);
+                }
+                function onBottomHoveredChanged() {
+                    if (borderBezels.bottomHovered && quickActionsDrawer.toggleOnHover)
+                        ShellState.openQuickActions(visualWindow.screen.name);
+                }
+                function onLeftHoveredChanged() {
+                    if (borderBezels.leftHovered && systemDrawer.toggleOnHover)
+                        ShellState.openSystemDrawer(visualWindow.screen.name);
+                }
+                function onRightHoveredChanged() {
+                    if (borderBezels.rightHovered && controlCenterDrawer.toggleOnHover)
+                        ShellState.openControlCenter(visualWindow.screen.name);
+                }
+            }
+
+            // ── Mask: bar + whichever drawer/loader is currently relevant,
+            // everything else click-through ──────────────────────────────
+            mask: Region {
+                Region {
+                    item: bar
+                }
+                Region {
+                    item: dashboardDrawer.panelItem
+                }
+                Region {
+                    item: controlCenterDrawer.panelItem
+                }
+                Region {
+                    item: systemDrawer.panelItem
+                }
+                Region {
+                    item: quickActionsDrawer.panelItem
+                }
+                Region {
+                    item: osd.panelItem
+                }
+                Region {
+                    item: notificationPopup.panelItem
+                }
+                Region {
+                    width: appLauncherLoader.shouldBeActive ? visualWindow.width : 0
+                    height: appLauncherLoader.shouldBeActive ? visualWindow.height : 0
+                }
+                Region {
+                    width: overviewLoader.shouldBeActive ? visualWindow.width : 0
+                    height: overviewLoader.shouldBeActive ? visualWindow.height : 0
+                }
+                Region {
+                    item: borderBezels.topBorderItem
+                }
+                Region {
+                    item: borderBezels.bottomBorderItem
+                }
+                Region {
+                    item: borderBezels.leftBorderItem
+                }
+                Region {
+                    item: borderBezels.rightBorderItem
+                }
             }
         }
-    }
 
-    // --- Bottom Bezel ---
-    Rectangle {
-        id: bottomBorderLine
-
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        color: Theme.background
-        height: Theme.panelBorderSize
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            color: Theme.borderColor
-            height: Theme.widgetBorderWidth
-            // opacity: ShellState.quakeTerminalOpened ? 0 : 1
-        }
-    }
-
-    // --- Left Bezel ---
-    Rectangle {
-        id: leftBorderLine
-
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.bezelSize
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.topMargin: root.topBarHeight
-        color: Theme.background
-        width: Theme.panelBorderSize
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.left: parent.right
-            anchors.top: parent.top
-            color: Theme.borderColor
-            // opacity: ShellState.launcherOpened ? 0 : 1
-            width: Theme.widgetBorderWidth
-        }
-    }
-
-    // --- Right Bezel ---
-    Rectangle {
-        id: rightBorderLine
-
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.bezelSize
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.topMargin: root.topBarHeight
-        color: Theme.background
-        width: Theme.panelBorderSize
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.right: parent.left
-            anchors.top: parent.top
-            color: Theme.borderColor
-            // opacity: ShellState.controlCenterOpened ? 0 : 1
-            width: Theme.widgetBorderWidth
-        }
-    }
-    ScreenCorner {
-        anchors.left: parent.left
-        anchors.leftMargin: root.bezelSize
-        anchors.top: parent.top
-        anchors.topMargin: root.topBarHeight
-        // top-left (rotation: 0, default)
-    }
-    ScreenCorner {
-        anchors.right: parent.right
-        anchors.rightMargin: root.bezelSize
-        anchors.top: parent.top
-        anchors.topMargin: root.topBarHeight
-        rotation: 90 // top-right
-    }
-    ScreenCorner {
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.bezelSize
-        anchors.right: parent.right
-        anchors.rightMargin: root.bezelSize
-        rotation: 180 // bottom-right
-    }
-    ScreenCorner {
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.bezelSize
-        anchors.left: parent.left
-        anchors.leftMargin: root.bezelSize
-        rotation: 270 // bottom-left
-    }
-
-    component ScreenCorner: Shape {
-        property real bw: Theme.widgetBorderWidth
-        property real offset: bw / 2.0
-        property int r: root.cornerRadius
-
-        antialiasing: true
-        height: r
-        preferredRendererType: Shape.CurveRenderer
-        width: r
-
-        ShapePath {
-            fillColor: Theme.background
-            startX: 0
-            startY: 0
-            strokeColor: Theme.background
-
-            PathLine {
-                x: r
-                y: 0
-            }
-            PathArc {
-                direction: PathArc.Counterclockwise
-                radiusX: r
-                radiusY: r
-                x: 0
-                y: r
-            }
-            PathLine {
-                x: 0
-                y: 0
-            }
-        }
-        ShapePath {
-            fillColor: "transparent"
-            startX: r
-            startY: offset
-            strokeColor: Theme.borderColor
-            strokeWidth: bw
-
-            PathArc {
-                direction: PathArc.Counterclockwise
-                radiusX: r - offset
-                radiusY: r - offset
-                x: offset
-                y: r
-            }
+        // ---------------------------------------------------------
+        // 2. Reservation windows (bar height + bezel margins)
+        // ---------------------------------------------------------
+        ExclusionZones {
+            screen: rootScope.screen
+            barHeight: rootScope.topBarHeight
+            bezelSize: rootScope.bezelSize
         }
     }
 }

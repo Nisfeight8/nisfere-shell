@@ -22,54 +22,77 @@ Item {
         spacing: 12
 
         // ── Circular gauges ───────────────────────────────────────
-        // Explicit height on wrapper item — prevents gauges rendering
-        // at height:0 and disappearing behind subsequent elements
+        // Was a Repeater over an inline array literal that referenced
+        // SystemStatsService.* directly — since that array expression
+        // re-evaluates (producing a brand-new array object) every
+        // time ANY of those stats changes, Repeater treated it as "the
+        // model changed" and destroyed+recreated all 3 delegates on
+        // every stats refresh tick. That meant CircularGauge's own
+        // skip-reveal-on-mount fix (see core/CircularGauge.qml) kicked
+        // in on every single tick too, since each recreation looked
+        // like a fresh mount — so these gauges likely never actually
+        // animated a value change smoothly, just silently snapped.
+        // Unrolled into 3 explicit gauges instead (same approach
+        // Weather.qml already uses for its own small fixed set of
+        // cards) — each one's own bindings stay reactive normally,
+        // with nothing ever recreating the Item/CircularGauge itself.
         RowLayout {
             Layout.fillWidth: true
             spacing: 0
 
-            Repeater {
-                model: [
-                    {
-                        value: SystemStatsService.cpuUsage,
-                        main: SystemStatsService.cpuTempText,
-                        sub: "CPU",
-                        sideTop: Math.round(SystemStatsService.cpuUsage * 100) + "%",
-                        sideSub: "Usage"
-                    },
-                    {
-                        value: SystemStatsService.ramUsage,
-                        main: SystemStatsService.ramUsedText,
-                        sub: "RAM",
-                        sideTop: (SystemStatsService.ramUsage * 100).toFixed(0) + "%",
-                        sideSub: SystemStatsService.ramTotalText
-                    },
-                    {
-                        value: parseFloat(SystemStatsService.diskUsage) / 100,
-                        main: SystemStatsService.diskUsedText,
-                        sub: "DISK",
-                        sideTop: SystemStatsService.diskUsage,
-                        sideSub: SystemStatsService.diskTotalText
-                    },
-                ]
+            // Explicit height on wrapper item — prevents gauges rendering
+            // at height:0 and disappearing behind subsequent elements
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 140
+                height: 140
 
-                // ↓ Explicit height — critical! Without it RowLayout
-                //   gives height:0 and the gauge renders behind siblings
-                Item {
-                    Layout.fillWidth: true
-                    height: 140
+                CircularGauge {
+                    anchors.centerIn: parent
+                    width: 130
+                    height: 130
+                    value: SystemStatsService.cpuUsage
+                    mainText: SystemStatsService.cpuTempText
+                    subText: "CPU"
+                    sideTextTitle: Math.round(SystemStatsService.cpuUsage * 100) + "%"
+                    sideTextSubtitle: "Usage"
+                    progressColor: root._statColor(SystemStatsService.cpuUsage)
+                }
+            }
 
-                    CircularGauge {
-                        anchors.centerIn: parent
-                        width: 130
-                        height: 130
-                        value: modelData.value
-                        mainText: modelData.main
-                        subText: modelData.sub
-                        sideTextTitle: modelData.sideTop
-                        sideTextSubtitle: modelData.sideSub
-                        progressColor: root._statColor(modelData.value)
-                    }
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 140
+                height: 140
+
+                CircularGauge {
+                    anchors.centerIn: parent
+                    width: 130
+                    height: 130
+                    value: SystemStatsService.ramUsage
+                    mainText: SystemStatsService.ramUsedText
+                    subText: "RAM"
+                    sideTextTitle: (SystemStatsService.ramUsage * 100).toFixed(0) + "%"
+                    sideTextSubtitle: SystemStatsService.ramTotalText
+                    progressColor: root._statColor(SystemStatsService.ramUsage)
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 140
+                height: 140
+
+                CircularGauge {
+                    anchors.centerIn: parent
+                    width: 130
+                    height: 130
+                    value: parseFloat(SystemStatsService.diskUsage) / 100
+                    mainText: SystemStatsService.diskUsedText
+                    subText: "DISK"
+                    sideTextTitle: SystemStatsService.diskUsage
+                    sideTextSubtitle: SystemStatsService.diskTotalText
+                    progressColor: root._statColor(parseFloat(SystemStatsService.diskUsage) / 100)
                 }
             }
         }

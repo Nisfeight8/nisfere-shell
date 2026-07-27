@@ -1,9 +1,10 @@
 pragma Singleton
 
 import QtQuick
+import Quickshell
 import Quickshell.Services.UPower
 
-QtObject {
+Singleton {
     id: root
 
     property Connections _batteryConnections: Connections {

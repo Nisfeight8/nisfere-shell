@@ -3,11 +3,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Singleton {
     id: root
 
-    property Process _hyprctlProc: Process {
-    }
+    property Process _hyprctlProc: Process {}
     property FileView _stateFile: FileView {
         blockLoading: true
         path: Quickshell.env("HOME") + "/.cache/nisfere/nightlight_state"
@@ -24,14 +23,16 @@ QtObject {
 
     function toggle() {
         const newState = !root.isActive;
-        const shaderPath = Quickshell.env("HOME") + "/.config/hypr/nightlight.glsl";
 
         if (newState) {
-            _hyprctlProc.exec(["hyprctl", "keyword", "decoration:screen_shader", shaderPath]);
             _stateFile.setText("1");
+            // Το -T είναι η μέρα και το -t η νύχτα. Βάζοντας 4000 και στα δύο,
+            // το wlsunset εφαρμόζει το φίλτρο ακαριαία, ό,τι ώρα και να είναι!
+            Quickshell.execDetached(["wlsunset", "-T", "10000", "-t", "4000"]);
         } else {
-            _hyprctlProc.exec(["hyprctl", "keyword", "decoration:screen_shader", "[[EMPTY]]"]);
             _stateFile.setText("0");
+            // Το pkill κλείνει το wlsunset και η οθόνη επανέρχεται στο κανονικό
+            Quickshell.execDetached(["pkill", "wlsunset"]);
         }
     }
 }

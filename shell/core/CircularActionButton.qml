@@ -25,7 +25,11 @@ ColumnLayout {
     property int diameter: 52
     property int iconSize: 20
 
-    readonly property bool isHovered: hover.hovered
+    readonly property bool isHovered: hover.hovered || forceHover
+    // Lets an external consumer (e.g. keyboard navigation highlighting
+    // the "selected" button) reuse the exact same hover visuals
+    // instead of inventing a separate focus-ring look.
+    property bool forceHover: false
     readonly property color _stateColor: root.isActive ? Theme.backgroundAlt : root.isHovered ? root.hoverColor : Theme.foreground
 
     signal tapped
@@ -66,8 +70,8 @@ ColumnLayout {
                 }
             }
             Behavior on opacity {
-                NumberAnimation {
-                    duration: 150
+                Anim {
+                    type: Anim.FastEffects
                 }
             }
         }
@@ -95,18 +99,6 @@ ColumnLayout {
                 }
             }
         }
-
-        HoverHandler {
-            id: hover
-            cursorShape: Qt.PointingHandCursor
-        }
-        TapHandler {
-            onTapped: root.tapped()
-        }
-        StyledToolTip {
-            visible: root.isHovered && root.tooltipText !== ""
-            text: root.tooltipText
-        }
     }
 
     Text {
@@ -123,9 +115,24 @@ ColumnLayout {
             }
         }
         Behavior on opacity {
-            NumberAnimation {
-                duration: 150
+            Anim {
+                type: Anim.FastEffects
             }
         }
+    }
+
+    // Moved up from `circle` to `root` — hover/tap/tooltip now cover the
+    // whole button (icon + label), not just the circle, so clicking or
+    // hovering the label works too instead of only the icon area.
+    HoverHandler {
+        id: hover
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        onTapped: root.tapped()
+    }
+    StyledToolTip {
+        visible: root.isHovered && root.tooltipText !== ""
+        text: root.tooltipText
     }
 }

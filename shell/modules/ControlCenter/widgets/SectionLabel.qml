@@ -1,40 +1,17 @@
 import QtQuick
-import QtQuick.Layouts
 import qs.core
 
-// Standard header for Control Center sub-pages: back button + title,
-// with an optional trailing slot for extra controls (e.g. an enable/
-// disable ToggleSwitch) declared directly as children.
-// Usage:
-//   PageHeader {
-//       Layout.fillWidth: true
-//       title: "Wi-Fi"
-//       onBackRequested: pageStack.currentIndex = 0
-//
-//       ToggleSwitch {
-//           checked: NetworkService.wifiEnabled
-//           onToggled: NetworkService.wifi.toggle()
-//       }
-//   }
-RowLayout {
+// Small section heading — groups related rows/controls within a
+// Control Center sub-page (e.g. "NETWORK", "SECURITY"), sitting below
+// a PageHeader. No back button, no navigation — that's PageHeader's
+// job; this is purely a label. Caller decides exact casing/wording,
+// same as PageTitle.
+// Usage: SectionLabel { text: "NETWORK" }
+Text {
     id: root
-
-    property string title: ""
-    signal backRequested
-
-    // Extra children declared inside PageHeader{} land here, after the title.
-    default property alias trailingData: trailingRow.data
-
-    spacing: 10
-
-    PageTitle {
-        Layout.fillWidth: true
-        text: root.title
-        elide: Text.ElideRight
-    }
-
-    RowLayout {
-        id: trailingRow
-        spacing: 8
-    }
+    color: Theme.foreground
+    font.family: Theme.fontName
+    font.pixelSize: 11
+    font.bold: true
+    opacity: 0.5
 }

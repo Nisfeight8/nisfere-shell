@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
-QtObject {
+Singleton {
     id: keyboardService
 
     property Process _initProc: Process {

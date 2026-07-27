@@ -1,8 +1,10 @@
 pragma Singleton
 import QtQuick
+import Quickshell
+
 import qs.services
 
-QtObject {
+Singleton {
     id: root
 
     property var updates: []

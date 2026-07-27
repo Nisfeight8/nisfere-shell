@@ -11,11 +11,6 @@ BarWidget {
     bgColor: "transparent"
     spacing: 8
 
-    SystemClock {
-        id: sysClock
-        precision: SystemClock.Seconds
-    }
-
     LucideIcon {
         anchors.verticalCenter: parent.verticalCenter
         color: Theme.selected
@@ -29,7 +24,10 @@ BarWidget {
         font.bold: true
         font.family: Theme.fontName
         font.pixelSize: 14
-        text: Qt.formatDateTime(sysClock.date, "ddd dd MMM • HH:mm")
+        // Was sysClock.date from a locally-owned SystemClock — now
+        // reads from the shared TimeService singleton (see
+        // services/TimeService.qml) instead of owning its own clock.
+        text: Qt.formatDateTime(TimeService.date, "ddd dd MMM • HH:mm")
     }
 
     Item {
@@ -71,14 +69,13 @@ BarWidget {
         }
     }
 
-    MouseArea {
-        id: clockMouse
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        hoverEnabled: true
+    HoverHandler {
         parent: clockWidget
-
-        onClicked: {
+        cursorShape: Qt.PointingHandCursor
+    }
+    TapHandler {
+        parent: clockWidget
+        onTapped: {
             if (!ShellState.dashboardOpened) {
                 if (NotificationService.notifications.length > 0) {
                     ShellState.currentDashboardTab = 3;

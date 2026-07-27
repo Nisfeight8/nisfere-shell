@@ -70,7 +70,7 @@ Item {
             label: "System Monitor",
             sub: "Full system stats",
             panel: "sysmon",
-            ready: false
+            ready: true
         },
         {
             icon: "key",

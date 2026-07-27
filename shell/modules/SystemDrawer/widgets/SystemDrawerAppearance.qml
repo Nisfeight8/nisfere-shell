@@ -110,7 +110,6 @@ Item {
                 icon: "layout-grid"
                 label: "App Launcher"
                 onTapped: {
-                    ShellState.launcherOpened = false;
                     ShellState.appLauncherOpened = true;
                 }
             }
@@ -135,12 +134,19 @@ Item {
                 }
             }
 
+            // Was `ready: false` / "Coming soon" — the feature already
+            // exists (see SystemStatsWidget.qml's own "Full System
+            // Monitor" NavTile), just wasn't wired up here yet. Same
+            // destination, same wiring.
             NavTile {
                 Layout.fillWidth: true
                 icon: "activity"
                 label: "System Monitor"
-                ready: false
-                subLabel: "Coming soon"
+                onTapped: {
+                    ShellState.appLauncherOpened = true;
+                    ShellState.launcherActiveTab = 1;
+                    ShellState.launcherActiveTool = "sysmon";
+                }
             }
         }
     }

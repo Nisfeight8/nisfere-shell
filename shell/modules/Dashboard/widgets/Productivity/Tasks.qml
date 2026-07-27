@@ -6,6 +6,10 @@ import qs.services
 Item {
     id: root
     anchors.fill: parent
+    // Was missing entirely — same fix as Productivity.qml/Media.qml:
+    // bottom-up from mainColumn's own (already-correct) implicit size.
+    implicitWidth: mainColumn.implicitWidth
+    implicitHeight: mainColumn.implicitHeight
 
     // "active" | "completed" — which list is currently shown
     property string filter: "active"
@@ -29,6 +33,7 @@ Item {
     }
 
     ColumnLayout {
+        id: mainColumn
         anchors.fill: parent
         spacing: 10
 
@@ -144,7 +149,7 @@ Item {
 
             delegate: Rectangle {
                 id: row
-                property bool isHovered: false
+                readonly property bool isHovered: rowHover.hovered
 
                 width: ListView.view.width
                 height: 40
@@ -204,8 +209,8 @@ Item {
                         opacity: modelData.done ? 0.4 : 1.0
                         elide: Text.ElideRight
                         Behavior on opacity {
-                            NumberAnimation {
-                                duration: 150
+                            Anim {
+                                type: Anim.FastEffects
                             }
                         }
                     }
@@ -222,9 +227,12 @@ Item {
                     }
                 }
 
+                // Whole-row hover, arrow cursor (not pointing-hand) —
+                // this drives only the background tint, not a "click
+                // me" affordance; the checkbox/X button each have
+                // their own PointingHandCursor for their own actions.
                 HoverHandler {
-                    cursorShape: Qt.ArrowCursor
-                    onHoveredChanged: row.isHovered = hovered
+                    id: rowHover
                 }
             }
         }

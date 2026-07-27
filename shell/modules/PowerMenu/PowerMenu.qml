@@ -73,36 +73,42 @@ PanelWindow {
             spacing: 40
 
             Repeater {
+                // Was inline `cmd: [...]` arrays duplicating the exact
+                // same systemctl/loginctl/hyprshutdown commands now
+                // centralized in PowerService.qml — action is a direct
+                // function reference (plain JS array literals can hold
+                // these fine), so there's one source of truth for what
+                // each of these commands actually is.
                 model: [
-                    {
-                        icon: "lock",
-                        label: "Lock",
-                        cmd: ["loginctl", "lock-session"],
-                        color: Theme.selected
-                    },
                     {
                         icon: "power",
                         label: "Shutdown",
-                        cmd: ["systemctl", "poweroff"],
+                        action: () => PowerService.poweroff(),
                         color: Theme.color1
                     },
                     {
                         icon: "refresh-cw",
                         label: "Reboot",
-                        cmd: ["systemctl", "reboot"],
-                        color: Theme.color3
+                        action: () => PowerService.reboot(),
+                        color: Theme.color2
                     },
                     {
                         icon: "moon",
                         label: "Suspend",
-                        cmd: ["systemctl", "suspend"],
+                        action: () => PowerService.suspend(),
+                        color: Theme.color3
+                    },
+                    {
+                        icon: "lock",
+                        label: "Lock",
+                        action: () => PowerService.lock(),
                         color: Theme.color4
                     },
                     {
                         icon: "log-out",
                         label: "Logout",
-                        cmd: ["hyprctl", "dispatch", "exit"],
-                        color: Theme.color2
+                        action: () => PowerService.logout(),
+                        color: Theme.color5
                     },
                 ]
 
@@ -118,7 +124,7 @@ PanelWindow {
 
                     onTapped: {
                         ShellState.powerMenuOpened = false;
-                        Quickshell.execDetached(modelData.cmd);
+                        modelData.action();
                     }
                 }
             }

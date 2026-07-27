@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 theme_manager = ThemeManager()
 
 _VALID_MODES = {"dark", "light"}
+_VALID_SCOPES = {"shared", "shell", "hyprland"}
 
 
 # ── Payload dataclasses ──────────────────────────────────────────────────────
@@ -51,6 +52,24 @@ class PreviewWallpaperPayload:
     def __post_init__(self):
         if not self.wallpaper_path:
             raise ValueError("wallpaper_path is required")
+
+
+@dataclass
+class SetSettingPayload:
+    key: str
+    value: object
+    # NEW — which style bucket to write into. Defaults to "shared" so
+    # existing QML callers that don't know about scopes yet still work
+    # (radius/fontName-style settings are shared anyway).
+    scope: str = "shared"
+
+    def __post_init__(self):
+        if not self.key:
+            raise ValueError("key is required")
+        if self.scope not in _VALID_SCOPES:
+            raise ValueError(
+                f"Invalid scope '{self.scope}', must be one of {_VALID_SCOPES}"
+            )
 
 
 # ── Command handler ───────────────────────────────────────────────────────────
@@ -127,6 +146,24 @@ async def handle_command(action: str, payload: dict, sock) -> None:
                         "payload": result,
                     }
                 )
+
+            case "set_setting":
+                # Entry point for the general-settings UI (radius,
+                # fontName, widgetOpacity, windowGapsIn, ... — any key,
+                # tagged with which style scope it belongs to). See
+                # ThemeManager.set_setting / StateManager for the
+                # underlying shared/shell/hyprland scope design.
+                p = SetSettingPayload(**payload)
+                result = await asyncio.to_thread(
+                    theme_manager.set_setting, p.key, p.value, p.scope
+                )
+                await sock.send(
+                    {
+                        "type": "setting_updated",
+                        "payload": result,
+                    }
+                )
+
             case _:
                 logger.warning("Unknown theme action: '%s'", action)
 

@@ -3,8 +3,9 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.services
 
-QtObject {
+Singleton {
     id: root
 
     property Process _cavaProc: Process {
@@ -15,38 +16,57 @@ QtObject {
 
         stdout: SplitParser {
             onRead: data => {
-                let rawValues = data.trim().split(";").filter(v => v !== "");
-
-                if (rawValues.length === 0)
-                    return;
-
-                let currentBars = rawValues.map(v => Number(v));
-                let barCount = currentBars.length;
-
-                if (barCount === 0)
-                    return;
-
+                // Single-pass parse — the old version did
+                // split → filter → map (3 separate array traversals,
+                // 2 throwaway intermediate arrays) on EVERY cava output
+                // line. At cava's frame rate (dozens of times/sec while
+                // music plays), that adds up to a huge number of small
+                // JS array allocations — confirmed via QML Profiler as
+                // the single biggest "LargeItem" memory churn source in
+                // the whole shell. One pass avoids the intermediate
+                // arrays entirely.
+                const parts = data.trim().split(";");
+                const currentBars = [];
+                const maxBassBars = 3;
                 let bassSum = 0;
+                let bassCount = 0;
                 let totalSum = 0;
-                let bassCount = Math.min(3, barCount);
 
-                for (let i = 0; i < barCount; i++) {
-                    let val = currentBars[i];
+                for (let i = 0; i < parts.length; i++) {
+                    const s = parts[i];
+                    if (s === "")
+                        continue;
+                    const val = Number(s);
+                    currentBars.push(val);
                     totalSum += val;
-                    if (i < bassCount) {
+                    if (currentBars.length <= maxBassBars) {
                         bassSum += val;
+                        bassCount++;
                     }
                 }
 
+                if (currentBars.length === 0)
+                    return;
+
                 root.bars = currentBars;
-                root.bass = bassSum / bassCount;
-                root.level = totalSum / barCount;
+                root.bass = bassCount > 0 ? bassSum / bassCount : 0;
+                root.level = totalSum / currentBars.length;
             }
         }
     }
     property var bars: []
     property real bass: 0
-    property bool isActive: MediaService.isPlaying
+
+    // Only run cava (and all the per-frame parsing above) while the
+    // visualizer is actually ON SCREEN — the Dashboard's Media tab,
+    // where Media.qml's glow effect consumes `bass`. Previously this
+    // ran the ENTIRE time music was playing, even with the Dashboard
+    // closed and nobody able to see the effect at all — by far the
+    // largest single contributor to background CPU/memory churn found
+    // via profiling. The compact bar indicators (Clock's disc icon,
+    // NowPlaying) don't use this data, so gating it here costs nothing
+    // visually.
+    property bool isActive: MediaService.isPlaying && ShellState.dashboardOpened && ShellState.currentDashboardTab === 1
     property real level: 0
 
     onIsActiveChanged: {

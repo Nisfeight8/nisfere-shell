@@ -3,24 +3,19 @@ import Quickshell
 import qs.core
 
 // Tooltip for items INSIDE the bar. Unlike StyledToolTip (which works
-// fine in Drawers — those PanelWindows are tall enough to contain a
-// normal Popup rendering below its trigger item), the bar's own
-// PanelWindow is only Theme.barHeight tall. A QtQuick.Controls Popup/
-// ToolTip can only ever paint within its own hosting window's bounds —
-// so trying to show one "below the bar" fails, since there's no "below"
-// inside a window that IS the bar's height.
+// fine in Drawers), the bar's own hosting window (now ScreenBorder,
+// previously its own small PanelWindow) needs a genuinely separate
+// PopupWindow surface to paint "below the bar" outside its own bounds.
 //
-// PopupWindow (Quickshell's own type, not QtQuick.Controls.Popup) opens
-// a genuinely separate top-level window instead, free of that
-// constraint — same mechanism BarPopup already uses. This reuses
-// PopupContainer so it's visually/motion-consistent with everything else.
-//
-// Usage (from inside Bar.qml's scope, where `myBar` id is in scope):
-//   BarTooltip {
-//       showPopup: hoverHandler.hovered && tooltipText !== ""
-//       targetItem: root
-//       text: tooltipText
-//   }
+// anchor.window uses targetItem's QsWindow.window — Quickshell's OWN
+// attached property (not standard Qt's `Window.window`, which returns
+// a generic Qt window proxy that Quickshell's anchor system doesn't
+// accept — that was the "ProxiedWindow... which is not a quickshell
+// window" warning from the first attempted fix). QsWindow.window gives
+// the actual Quickshell window instance ultimately hosting this Item,
+// rather than a hardcoded id reference like the old `myBar` (which
+// broke once Bar.qml became a plain Item, no longer its own window,
+// hosted inside ScreenBorder instead).
 PopupWindow {
     id: root
 
@@ -29,11 +24,9 @@ PopupWindow {
     required property Item targetItem
 
     property real targetX: targetItem.mapToItem(null, 0, 0).x + (targetItem.width / 2) - (root.width / 2)
-    
-    
     anchor.rect.x: Math.max(8, targetX)
     anchor.rect.y: Theme.barHeight
-    anchor.window: myBar
+    anchor.window: targetItem.QsWindow.window
 
     color: "transparent"
     implicitWidth: container.implicitWidth

@@ -5,7 +5,7 @@ import qs.services
 ControlButton {
     id: root
 
-    property bool isDark: ThemeService.currentState ? ThemeService.currentState.mode === "dark" : true
+    property bool isDark: ThemeState.mode === "dark"
 
     iconText: "palette"
     title: isDark ? "Dark Theme" : "Light Theme"
@@ -14,6 +14,6 @@ ControlButton {
     isActive: isDark
 
     onClicked: {
-        ThemeService.toggleMode();
+        ThemeActions.toggleMode();
     }
 }

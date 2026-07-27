@@ -27,21 +27,43 @@ RowLayout {
         radius: 18
         width: 36
 
+        Behavior on color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
+        Behavior on border.color {
+            AnimColor {
+                type: Anim.FastEffects
+            }
+        }
+
         LucideIcon {
             anchors.centerIn: parent
             size: 18
             color: (root.isMuteable && root.isMuted) ? Theme.foreground : Theme.selected
             opacity: (root.isMuteable && root.isMuted) ? 0.5 : 1.0
             icon: root.isMuted ? root.mutedIcon : root.activeIcon
+
+            Behavior on color {
+                AnimColor {
+                    type: Anim.FastEffects
+                }
+            }
+            Behavior on opacity {
+                Anim {
+                    type: Anim.FastEffects
+                }
+            }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
+        HoverHandler {
             enabled: root.isMuteable
-            hoverEnabled: root.isMuteable
-
-            onClicked: root.toggleMuteClicked()
+            cursorShape: Qt.PointingHandCursor
+        }
+        TapHandler {
+            enabled: root.isMuteable
+            onTapped: root.toggleMuteClicked()
         }
     }
 
@@ -49,7 +71,22 @@ RowLayout {
         id: internalSlider
         Layout.fillWidth: true
         isMuted: root.isMuteable && root.isMuted
-        value: root.value
+
+        // Was a plain `value: root.value` binding — the FIRST time the
+        // user drags the slider, Slider's own internal drag handling
+        // writes to `value` imperatively, silently destroying a plain
+        // declarative binding. After that this slider would stop
+        // following root.value if it ever changed externally (e.g.
+        // volume changed by a hardware key while this panel is open).
+        // Same bug MediaSlider.qml already correctly avoids — using
+        // the same Binding + when:!pressed pattern here too.
+        Binding {
+            target: internalSlider
+            property: "value"
+            value: root.value
+            when: !internalSlider.pressed
+            restoreMode: Binding.RestoreNone
+        }
 
         onMoved: root.liveValueMoved(internalSlider.value)
         onPressedChanged: if (!pressed)

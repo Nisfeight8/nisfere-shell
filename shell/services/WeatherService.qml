@@ -1,8 +1,8 @@
 pragma Singleton
-
+import Quickshell
 import QtQuick
 
-QtObject {
+Singleton {
     id: root
 
     property string city: ""

@@ -12,6 +12,15 @@ Item {
 
     property int bottomOffset: 0
 
+    // NEW — the path below is hardcoded with the free/rounded corner
+    // at the BOTTOM (correct for top-anchored corner drawers like
+    // SystemDrawer/ControlCenter, cornerSecondaryEdge=TopEdge). For
+    // bottom-anchored corners (cornerSecondaryEdge=BottomEdge, e.g.
+    // OSD/NotificationPopup), the free corner needs to be at the TOP
+    // instead — a vertical flip, same principle as the existing
+    // horizontal xScale flip for Left/Right.
+    property bool cornerAtTop: true
+
     Shape {
         id: theShape
         anchors.fill: parent
@@ -20,7 +29,9 @@ Item {
         transformOrigin: Item.Center
         transform: Scale {
             origin.x: root.width / 2
+            origin.y: root.height / 2
             xScale: root.edge === Qt.LeftEdge ? -1 : 1
+            yScale: root.cornerAtTop ? 1 : -1
         }
 
         // ── FILL ──────────────────────────────────────────────────────

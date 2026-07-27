@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-QtObject {
+Singleton {
     id: root
 
     property string backlightPath: ""
