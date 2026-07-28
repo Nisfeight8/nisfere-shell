@@ -1,8 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import Quickshell.Hyprland
-
 import qs.modules.Bar
 import qs.modules.Dashboard
 import qs.modules.ControlCenter
@@ -12,6 +10,7 @@ import qs.modules.CentralLauncher
 import qs.modules.Osd
 import qs.modules.NotificationPopup
 import qs.modules.WorkspaceOverview
+// import qs.modules.WallpaperLyrics
 
 import qs.core
 import qs.services
@@ -54,8 +53,10 @@ Variants {
 
             // ── Fullscreen detection ──────────────────────────────────
             readonly property var _monitorData: HyprlandData.monitors.find(m => m.name === screen.name)
-            readonly property int activeWorkspaceId: _monitorData?.activeWorkspace?.id ?? -1
-            readonly property bool hasFullscreen: HyprlandData.windowList.some(w => (w.workspace?.id ?? -1) === activeWorkspaceId && (w.fullscreen ?? 0) > 0)
+            readonly property var activeWorkspace: {
+                return ToplevelManager.toplevels.values.find(t => t.activated && t.screens.some(s => s.name === screen.name)) ?? null;
+            }
+            readonly property bool hasFullscreen: activeWorkspace ? activeWorkspace.fullscreen : false
 
             // ── Adjacent-monitor detection ─────────────────────────────
             // Moving the cursor between two side-by-side monitors passes
@@ -86,9 +87,7 @@ Variants {
             readonly property bool hasMonitorToRight: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs(m.x - (_monitorData.x + _monitorData.width)) < 2 && _yOverlaps(m)) : false
             readonly property bool hasMonitorAbove: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs((m.y + m.height) - _monitorData.y) < 2 && _xOverlaps(m)) : false
             readonly property bool hasMonitorBelow: _monitorData ? HyprlandData.monitors.some(m => m.name !== _monitorData.name && Math.abs(m.y - (_monitorData.y + _monitorData.height)) < 2 && _xOverlaps(m)) : false
-            Component.onCompleted: {
-                console.log(screen.name)
-            }
+
             WlrLayershell.keyboardFocus: isAnyUIOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
             WlrLayershell.layer: (isAnyUIOpen || osd.shown || notificationPopup.shown) ? WlrLayer.Overlay : WlrLayer.Top
 
@@ -269,7 +268,17 @@ Variants {
         }
 
         // ---------------------------------------------------------
-        // 2. Reservation windows (bar height + bezel margins)
+        // 2. Wallpaper lyrics overlay — sits between the real
+        // wallpaper and normal windows, own PanelWindow so it's
+        // independent of visualWindow's own layer/z-order concerns.
+        // ---------------------------------------------------------
+        // WallpaperLyricsOverlay {
+        //     screen: rootScope.screen
+        //     monitorData: visualWindow._monitorData
+        // }
+
+        // ---------------------------------------------------------
+        // 3. Reservation windows (bar height + bezel margins)
         // ---------------------------------------------------------
         ExclusionZones {
             screen: rootScope.screen
