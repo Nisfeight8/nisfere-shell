@@ -46,9 +46,9 @@ return {
     ------------------
     ---- FONT --------
     ------------------
-    fontName              = "{{ fontName }}"
+    fontName              = "{{ fontName }}",
     ------------------
     ---- GENERAL SETTINGS --------
     ------------------
-    workspacesPerMonitor              = "{{ workspacesPerMonitor }}"
+    workspacesPerMonitor              = {{ workspacesPerMonitor }}
 }
