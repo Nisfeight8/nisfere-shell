@@ -380,82 +380,45 @@ else
 fi
 
  
-# ── 8c. Display manager (optional, customizable) ─────────────────────────────
+# ── 8c. Display manager (optional) ───────────────────────────────────────────
 # Without this, you start Hyprland manually each boot (start-hyprland
 # from a TTY, or the prompt at the very end of this script for right
-# now). greetd+regreet is the one worth eyeing if you want a themeable
-# greeter later (GTK-based, could match your nisfere colors down the
-# line) — greetd+tuigreet is the safer/simpler fallback (no extra
-# compositor needed, more battle-tested). Both configs below match the
-# ArchWiki's Hyprland-specific greetd examples exactly. SDDM works but
-# has a documented VT-switch-back quirk with hyprshutdown on logout
-# (see wiki.hypr.land/Hypr-Ecosystem/hyprshutdown — not exclusive to
-# SDDM, but well-documented there specifically).
+# now). Enabled but NOT started now — starting it immediately could
+# disrupt the very TTY session you're running this install from.
 #
-# NOTE: greetd-tuigreet/greetd-regreet package names are confirmed
-# against the current ArchWiki greetd page — safe to trust this time.
+# (greetd+tuigreet/regreet were tried and dropped — regreet specifically
+# didn't come up cleanly after reboot in testing; SDDM is the reliable
+# choice here, VT-switch-back quirk addressed separately via
+# hyprshutdown --vt auto + the chvt sudoers rule below.)
  
 if [[ $DRY_RUN -eq 1 ]]; then
-    warn "Skipping the display manager prompt in dry-run mode."
+    warn "Skipping the SDDM prompt in dry-run mode."
 else
     echo
-    echo "Display manager options:"
-    echo "  1) None    — start Hyprland manually (start-hyprland) each boot"
-    echo "  2) SDDM    — full-featured, but has a known VT-switch-back quirk on Hyprland logout"
-    echo "  3) greetd + tuigreet — lightweight text-based greeter, no theming, no extra compositor needed"
-    echo "  4) greetd + regreet  — GTK-based greeter, themeable later"
-    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Choice [1-4, default 1]: " dm_choice
-    case "${dm_choice:-1}" in
-        2)
-            run yay -S --needed --noconfirm sddm
-            run sudo systemctl enable sddm.service
-            log "SDDM installed and enabled — will show a login screen starting your NEXT boot."
-            ;;
-        3)
-            run yay -S --needed --noconfirm greetd greetd-tuigreet
-            # start-hyprland, not raw Hyprland — matches the same
-            # "official entry point since 0.53" reasoning as the
-            # launch-Hyprland-now prompt at the end of this script.
-            GREETD_CONFIG='[terminal]
-vt = 1
- 
-[default_session]
-command = "tuigreet --cmd start-hyprland"
-user = "greeter"'
-            if [[ $DRY_RUN -eq 1 ]]; then
-                echo -e "\033[2m[dry-run]\033[0m write /etc/greetd/config.toml"
-            else
-                echo "$GREETD_CONFIG" | sudo tee /etc/greetd/config.toml >/dev/null
-            fi
-            run sudo systemctl enable greetd.service
-            log "greetd + tuigreet installed and enabled — will show a login screen starting your NEXT boot."
-            ;;
-        4)
-            run yay -S --needed --noconfirm greetd greetd-regreet
-            # ArchWiki's official Hyprland-specific pattern — Hyprland
-            # itself (via start-hyprland) is the mini-compositor the
-            # greeter runs inside, not a separate one like cage. The
-            # minimal /etc/greetd/hyprland.conf just launches regreet
-            # and exits once regreet itself exits (i.e. once you log in).
-            GREETD_CONFIG='[default_session]
-command = "start-hyprland -- -c /etc/greetd/hyprland.conf"
-user = "greeter"'
-            GREETD_HYPR_CONF='exec-once = regreet; hyprctl dispatch exit'
-            if [[ $DRY_RUN -eq 1 ]]; then
-                echo -e "\033[2m[dry-run]\033[0m write /etc/greetd/config.toml"
-                echo -e "\033[2m[dry-run]\033[0m write /etc/greetd/hyprland.conf"
-            else
-                echo "$GREETD_CONFIG" | sudo tee /etc/greetd/config.toml >/dev/null
-                echo "$GREETD_HYPR_CONF" | sudo tee /etc/greetd/hyprland.conf >/dev/null
-            fi
-            run sudo systemctl enable greetd.service
-            log "greetd + regreet installed and enabled — will show a login screen starting your NEXT boot. Newer/less battle-tested setup than tuigreet — if it doesn't come up cleanly, 'systemctl disable greetd' from a TTY and fall back to option 1 or 3."
-            ;;
-        *)
-            warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
-            ;;
-    esac
+    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install SDDM (graphical login screen)? [y/N] " install_sddm
+    if [[ "$install_sddm" =~ ^[Yy]$ ]]; then
+        run yay -S --needed --noconfirm sddm
+        run sudo systemctl enable sddm.service
+        log "SDDM installed and enabled — will show a login screen starting your NEXT boot."
+    else
+        warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
+    fi
 fi
+
+# ── 8d. chvt sudoers rule (for hyprshutdown --vt auto) ───────────────────────
+# Narrow, single-purpose rule the hyprshutdown docs themselves call
+# safe ("chvt only switches virtual terminals and cannot be exploited
+# for privilege escalation") — added unconditionally, unlike the
+# broader pacman rule above which actually does warrant asking first.
+ 
+log "Adding passwordless sudo for chvt (needed by hyprshutdown --vt auto)..."
+if [[ $DRY_RUN -eq 1 ]]; then
+    echo -e "\033[2m[dry-run]\033[0m write /etc/sudoers.d/chvt"
+else
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/chvt" | sudo tee /etc/sudoers.d/chvt >/dev/null
+    sudo chmod 440 /etc/sudoers.d/chvt
+fi
+
 
 
 
