@@ -170,6 +170,7 @@ PACKAGES=(
 
     # Shell utilities used by daemon/QML (cava, clipboard, screenshots, etc.)
     zsh
+    fastfetch
     cava
     power-profiles-daemon
     brightnessctl
