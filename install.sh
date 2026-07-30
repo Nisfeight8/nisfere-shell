@@ -168,6 +168,7 @@ PACKAGES=(
     # Python dependencies for the daemon
     python-jinja2
     python-psutil
+    python-docker
 )
 
 run yay -S --needed --noconfirm "${PACKAGES[@]}"
