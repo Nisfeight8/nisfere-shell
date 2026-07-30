@@ -119,7 +119,7 @@ PACKAGES=(
 
     # Wallpaper / theming pipeline
     awww
-    wallust
+    wallust-git
     adw-gtk-theme
     papirus-icon-theme
     papirus-folders
