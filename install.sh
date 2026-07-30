@@ -379,9 +379,6 @@ else
     fi
 fi
 
-        warn "Skipped — the Docker tab won't have anything to show, but nothing else is affected."
-    fi
-fi
  
 # ── 8c. Display manager (optional, customizable) ─────────────────────────────
 # Without this, you start Hyprland manually each boot (start-hyprland
