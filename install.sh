@@ -301,6 +301,27 @@ else
     fi
 fi
 
+# ── 8c. Display manager (optional) ───────────────────────────────────────────
+# Without this, you start Hyprland manually each boot (start-hyprland
+# from a TTY, or the prompt at the very end of this script for right
+# now). SDDM is well-supported with Hyprland specifically. Enabled but
+# NOT started now — starting it immediately could disrupt the very
+# TTY session you're running this install from.
+ 
+if [[ $DRY_RUN -eq 1 ]]; then
+    warn "Skipping the SDDM prompt in dry-run mode."
+else
+    echo
+    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install SDDM (graphical login screen)? [y/N] " install_sddm
+    if [[ "$install_sddm" =~ ^[Yy]$ ]]; then
+        run yay -S --needed --noconfirm sddm
+        run sudo systemctl enable sddm.service
+        log "SDDM installed and enabled — will show a login screen starting your NEXT boot (Hyprland should already appear as a selectable session, installed as part of the hyprland package itself)."
+    else
+        warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
+    fi
+fi
+
 
 # ── 9. Daemon systemd --user service ─────────────────────────────────────────
 # Static file, copied as-is (always — a symlinked systemd unit file is
