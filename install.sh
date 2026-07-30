@@ -119,6 +119,11 @@ PACKAGES=(
 
     # Wallpaper / theming pipeline
     awww
+    # wallust-git, not plain wallust — the tarball-based AUR package
+    # has a known recurring stale-checksum bug (PKGBUILD's recorded
+    # sha256sum for the crates.io source tarball doesn't match what's
+    # actually served, causing "did not pass the validity check").
+    # -git builds straight from the repo instead, sidestepping it.
     wallust-git
     adw-gtk-theme
     papirus-icon-theme
@@ -128,12 +133,26 @@ PACKAGES=(
 
     # Fonts
     ttf-arimo-nerd
+    noto-fonts
+
+    # Audio (PipeWire) — nothing audio-related works without this:
+    # volume controls, cava visualizer, media playback, all of it.
+    pipewire
+    pipewire-pulse
+    pipewire-alsa
+    pipewire-jack
+    wireplumber
+
+    # GTK settings GUI — handy for eyeballing/adjusting theme, icon
+    # theme, cursor theme; already used once to debug adw-gtk3.
+    nwg-look
 
     # File manager (Thunar) + trash/mount/archive support
     thunar
     thunar-volman
     thunar-archive-plugin
     xarchiver
+    xfconf
     gvfs
     gvfs-mtp
     gvfs-gphoto2
@@ -150,6 +169,7 @@ PACKAGES=(
     bpytop
 
     # Shell utilities used by daemon/QML (cava, clipboard, screenshots, etc.)
+    zsh
     cava
     power-profiles-daemon
     brightnessctl
@@ -189,9 +209,6 @@ log "Setting up XDG user directories..."
 run xdg-user-dirs-update
 
 # ── 4. Dotfiles from dots/ ───────────────────────────────────────────────────
-# hypr is dev-linkable (you'll tweak Hyprland config); wallust/qtengine/
-# gtk-*.0 always copy — rarely touched after first setup, and safer
-# not to have system-level config symlinked into a git working tree.
 # Order matters for wallust: it needs to be in place BEFORE step 10's
 # "apply default theme", since ColorSource's constructor checks/patches
 # ~/.config/wallust/wallust.toml and just logs a warning + skips if the
@@ -199,12 +216,51 @@ run xdg-user-dirs-update
 
 run mkdir -p "$HOME/.config"
 
-log "Installing dotfiles (hypr, wallust, qtengine, gtk-3.0, gtk-4.0)..."
+log "Installing dotfiles (hypr, wallust, qtengine, gtk-3.0, gtk-4.0, xfce4)..."
 install_dotdir "hypr"
 install_dotdir "wallust"
 install_dotdir "qtengine"
 install_dotdir "gtk-3.0"
 install_dotdir "gtk-4.0"
+install_dotdir "bpytop"
+install_dotdir "alacritty"
+install_dotdir "fastfetch"
+
+# ── 4b. Zsh ───────────────────────────────────────────────────────────────────
+# .zshrc goes straight to $HOME (not ~/.config) — that's just where
+# zsh looks by default, unless ZDOTDIR says otherwise, which we're not
+# setting here. Plugins get git-cloned into ~/.config/nisfere/zsh/
+# plugins/ (not shipped in dots/ — nothing to copy, just clones at
+# install time, same idea as ~/.cache/nisfere). Sets zsh as your login
+# shell unconditionally — you asked for that, not a prompt.
+
+install_zsh() {
+    log "Configuring Zsh..."
+    copy_backed_up "$REPO_DIR/dots/zsh/.zshrc" "$HOME/.zshrc"
+
+    local zsh_dir="$NISFERE_DIR/zsh"
+    local plugins_dir="$zsh_dir/plugins"
+    run mkdir -p "$plugins_dir"
+
+    local plugin
+    for plugin in zsh-syntax-highlighting zsh-autosuggestions zsh-history-substring-search; do
+        if [[ ! -d "$plugins_dir/$plugin" ]]; then
+            run git clone "https://github.com/zsh-users/$plugin.git" "$plugins_dir/$plugin"
+        fi
+    done
+
+    # Zsh appends here on every command — needs to exist upfront with
+    # the right permissions (history can contain sensitive stuff).
+    local history_file="$HOME/.zsh_history"
+    if [[ ! -f "$history_file" ]]; then
+        run touch "$history_file"
+        run chmod 600 "$history_file"
+    fi
+
+    run sudo chsh -s /bin/zsh "$USER"
+    log "Zsh configured (default shell — takes effect on your next login)."
+}
+install_zsh
 
 # ── 5. Nisfere daemon + shell + templates/themes ─────────────────────────────
 
@@ -235,17 +291,37 @@ fi
 run ln -s "$NISFERE_DIR/shell" "$QUICKSHELL_DEFAULT_DIR"
 
 # ── 6. Cache/data/media directories ──────────────────────────────────────────
-# app_usage.json, nightlight_state, notifications.json, tasks.json,
-# state.json are all created lazily by their own Python module on
-# first real write (same pattern StateManager already uses — missing
-# file -> sensible default), so only the parent directory needs to
-# actually exist ahead of time.
+# state.json is NOT created here — StateManager already handles that
+# correctly on demand (missing file -> sensible default, tested
+# extensively). The other four don't have the same confirmed handling,
+# so they get explicit default content below instead of relying on
+# lazy creation.
 
 log "Creating cache/data directories..."
 run mkdir -p "$HOME/.cache/nisfere"
 run mkdir -p "$HOME/Pictures/Wallpapers"
 run mkdir -p "$HOME/Pictures/Screenshots"
 run mkdir -p "$HOME/Videos/Recordings"
+
+# Default contents are best-guess (array for lists, object for
+# keyed/single state) — only create if missing, never overwrite
+# something already there. Confirm these match what each module
+# actually expects; state.json itself is NOT included here since
+# StateManager already creates it correctly on demand (tested
+# extensively earlier) — adding it here too could conflict with that.
+create_cache_file() {
+    local name="$1"
+    local default_content="$2"
+    local dst="$HOME/.cache/nisfere/$name"
+    if [[ -f "$dst" ]]; then
+        return
+    fi
+    if [[ $DRY_RUN -eq 1 ]]; then
+        echo -e "\033[2m[dry-run]\033[0m write $dst: $default_content"
+    else
+        echo "$default_content" > "$dst"
+    fi
+}
 
 # ── 7. Icon theme + GSettings (best-effort extra; settings.ini from
 # dots/gtk-*.0 above is the mechanism that actually matters under
@@ -280,7 +356,7 @@ fi
 # services/docker_service.py) — the daemon starts and runs fine either
 # way, the Dashboard's Docker tab just reports unavailable if you skip
 # this. Nothing else is affected.
- 
+
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the Docker prompt in dry-run mode."
 else
@@ -307,7 +383,7 @@ fi
 # now). SDDM is well-supported with Hyprland specifically. Enabled but
 # NOT started now — starting it immediately could disrupt the very
 # TTY session you're running this install from.
- 
+
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the SDDM prompt in dry-run mode."
 else
@@ -321,7 +397,6 @@ else
         warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
     fi
 fi
-
 
 # ── 9. Daemon systemd --user service ─────────────────────────────────────────
 # Static file, copied as-is (always — a symlinked systemd unit file is
@@ -394,12 +469,11 @@ echo "       exec-once = quickshell > ~/.cache/nisfere/quickshell.log 2>&1"
 echo "     (no -p needed anymore — ~/.config/quickshell now symlinks to the"
 echo "     real shell folder, so the default path is already correct, and"
 echo "     'qs ipc call'/'qs ipc show' will find the running instance too)."
-echo "  3. Log out and start a Hyprland session (or reboot) to pick up the new config."
-echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
+echo "  3. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
 
 # ── 11. Launch Hyprland now? (must be the LAST thing this script does —
 # `exec` replaces the current shell process, nothing after it runs) ──────────
- 
+
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the 'launch Hyprland now' prompt in dry-run mode."
 elif [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
@@ -418,4 +492,3 @@ else
         log "Skipped — log out and start a Hyprland session (or reboot) whenever you're ready."
     fi
 fi
-
