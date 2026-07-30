@@ -168,7 +168,6 @@ PACKAGES=(
     # Python dependencies for the daemon
     python-jinja2
     python-psutil
-    python-docker
 )
 
 run yay -S --needed --noconfirm "${PACKAGES[@]}"
@@ -274,6 +273,34 @@ else
         warn "Skipped — Arch updates in the UI will fall back to a polkit (pkexec) prompt. Make sure a polkit agent is running (e.g. exec-once in Hyprland: /usr/lib/polkit-kde-authentication-agent-1)."
     fi
 fi
+
+# ── 8b. Docker (optional) ────────────────────────────────────────────────────
+# Fully opt-in: neither Docker Engine nor python-docker are installed
+# by default. docker_service.py guards its own `import docker` (see
+# services/docker_service.py) — the daemon starts and runs fine either
+# way, the Dashboard's Docker tab just reports unavailable if you skip
+# this. Nothing else is affected.
+ 
+if [[ $DRY_RUN -eq 1 ]]; then
+    warn "Skipping the Docker prompt in dry-run mode."
+else
+    echo
+    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install Docker Engine (for the Dashboard's Docker tab)? [y/N] " install_docker
+    if [[ "$install_docker" =~ ^[Yy]$ ]]; then
+        run yay -S --needed --noconfirm docker docker-compose python-docker
+        run sudo systemctl enable --now docker.service
+        # Needed so python-docker (running as your user, not root) can
+        # actually reach /var/run/docker.sock — without this you'd get
+        # a permission error instead of a working connection. Group
+        # membership only takes effect on your NEXT login, not this
+        # session.
+        run sudo usermod -aG docker "$USER"
+        log "Docker installed and enabled. Log out and back in for group membership to take effect."
+    else
+        warn "Skipped — the Docker tab won't have anything to show, but nothing else is affected."
+    fi
+fi
+
 
 # ── 9. Daemon systemd --user service ─────────────────────────────────────────
 # Static file, copied as-is (always — a symlinked systemd unit file is

@@ -1,19 +1,48 @@
 import asyncio
 import logging
 
-import docker
-from docker import DockerClient
-
 logger = logging.getLogger(__name__)
+
+# python-docker is optional — Docker itself is opt-in at install time
+# (not every machine runs containers). Without this guard, a missing
+# package here would crash this module's import, which cascades
+# straight up through docker_manager.py's own top-level import into
+# main.py's `from modules import docker_manager, ...` — taking the
+# ENTIRE daemon down with it, not just the Docker tab. Every public
+# method below already has its own try/except around client calls
+# (handles the daemon-not-running case at runtime just fine) — the
+# only gap was this import itself never getting that chance to run.
+try:
+    import docker
+    from docker import DockerClient
+
+    _DOCKER_AVAILABLE = True
+except ImportError:
+    docker = None
+    DockerClient = None
+    _DOCKER_AVAILABLE = False
+    logger.warning(
+        "python-docker not installed — Docker features disabled (Docker tab "
+        "will report unavailable instead of working, nothing else is affected)"
+    )
 
 
 class DockerService:
 
-    def _client(self) -> DockerClient:
+    def _client(self):
         """Creates a fresh client per call — handles daemon restarts gracefully."""
+        if not _DOCKER_AVAILABLE:
+            raise RuntimeError(
+                "Docker is not installed (python-docker package missing)"
+            )
         return docker.from_env()
 
     # ── Streaming ────────────────────────────────────────────────
+    # These shell out to the `docker`/`docker compose` CLI binaries
+    # directly, not the Python library — a missing CLI binary raises
+    # FileNotFoundError here, already caught by docker_manager.py's
+    # own outer try/except around every action, so no extra guard
+    # needed in this section.
 
     async def get_stats_process(self, container_id: str):
         return await asyncio.create_subprocess_exec(
@@ -39,7 +68,7 @@ class DockerService:
 
     # ── Data fetchers ─────────────────────────────────────────────
 
-    def _fetch_containers(self, client: DockerClient) -> tuple:
+    def _fetch_containers(self, client) -> tuple:
         compose_projects: dict = {}
         standalone_containers: list = []
         running_count = 0
@@ -84,7 +113,7 @@ class DockerService:
 
         return compose_projects, standalone_containers, running_count, len(containers)
 
-    def _fetch_images(self, client: DockerClient) -> list[dict]:
+    def _fetch_images(self, client) -> list[dict]:
         result = []
         for img in client.images.list():
             tags = img.tags or ["<none>:<none>"]
@@ -101,7 +130,7 @@ class DockerService:
                 )
         return result
 
-    def _fetch_volumes(self, client: DockerClient) -> list[dict]:
+    def _fetch_volumes(self, client) -> list[dict]:
         return [
             {
                 "name": vol.name,
