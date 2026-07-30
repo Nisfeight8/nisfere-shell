@@ -1,3 +1,11 @@
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+
+# Daemon runtime logs (stray, shouldn't be tracked)
+daemon/output.log
+daemon/output2.log
+
+# Runtime-generated, lives in ~/.cache/nisfere in a real install —
+# only relevant here if you're testing against a repo-local cache path.
+*.log

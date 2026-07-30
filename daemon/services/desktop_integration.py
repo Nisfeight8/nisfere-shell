@@ -91,8 +91,13 @@ class DesktopIntegration:
                 check=False,
             )
             active_icon_theme = icon_theme_result.stdout.strip().strip("'")
+            # Fallback matters more than it looks — gsettings get
+            # likely returns empty/stale under Hyprland (no
+            # gnome-settings-daemon backing it, same root cause as
+            # reload_gtk()'s own gsettings-doesn't-work issue), so
+            # this branch is the one that actually runs in practice.
             papirus_theme = (
-                active_icon_theme if "apirus" in active_icon_theme else "Papirus-Dark"
+                active_icon_theme if "apirus" in active_icon_theme else "Papirus"
             )
 
             # Run and wait so icon cache is updated before GTK reload
@@ -114,16 +119,42 @@ class DesktopIntegration:
 
     def reload_gtk(self, mode: str) -> None:
         """
-        Forces GTK3/4 apps to reload colors live.
+        Forces GTK3/4 apps to pick up the new theme.
+
+        gsettings alone doesn't work under Hyprland (or any non-GNOME
+        compositor) — it writes to the dconf database, but nothing
+        actually applies that to running/launching GTK apps without
+        gnome-settings-daemon (part of a full GNOME session, which
+        Hyprland doesn't have). settings.ini is what GTK3/4 actually
+        read directly, regardless of desktop environment — the
+        reliable mechanism, not just a fallback. gsettings is still
+        called too since it's harmless and some portal-aware apps do
+        check it.
         - Uses adw-gtk3 (no dark/light suffix) — our CSS variables handle colors.
-        - Toggles gtk-theme name to trigger a CSS reload in all GTK apps.
         """
+        gtk_theme = "adw-gtk3-dark" if mode == "dark" else "adw-gtk3"
+
         try:
-            gtk_theme = "adw-gtk3-dark" if mode == "dark" else "adw-gtk3"
             subprocess.run(
                 ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme],
                 check=False,
             )
-            logger.debug("GTK reloaded (mode=%s)", mode)
         except Exception as e:
-            logger.warning("GTK reload failed: %s", e)
+            logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
+
+        settings_ini = (
+            "[Settings]\n"
+            f"gtk-theme-name={gtk_theme}\n"
+            "gtk-icon-theme-name=Papirus\n"
+            f"gtk-application-prefer-dark-theme={'1' if mode == 'dark' else '0'}\n"
+        )
+
+        for gtk_dir in ("gtk-3.0", "gtk-4.0"):
+            dst = Path.home() / ".config" / gtk_dir / "settings.ini"
+            try:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_text(settings_ini)
+            except Exception as e:
+                logger.warning("Failed to write %s: %s", dst, e)
+
+        logger.debug("GTK reloaded (mode=%s, theme=%s)", mode, gtk_theme)

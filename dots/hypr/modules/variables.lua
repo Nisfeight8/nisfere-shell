@@ -42,7 +42,7 @@ return {
     ---- MISC --------
     ------------------
     cursorTheme           = "Breeze-Adapta-Cursor",
-    cursorSize            = 17,
+    cursorSize            = 10,
     ------------------
     ---- FONT --------
     ------------------
@@ -50,5 +50,5 @@ return {
     ------------------
     ---- GENERAL SETTINGS --------
     ------------------
-    workspacesPerMonitor              = 8
+    workspacesPerMonitor              = 10
 }

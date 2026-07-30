@@ -1,0 +1,13 @@
+[Unit]
+Description=Nisfere shell daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.config/nisfere/daemon
+ExecStart=/usr/bin/python3 main.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
