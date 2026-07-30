@@ -27,6 +27,6 @@ Singleton {
     }
 
     function logout() {
-        Quickshell.execDetached(["hyprshutdown", "--vt", "auto"]);
+        Quickshell.execDetached(["hyprshutdown"]);
     }
 }

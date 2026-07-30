@@ -405,20 +405,6 @@ else
     fi
 fi
 
-# ── 8d. chvt sudoers rule (for hyprshutdown --vt auto) ───────────────────────
-# Narrow, single-purpose rule the hyprshutdown docs themselves call
-# safe ("chvt only switches virtual terminals and cannot be exploited
-# for privilege escalation") — added unconditionally, unlike the
-# broader pacman rule above which actually does warrant asking first.
- 
-log "Adding passwordless sudo for chvt (needed by hyprshutdown --vt auto)..."
-if [[ $DRY_RUN -eq 1 ]]; then
-    echo -e "\033[2m[dry-run]\033[0m write /etc/sudoers.d/chvt"
-else
-    echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/chvt" | sudo tee /etc/sudoers.d/chvt >/dev/null
-    sudo chmod 440 /etc/sudoers.d/chvt
-fi
-
 
 
 
