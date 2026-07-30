@@ -166,7 +166,7 @@ PACKAGES=(
     pacman-contrib
 
     # Python dependencies for the daemon
-    python-jinja2
+    python-jinja
     python-psutil
 )
 
@@ -375,3 +375,26 @@ echo "     real shell folder, so the default path is already correct, and"
 echo "     'qs ipc call'/'qs ipc show' will find the running instance too)."
 echo "  3. Log out and start a Hyprland session (or reboot) to pick up the new config."
 echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
+
+# ── 11. Launch Hyprland now? (must be the LAST thing this script does —
+# `exec` replaces the current shell process, nothing after it runs) ──────────
+ 
+if [[ $DRY_RUN -eq 1 ]]; then
+    warn "Skipping the 'launch Hyprland now' prompt in dry-run mode."
+elif [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
+    warn "Detected an SSH session — can't launch a Wayland/Hyprland session from here (no real seat/display to render into). Log in on the actual console/TTY and run 'Hyprland', or reboot into it."
+else
+    echo
+    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Launch Hyprland now? (replaces this shell session) [y/N] " launch_now
+    if [[ "$launch_now" =~ ^[Yy]$ ]]; then
+        log "Launching Hyprland via start-hyprland..."
+        # NOT the raw `Hyprland` binary directly — since 0.53, that's
+        # no longer the expected entry point (you'd get a "Hyprland
+        # was started without start-hyprland" warning/error). This
+        # wrapper (same package) adds crash recovery/safe mode too.
+        exec start-hyprland
+    else
+        log "Skipped — log out and start a Hyprland session (or reboot) whenever you're ready."
+    fi
+fi
+
