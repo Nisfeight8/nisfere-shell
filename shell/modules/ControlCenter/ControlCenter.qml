@@ -10,7 +10,7 @@ BaseDrawer {
     
     screenOffset: Theme.barHeight
     openedRequest: ShellState.controlCenterOpened
-    minPanelWidth: Screen.width / 4
+    minPanelWidth: 480
     minPanelHeight: 300
     toggleOnHover: false
 

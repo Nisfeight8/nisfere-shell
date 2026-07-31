@@ -41,8 +41,8 @@ return {
     ------------------
     ---- MISC --------
     ------------------
-    cursorTheme           = "Breeze-Adapta-Cursor",
-    cursorSize            = 10,
+    cursorTheme           = "Bibata-Modern-Classic",
+    cursorSize            = 24,
     ------------------
     ---- FONT --------
     ------------------

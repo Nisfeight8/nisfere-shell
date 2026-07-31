@@ -2,7 +2,7 @@
 #
 # install.sh — Nisfere shell installer
 #
-# Installs: Hyprland config, wallust, qtengine, GTK settings (all from
+# Installs: Hyprland config, qtengine, GTK settings (all from
 # dots/), the daemon + Quickshell shell + templates/themes
 # (~/.config/nisfere), all required packages (via yay), fonts,
 # systemd --user service for the daemon, XDG user dirs, and a
@@ -119,17 +119,16 @@ PACKAGES=(
 
     # Wallpaper / theming pipeline
     awww
-    # wallust-git, not plain wallust — the tarball-based AUR package
-    # has a known recurring stale-checksum bug (PKGBUILD's recorded
-    # sha256sum for the crates.io source tarball doesn't match what's
-    # actually served, causing "did not pass the validity check").
-    # -git builds straight from the repo instead, sidestepping it.
-    wallust-git
     adw-gtk-theme
     papirus-icon-theme
     papirus-folders
     breeze
     qtengine
+    # Matches state.json's default cursorTheme ("Bibata-Modern-Classic")
+    # exactly — Bibata is the most commonly used cursor theme in
+    # modern Hyprland setups specifically, pairs well with the flat/
+    # modern adw-gtk3 + Papirus look already in use here.
+    bibata-cursor-theme
 
     # Fonts
     ttf-arimo-nerd
@@ -189,6 +188,8 @@ PACKAGES=(
     # Python dependencies for the daemon
     python-jinja
     python-psutil
+    python-pillow
+    python-numpy
 )
 
 run yay -S --needed --noconfirm "${PACKAGES[@]}"
@@ -210,16 +211,11 @@ log "Setting up XDG user directories..."
 run xdg-user-dirs-update
 
 # ── 4. Dotfiles from dots/ ───────────────────────────────────────────────────
-# Order matters for wallust: it needs to be in place BEFORE step 10's
-# "apply default theme", since ColorSource's constructor checks/patches
-# ~/.config/wallust/wallust.toml and just logs a warning + skips if the
-# file doesn't exist yet.
 
 run mkdir -p "$HOME/.config"
 
-log "Installing dotfiles (hypr, wallust, qtengine, gtk-3.0, gtk-4.0, xfce4)..."
+log "Installing dotfiles (hypr, qtengine, gtk-3.0, gtk-4.0, xfce4)..."
 install_dotdir "hypr"
-install_dotdir "wallust"
 install_dotdir "qtengine"
 install_dotdir "gtk-3.0"
 install_dotdir "gtk-4.0"
@@ -238,6 +234,9 @@ install_dotdir "fastfetch"
 install_zsh() {
     log "Configuring Zsh..."
     copy_backed_up "$REPO_DIR/dots/zsh/.zshrc" "$HOME/.zshrc"
+    # greetd doesn't source .zshrc (or any shell rc file) — this is
+    # what actually reaches anything greetd launches, PATH-wise.
+    # Harmless even if you're not using greetd.
     copy_backed_up "$REPO_DIR/dots/zsh/.profile" "$HOME/.profile"
 
     local zsh_dir="$NISFERE_DIR/zsh"
@@ -379,7 +378,6 @@ else
     fi
 fi
 
- 
 # ── 8c. Display manager (optional) ───────────────────────────────────────────
 # Without this, you start Hyprland manually each boot (start-hyprland
 # from a TTY, or the prompt at the very end of this script for right
@@ -390,7 +388,7 @@ fi
 # didn't come up cleanly after reboot in testing; SDDM is the reliable
 # choice here, VT-switch-back quirk addressed separately via
 # hyprshutdown --vt auto + the chvt sudoers rule below.)
- 
+
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the SDDM prompt in dry-run mode."
 else
@@ -404,9 +402,6 @@ else
         warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
     fi
 fi
-
-
-
 
 # ── 9. Daemon systemd --user service ─────────────────────────────────────────
 # Static file, copied as-is (always — a symlinked systemd unit file is

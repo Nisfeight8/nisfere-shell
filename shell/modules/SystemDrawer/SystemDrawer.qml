@@ -9,7 +9,7 @@ BaseDrawer {
     edge: Qt.LeftEdge
     screenOffset: Theme.barHeight
     openedRequest: ShellState.systemDrawerOpened
-    minPanelWidth: Screen.width / 4
+    minPanelWidth: 480
     minPanelHeight: 300
     onCloseRequest: ShellState.systemDrawerOpened = false
     onOpenedChanged: if (opened)

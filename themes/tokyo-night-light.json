@@ -3,7 +3,10 @@
   "special": {
     "background": "#e1e2e7",
     "foreground": "#3760bf",
-    "cursor": "#3760bf"
+    "cursor": "#3760bf",
+    "accent": "#2e55b1",
+    "backgroundAlt": "#d5d6db",
+    "foregroundAlt": "#738fd2"
   },
   "colors": {
     "color0": "#e1e2e7",

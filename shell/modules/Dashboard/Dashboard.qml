@@ -8,8 +8,8 @@ BaseDrawer {
     edge: Qt.TopEdge
     edgeMargin: 0
     screenOffset: Theme.barHeight
-    minPanelWidth: Screen.width * 0.45
-    minPanelHeight: Screen.height * 0.45
+    minPanelWidth: 850
+    minPanelHeight: 450
     toggleOnHover: false
     openedRequest: ShellState.dashboardOpened
 

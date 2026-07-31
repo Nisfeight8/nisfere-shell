@@ -22,9 +22,7 @@ class DesktopIntegration:
         )
 
     def preview_wallpaper(self, path: str) -> None:
-        subprocess.run(
-            ["awww", "img", path, "--transition-type", "none"], check=False
-        )
+        subprocess.run(["awww", "img", path, "--transition-type", "none"], check=False)
 
     def sync_papirus_folders(self, accent_hex: str) -> None:
         """
@@ -117,9 +115,12 @@ class DesktopIntegration:
         except Exception as e:
             logger.warning("Papirus sync failed: %s", e)
 
-    def reload_gtk(self, mode: str) -> None:
+    def reload_gtk(
+        self, mode: str, cursor_theme: str = "", cursor_size: int = 24
+    ) -> None:
         """
-        Forces GTK3/4 apps to pick up the new theme.
+        Forces GTK3/4 apps to pick up the new theme, and updates the
+        live cursor (hyprctl setcursor) + GTK's own cursor settings.
 
         gsettings alone doesn't work under Hyprland (or any non-GNOME
         compositor) — it writes to the dconf database, but nothing
@@ -130,22 +131,66 @@ class DesktopIntegration:
         reliable mechanism, not just a fallback. gsettings is still
         called too since it's harmless and some portal-aware apps do
         check it.
+
+        cursor_theme/cursor_size are passed in (not hardcoded) because
+        this method does a FULL overwrite of settings.ini each call —
+        omitting them here would silently wipe the cursor theme out of
+        GTK's settings on every future dark/light toggle, even though
+        Hyprland/Qt (which read XCURSOR_THEME/XCURSOR_SIZE env vars
+        instead, via variables.lua.template) would be unaffected.
         - Uses adw-gtk3 (no dark/light suffix) — our CSS variables handle colors.
         """
         gtk_theme = "adw-gtk3-dark" if mode == "dark" else "adw-gtk3"
 
         try:
             subprocess.run(
-                ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme],
+                [
+                    "gsettings",
+                    "set",
+                    "org.gnome.desktop.interface",
+                    "gtk-theme",
+                    gtk_theme,
+                ],
                 check=False,
             )
         except Exception as e:
             logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
 
+        if cursor_theme:
+            try:
+                # Updates the live cursor immediately for apps already
+                # running (hyprcursor-aware ones, e.g. Qt/Chromium/
+                # Electron) — subprocess.run requires str args, hence
+                # str(cursor_size) (an int here would raise TypeError
+                # and abort this whole method before settings.ini,
+                # the part that actually matters most, ever gets written).
+                subprocess.run(
+                    ["hyprctl", "setcursor", cursor_theme, str(cursor_size)],
+                    check=False,
+                )
+            except Exception as e:
+                logger.warning("hyprctl setcursor failed (non-fatal): %s", e)
+
+            try:
+                subprocess.run(
+                    [
+                        "gsettings",
+                        "set",
+                        "org.gnome.desktop.interface",
+                        "cursor-theme",
+                        cursor_theme,
+                    ],
+                    check=False,
+                )
+            except Exception as e:
+                logger.warning("gsettings cursor-theme set failed (non-fatal): %s", e)
+
         settings_ini = (
             "[Settings]\n"
             f"gtk-theme-name={gtk_theme}\n"
             "gtk-icon-theme-name=Papirus\n"
+            f"gtk-cursor-theme-name={cursor_theme}\n"
+            f"gtk-cursor-theme-size={cursor_size}\n"
             f"gtk-application-prefer-dark-theme={'1' if mode == 'dark' else '0'}\n"
         )
 
@@ -157,4 +202,10 @@ class DesktopIntegration:
             except Exception as e:
                 logger.warning("Failed to write %s: %s", dst, e)
 
-        logger.debug("GTK reloaded (mode=%s, theme=%s)", mode, gtk_theme)
+        logger.debug(
+            "GTK reloaded (mode=%s, theme=%s, cursor=%s@%s)",
+            mode,
+            gtk_theme,
+            cursor_theme,
+            cursor_size,
+        )

@@ -26,8 +26,8 @@ QtObject {
     readonly property color _opaqueBackground: Colors.background
     readonly property color _opaqueBackgroundAlt: Qt.tint(_opaqueBackground, Qt.rgba(Colors.foreground.r, Colors.foreground.g, Colors.foreground.b, 0.06))
 
-    property color background: Qt.rgba(_opaqueBackground.r, _opaqueBackground.g, _opaqueBackground.b, StyleSettings.widgetOpacity)
-    property color backgroundAlt: Qt.rgba(_opaqueBackgroundAlt.r, _opaqueBackgroundAlt.g, _opaqueBackgroundAlt.b, StyleSettings.widgetOpacity)
+    property color background: Colors.background
+    property color backgroundAlt: Colors.backgroundAlt
     property color foreground: Colors.foreground
     property color selected: Colors.selected
     property color cursor: Colors.cursor

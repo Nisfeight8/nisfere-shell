@@ -4,13 +4,19 @@ KEY=$1
 ACTION=$2
 PER_MON=${3:-10}
 
-MONITOR_ID=$(hyprctl activeworkspace -j | jq '.monitorID')
+ACTIVE_MONITOR=$(hyprctl activeworkspace -j | jq -r '.monitor')
 
-if [ -z "$MONITOR_ID" ] || [ "$MONITOR_ID" = "null" ]; then
-    MONITOR_ID=0
+INDEX=$(hyprctl monitors -j | jq --arg am "$ACTIVE_MONITOR" -r '
+  map(.name) | 
+  sort_by((test("^eDP") | not), .) | 
+  index($am)
+')
+
+if [ -z "$INDEX" ] || [ "$INDEX" = "null" ]; then
+    INDEX=0
 fi
 
-TARGET=$(( (MONITOR_ID * PER_MON) + KEY ))
+TARGET=$(( (INDEX * PER_MON) + KEY ))
 
 if [ "$ACTION" = "movetoworkspace" ]; then
     hyprctl dispatch "hl.dsp.window.move({ workspace = '${TARGET}' })"

@@ -7,7 +7,7 @@
 #
 # Run install.sh once first — this only toggles daemon/shell/
 # templates/themes/templates.json, it doesn't touch packages, the
-# systemd unit file itself, or dots/{wallust,qtengine,gtk-*,systemd}
+# systemd unit file itself, or dots/{qtengine,gtk-*,systemd}
 # (those rarely change once set up).
 #
 # Usage:

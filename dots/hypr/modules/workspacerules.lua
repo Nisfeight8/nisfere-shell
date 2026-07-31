@@ -33,6 +33,3 @@ local function assign_workspaces()
 end
 
 assign_workspaces()
-
-hl.on("monitor.added", assign_workspaces)
-hl.on("monitor.removed", assign_workspaces)

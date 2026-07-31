@@ -7,61 +7,48 @@ color dict out.
 
 import json
 import logging
-import os
-import subprocess
 
 from .config import NisfereConfig
+from .nisfere_chroma import extract_palette
 
 logger = logging.getLogger(__name__)
-
-# Injected into wallust.toml if the entry is missing
-_WALLUST_TEMPLATE_ENTRY = (
-    "wallust = { src = 'colors.json', dst = '~/.cache/wallust/colors.json' }"
-)
 
 
 class ColorSource:
     def __init__(self, config: NisfereConfig):
         self.config = config
-        self._ensure_wallust_template()
-
-    # ── Setup ────────────────────────────────────────────────────────────────
-
-    def _ensure_wallust_template(self) -> None:
-        """
-        Patches wallust.toml to include our colors.json template entry
-        so wallust always exports colors where we expect them.
-        """
-        wt = self.config.wallust_config
-        if not wt.exists():
-            logger.warning("wallust.toml not found at %s — skipping template check", wt)
-            return
-
-        content = wt.read_text()
-        if "colors.json" in content:
-            logger.debug("wallust colors.json template already present")
-            return
-
-        if "[templates]" in content:
-            content = content.replace(
-                "[templates]",
-                f"[templates]\n{_WALLUST_TEMPLATE_ENTRY}",
-            )
-        else:
-            content += f"\n[templates]\n{_WALLUST_TEMPLATE_ENTRY}\n"
-
-        wt.write_text(content)
-        logger.info("Patched wallust.toml with colors.json template entry")
 
     # ── Sources ──────────────────────────────────────────────────────────────
 
-    def extract_dynamic(self, image_path: str, mode: str) -> dict:
-        """Runs wallust on the image; reads the exported colors.json."""
-        cmd = ["wallust", "run", os.path.expanduser(image_path)]
-        if mode == "light":
-            cmd.extend(["--palette", "light"])
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return json.loads(self.config.wallust_colors_cache.read_text())
+    def extract_dynamic(
+        self,
+        image_path: str,
+        mode: str,
+        algorithm: str = "median_cut",
+        saturation: float = 1.3,
+        bg_saturation: float = 0.08,
+        contrast: float = 1.0,
+        resize_to: int = 200,
+    ) -> dict:
+        """
+        Extracts colors from the image via our own in-house extractor
+        (services/nisfere_chroma.py) — in-process, no subprocess, no
+        external `wallust` binary/cache file involved anymore. Tuning
+        knobs default to nisfere_chroma's own defaults; ThemeManager
+        passes the actual configured values (from StateManager's
+        chroma_settings) when calling this.
+        """
+        import os
+
+        return extract_palette(
+            os.path.expanduser(image_path),
+            mode=mode,
+            algorithm=algorithm,
+            saturation=saturation,
+            bg_saturation=bg_saturation,
+            contrast=contrast,
+            resize_to=resize_to,
+        )
 
     def load_static(self, theme_name: str, mode: str = "dark") -> dict:
         """
@@ -86,10 +73,16 @@ class ColorSource:
 
     def flatten(self, raw_data: dict, mode: str) -> dict:
         """
-        Flattens wallust's nested JSON (special/colors) into a flat
-        dict of template vars. Everything this returns belongs in the
-        'shared' style scope — colors are the one thing both Quickshell
-        and Hyprland always need.
+        Flattens color data into a flat dict of template vars.
+        Everything this returns belongs in the 'shared' style scope —
+        colors are the one thing both Quickshell and Hyprland always
+        need.
+
+        nisfere_chroma.extract_palette() already returns a flat
+        {name: "#rrggbb"} dict directly (no nested "special"/"colors"
+        keys the way the old external wallust CLI's JSON did) — this
+        still handles that OLD nested shape too, for static theme
+        JSONs under themes/ that were authored in that format.
         """
         vars_dict: dict = {"mode": mode, "alpha": 100}
 

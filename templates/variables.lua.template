@@ -4,7 +4,7 @@ return {
     ------------------
     bg_color              = "rgb({{ background | strip }})",
     fg_color              = "rgb({{ foreground | strip }})",
-    active_border         = "rgba({{ color4 | strip }}ee)",
+    active_border         = "rgba({{ accent | strip }}ee)",
     inactive_border       = "rgba({{ backgroundAlt | strip }}aa)",
     shadow_color          = "rgba(00000066)",
     ------------------

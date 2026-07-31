@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 
@@ -21,6 +22,9 @@ BarWidget {
     }
     TapHandler {
         parent: launcherBtn
-        onTapped: ShellState.appLauncherOpened = !ShellState.appLauncherOpened
+        onTapped: {
+            const screenName = QsWindow.window?.screen?.name ?? "";
+            ShellState.toggleAppLauncher(screenName);
+        }
     }
 }

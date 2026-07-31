@@ -15,13 +15,6 @@ class NisfereConfig:
     cache_dir: Path = field(
         default_factory=lambda: Path("~/.cache/nisfere").expanduser()
     )
-    # ↓ External path – written by wallust, read by us
-    wallust_colors_cache: Path = field(
-        default_factory=lambda: Path("~/.cache/wallust/colors.json").expanduser()
-    )
-    wallust_config: Path = field(
-        default_factory=lambda: Path("~/.config/wallust/wallust.toml").expanduser()
-    )
 
     @property
     def templates_dir(self) -> Path:

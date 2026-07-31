@@ -1,6 +1,6 @@
 """
 ThemeManager — orchestrates a theme change end to end:
-  1. get raw colors from ColorSource (wallust or static json)
+  1. get raw colors from ColorSource (nisfere_chroma or static json)
   2. merge them into StateManager's 'shared' scope
   3. re-render everything via TemplateRenderer
   4. trigger desktop side-effects via DesktopIntegration
@@ -29,11 +29,7 @@ _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 # from day one — not just QML-side fallback constants nobody's ever
 # confirmed are actually in effect.
 _DEFAULT_SETTINGS: dict = {
-    "shared": {
-        "radius": 20,
-        "fontName": "Arimo Nerd Font",
-        "workspacesPerMonitor": 10
-    },
+    "shared": {"radius": 20, "fontName": "Arimo Nerd Font", "workspacesPerMonitor": 10},
     "shell": {
         "enableWidgetBorders": True,
         "barHeight": 50,
@@ -56,8 +52,8 @@ _DEFAULT_SETTINGS: dict = {
         "shadowEnabled": True,
         "shadowRange": 15,
         "shadowRenderPower": 4,
-        "cursorTheme": "Breeze-Adapta-Cursor",
-        "cursorSize": 10,
+        "cursorTheme": "Bibata-Modern-Ice",
+        "cursorSize": 24,
     },
 }
 
@@ -135,7 +131,8 @@ class ThemeManager:
                 self.state.save(state)
             return True
 
-        raw = self.colors.extract_dynamic(wallpaper_path, mode)
+        chroma_settings = self.state.get_chroma_settings()
+        raw = self.colors.extract_dynamic(wallpaper_path, mode, **chroma_settings)
         return self._apply_colors(raw, mode, wallpaper_path, "dynamic", None)
 
     def set_colors(self, theme_name: str, mode: str = "dark") -> bool:
@@ -226,10 +223,8 @@ class ThemeManager:
 
             bg = shared_vars["background"]
             if mode == "light":
-                shared_vars["backgroundAlt"] = filter_darken(bg, 0.05)
                 shared_vars["borderColor"] = filter_darken(bg, 0.10)
             else:
-                shared_vars["backgroundAlt"] = filter_lighten(bg, 0.05)
                 shared_vars["borderColor"] = filter_lighten(bg, 0.10)
 
             # Merges over existing 'shared' scope only — shell/hyprland
@@ -240,6 +235,19 @@ class ThemeManager:
                 shared_vars, wallpaper_path, mode, source_type, source_name
             )
 
+            # Contrast-matched: Classic (black) on light backgrounds,
+            # Ice (white) on dark backgrounds — reversed from this
+            # would give the WORST possible contrast in both modes.
+            cursor_theme = (
+                "Bibata-Modern-Classic" if mode == "light" else "Bibata-Modern-Ice"
+            )
+            cursor_size = state.style.get("hyprland", {}).get("cursorSize", 24)
+
+            # set_setting() returns a fresh ThemeState — MUST reassign
+            # `state` here, or render_all() below renders whatever
+            # cursorTheme was already on disk before this call (one
+            # theme-apply behind), not the value we just computed.
+            state = self.state.set_setting("cursorTheme", cursor_theme, "hyprland")
             self.renderer.render_all(state.style)
 
             # All desktop side-effect threading lives here, in one
@@ -250,7 +258,10 @@ class ThemeManager:
                 daemon=True,
             ).start()
             threading.Thread(
-                target=self.desktop.reload_gtk, args=(mode,), daemon=True
+                target=self.desktop.reload_gtk,
+                args=(mode,),
+                kwargs={"cursor_theme": cursor_theme, "cursor_size": cursor_size},
+                daemon=True,
             ).start()
 
             logger.info(

@@ -40,13 +40,14 @@ Singleton {
     property string quickAction: ""
     property bool quickActionsOpened: false
 
-    property int workspacesPerMonitor: ThemeState.shared.workspacesPerMonitor
+    property int workspacesPerMonitor: 10
     property bool overviewOpen: false
     property int overviewRows: 2
     property int overviewColumns: workspacesPerMonitor / overviewRows
     property bool overviewPreviewsEnabled: true
     property bool overviewLivePreviews: false
 
+    Component.onCompleted: workspacesPerMonitor = ThemeState.shared.workspacesPerMonitor
     // ── Open/close/toggle methods ───────────────────────────────────
     // Callers (hover wiring, IPC handlers) call these instead of
     // mutating the booleans directly, so "which screen asked for

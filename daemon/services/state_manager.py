@@ -23,6 +23,18 @@ logger = logging.getLogger(__name__)
 
 _SCOPES = ("shared", "shell", "hyprland")
 
+# nisfere_chroma.py's own tuning knobs — kept as its own top-level
+# dict, NOT inside style/shared/shell/hyprland, since these affect
+# HOW colors get extracted, not the resulting visual style itself.
+# No template ever reads these.
+_DEFAULT_CHROMA_SETTINGS = {
+    "algorithm": "median_cut",
+    "saturation": 1.3,
+    "bg_saturation": 0.08,
+    "contrast": 1.0,
+    "resize_to": 200,
+}
+
 # Keys that lived in the OLD flat style dict and are Hyprland- or
 # shell-only. Used ONLY once, to bucket a pre-existing flat
 # state.json the first time it's loaded after upgrading. Anything
@@ -62,11 +74,10 @@ def _migrate_flat_style(flat: dict) -> dict:
 @dataclass
 class ThemeState:
     """
-    Persisted state in ~/.cache/nisfere/state.json.
-
-    source_type: "dynamic" -> colors extracted from wallpaper via wallust
-                 "static"  -> colors loaded from a theme JSON file
-    source_name: None if dynamic, the theme filename if static
+    ...
+    chroma_settings: tuning knobs for nisfere_chroma.py's own
+                 extract_palette() (algorithm, saturation, etc.) — see
+                 _DEFAULT_CHROMA_SETTINGS above.
     style:       {"shared": {...}, "shell": {...}, "hyprland": {...}}
     """
 
@@ -74,6 +85,9 @@ class ThemeState:
     mode: str
     source_type: str
     source_name: str | None
+    chroma_settings: dict = field(
+        default_factory=lambda: dict(_DEFAULT_CHROMA_SETTINGS)
+    )
     style: dict = field(
         default_factory=lambda: {"shared": {}, "shell": {}, "hyprland": {}}
     )
@@ -84,6 +98,7 @@ class ThemeState:
             "mode": self.mode,
             "source_type": self.source_type,
             "source_name": self.source_name,
+            "chroma_settings": self.chroma_settings,
             "style": self.style,
         }
 
@@ -91,21 +106,26 @@ class ThemeState:
     def from_dict(cls, data: dict) -> "ThemeState":
         style = data.get("style", {})
         if not any(scope in style for scope in _SCOPES):
-            # No scope keys present at all → this is a pre-refactor
-            # flat style dict (or empty). Migrate it in place.
             style = _migrate_flat_style(style)
         else:
             for scope in _SCOPES:
                 style.setdefault(scope, {})
+
+        # Missing chroma_settings (or missing individual keys within
+        # it — e.g. upgrading from before a new knob was added) fall
+        # back to defaults, same "fill gaps, never overwrite" spirit
+        # as seed_defaults() below.
+        chroma_settings = dict(_DEFAULT_CHROMA_SETTINGS)
+        chroma_settings.update(data.get("chroma_settings", {}))
 
         return cls(
             wallpaper=data.get("wallpaper", ""),
             mode=data.get("mode", "dark"),
             source_type=data.get("source_type", "dynamic"),
             source_name=data.get("source_name"),
+            chroma_settings=chroma_settings,
             style=style,
         )
-
 
 class StateManager:
     """The ONLY class that reads or writes state.json."""
@@ -167,6 +187,17 @@ class StateManager:
         self.save(state)
         return state
 
+    def get_chroma_settings(self) -> dict:
+        state = self.load()
+        return dict(state.chroma_settings) if state else dict(_DEFAULT_CHROMA_SETTINGS)
+
+    def set_chroma_setting(self, key: str, value) -> ThemeState:
+        """Updates ONE chroma extraction setting, preserving everything else."""
+        state = self._load_or_new()
+        state.chroma_settings[key] = value
+        self.save(state)
+        return state
+
     # ── Bulk color/theme updates (wallpaper change, theme switch) ───────────
 
     def update_shared(
@@ -199,6 +230,7 @@ class StateManager:
             source_type=source_type,
             source_name=source_name,
             style=style,
+            chroma_settings=dict(existing.chroma_settings) if existing else dict(_DEFAULT_CHROMA_SETTINGS),
         )
         self.save(state)
         return state

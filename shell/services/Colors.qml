@@ -53,7 +53,7 @@ Singleton {
         if (c.borderColor) root.borderColor = c.borderColor;
 
         // selected = color4 (accent, matches wallust palette convention)
-        if (c.color4) root.selected = c.color4;
+        if (c.accent) root.selected = c.accent;
 
         if (c.color0) root.color0 = c.color0;
         if (c.color1) root.color1 = c.color1;
