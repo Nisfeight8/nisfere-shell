@@ -11,7 +11,7 @@ BarWidget {
     spacing: 6
     readonly property int workspacesPerMonitor: ShellState.workspacesPerMonitor
     readonly property string screenName: QsWindow.window?.screen?.name ?? ""
-    readonly property var monitorData: HyprlandData.monitors.find(m => m.name === screenName)
+    readonly property var monitorData: HyprlandData.monitors.values.find(m => m.name === screenName)
     readonly property HyprlandMonitor monitor: Hyprland.monitors.values.find(m => m.id === monitorData?.id) ?? null
     readonly property int currentWorkspaceId: monitor?.activeWorkspace?.id ?? 1
     readonly property int baseWorkspaceId: Math.floor((currentWorkspaceId - 1) / workspacesPerMonitor) * workspacesPerMonitor + 1

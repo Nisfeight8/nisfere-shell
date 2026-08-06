@@ -9,6 +9,7 @@ Item {
 
     property int edge: Qt.LeftEdge
     property bool cornerMode: false
+    property bool sidePanelMode: false
     property int cornerSecondaryEdge: Qt.TopEdge
     property bool opened: false
     property color bgColor: Theme.background
@@ -17,7 +18,11 @@ Item {
 
     Loader {
         anchors.fill: parent
-        sourceComponent: root.cornerMode ? cornerShapeComp : panelShapeComp
+        sourceComponent: {
+            if (root.cornerMode) return cornerShapeComp;
+            if (root.sidePanelMode) return sidePanelShapeComp;
+            return panelShapeComp;
+        }
     }
 
     Component {
@@ -34,7 +39,21 @@ Item {
             }
         }
     }
-
+    Component {
+        id: sidePanelShapeComp
+        SidePanelShape {
+            anchors.fill: parent
+            bgColor: root.bgColor
+            borderColor: root._borderColor
+            edge: root.edge
+            // bottomOffset: 0 // Αν τυχόν περάσεις το bottomOffset στον BaseDrawer, μπορείς να το κάνεις bind εδώ
+            Behavior on borderColor {
+                AnimColor {
+                    type: Anim.DefaultEffects
+                }
+            }
+        }
+    }
     Component {
         id: cornerShapeComp
         CornerShape {

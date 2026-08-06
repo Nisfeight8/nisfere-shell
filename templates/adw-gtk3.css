@@ -5,9 +5,9 @@
 /* ── adw-gtk3 standard names ──────────────────────────────────────────
    These are read by adw-gtk3 to theme ALL GTK apps dynamically.
    ─────────────────────────────────────────────────────────────────── */
-@define-color accent_color       {{color4}};
+@define-color accent_color       {{accent}};
 @define-color accent_fg_color    {{background}};
-@define-color accent_bg_color    {{color4}};
+@define-color accent_bg_color    {{accent}};
 @define-color window_bg_color    {{background}};
 @define-color window_fg_color    {{foreground}};
 @define-color headerbar_bg_color {{borderColor}};

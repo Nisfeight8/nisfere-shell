@@ -70,9 +70,9 @@ Item {
             RecordingIndicator {
                 id: recordingIndicator
             }
-            SystemStatsWidget {
-                id: systemStats
-            }
+            // SystemStatsWidget {
+            //     id: systemStats
+            // }
             TrayWidget {
                 id: sysTrayWidget
             }

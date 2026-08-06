@@ -35,17 +35,28 @@ Item {
         }
     }
 
+    // Classic launcher — sugar over `search open apps` below (kept as
+    // its own memorable target since it's such a common action —
+    // keybind configs usually want something mnemonic here, not
+    // "search toggle apps"). Was ShellState.toggleAppLauncher/
+    // openAppLauncher/closeAppLauncher, none of which exist anymore.
+    // "apps" has an empty keyword, so openDashboardSearch's existing
+    // generic logic clears the query and lands you on browse mode with
+    // the search bar available — exactly the classic launcher feel.
+    // (There used to be a separate search-bar-less "appLauncherFull"
+    // component/IPC target too — removed entirely, see ShellState.qml's
+    // note on why.)
     IpcHandler {
         target: "launcher"
 
-        function toggle(): void {
-            ShellState.toggleAppLauncher(ShellState.focusedScreenName);
-        }
         function open(): void {
-            ShellState.openAppLauncher(ShellState.focusedScreenName);
+            ShellState.openDashboardSearch(ShellState.focusedScreenName, "apps");
+        }
+        function toggle(): void {
+            ShellState.toggleDashboardSearch(ShellState.focusedScreenName, "apps");
         }
         function close(): void {
-            ShellState.closeAppLauncher();
+            ShellState.closeDashboard();
         }
     }
 
@@ -64,20 +75,6 @@ Item {
     }
 
     IpcHandler {
-        target: "quickactions"
-
-        function open(action: string): void {
-            ShellState.openQuickActions(ShellState.focusedScreenName, action);
-        }
-        function close(): void {
-            ShellState.closeQuickActions();
-        }
-        function toggle(action: string): void {
-            ShellState.toggleQuickActions(ShellState.focusedScreenName, action);
-        }
-    }
-
-    IpcHandler {
         target: "dashboard"
 
         function toggle(): void {
@@ -89,9 +86,14 @@ Item {
         function close(): void {
             ShellState.closeDashboard();
         }
+        // Was ShellState.currentDashboardTab (doesn't exist — renamed
+        // to dashboardTabsCurrentTab) + openDashboard (which doesn't
+        // force "tabs" mode, just reopens whatever was last active —
+        // openDashboardTabs is the one that actually guarantees you
+        // land on the tabs page with the requested tab selected).
         function openTab(index: int): void {
-            ShellState.currentDashboardTab = index;
-            ShellState.openDashboard(ShellState.focusedScreenName);
+            ShellState.dashboardTabsCurrentTab = index;
+            ShellState.openDashboardTabs(ShellState.focusedScreenName);
         }
     }
 
@@ -106,6 +108,48 @@ Item {
         }
         function close(): void {
             ShellState.closeControlCenter();
+        }
+    }
+
+    // ── Any search provider — one generic target instead of one
+    // IpcHandler block per provider. Adding a new shortcut-able
+    // provider now needs ZERO new IPC code, just a convenience wrapper
+    // in ShellState (or not even that — providerId is a plain string,
+    // so e.g. `qs ipc call search open ssh` already works today even
+    // though ShellState.openSsh exists purely for in-shell callers,
+    // not because IPC needs it).
+    //
+    // Usage: `qs ipc call search open wallpapers`, `qs ipc call search
+    // toggle colors`, `qs ipc call search open clipboard`, etc.
+    IpcHandler {
+        target: "search"
+
+        function open(providerId: string): void {
+            ShellState.openDashboardSearch(ShellState.focusedScreenName, providerId);
+        }
+        function toggle(providerId: string): void {
+            ShellState.toggleDashboardSearch(ShellState.focusedScreenName, providerId);
+        }
+        function close(): void {
+            ShellState.closeDashboard();
+        }
+    }
+
+    // ── Any standalone top-level tool — one generic target instead of
+    // one IpcHandler block per tool, same reasoning as "search" above.
+    // Usage: `qs ipc call tool open docker`, `qs ipc call tool toggle
+    // settings`, etc.
+    IpcHandler {
+        target: "tool"
+
+        function open(componentId: string): void {
+            ShellState.openDashboardComponent(ShellState.focusedScreenName, componentId);
+        }
+        function toggle(componentId: string): void {
+            ShellState.toggleDashboardComponent(ShellState.focusedScreenName, componentId);
+        }
+        function close(): void {
+            ShellState.closeDashboard();
         }
     }
 }

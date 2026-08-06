@@ -57,16 +57,24 @@ Singleton {
     property var bars: []
     property real bass: 0
 
-    // Only run cava (and all the per-frame parsing above) while the
-    // visualizer is actually ON SCREEN — the Dashboard's Media tab,
-    // where Media.qml's glow effect consumes `bass`. Previously this
-    // ran the ENTIRE time music was playing, even with the Dashboard
-    // closed and nobody able to see the effect at all — by far the
-    // largest single contributor to background CPU/memory churn found
-    // via profiling. The compact bar indicators (Clock's disc icon,
-    // NowPlaying) don't use this data, so gating it here costs nothing
-    // visually.
-    property bool isActive: MediaService.isPlaying && ShellState.dashboardOpened && ShellState.currentDashboardTab === 1
+    // ── Wallpaper-visualizer gating ─────────────────────────────────
+    // "Is there at least one screen right now showing wallpaper (no
+    // activated window on it) with nothing else open" — the actual
+    // per-screen active-window check now lives in one place,
+    // ActiveWindow bar widget instead of being copy-pasted here too.
+
+    readonly property bool anyScreenShowingWallpaper: HyprlandData.anyScreenShowingWallpaper
+
+    // Only run cava (and all the per-frame parsing above) while
+    // something is actually going to consume `bars`/`bass`/`level` —
+    // either the Dashboard's Media tab (glow effect) or the wallpaper
+    // visualizer overlay when the desktop is showing. Previously this
+    // ran the ENTIRE time music was playing, even with nothing open to
+    // see it — by far the largest single contributor to background
+    // CPU/memory churn found via profiling. The compact bar indicators
+    // (Clock's disc icon, NowPlaying) don't use this data, so gating
+    // it here costs nothing visually.
+    property bool isActive: MediaService.isPlaying && ((ShellState.dashboardOpened && ShellState.dashboardTabsCurrentTab === 1) || root.anyScreenShowingWallpaper)
     property real level: 0
 
     onIsActiveChanged: {

@@ -18,8 +18,9 @@ QtObject {
     // ── Inputs ───────────────────────────────────────────────────
     property int edge: Qt.LeftEdge
     property bool cornerMode: false
+    property bool sidePanelMode: false
     property int cornerSecondaryEdge: Qt.TopEdge
-    property real edgeMargin: 10
+    property real edgeMargin: Theme.screenBorderSize
 
     property real minPanelWidth: 0
     property real minPanelHeight: 0
@@ -35,8 +36,8 @@ QtObject {
     // ── Derived: which edge(s) this drawer sits against ───────────
     readonly property bool isHorizontal: edge === Qt.LeftEdge || edge === Qt.RightEdge
 
-    readonly property bool anchorTop: edge === Qt.TopEdge || (cornerMode && cornerSecondaryEdge === Qt.TopEdge)
-    readonly property bool anchorBottom: edge === Qt.BottomEdge || (cornerMode && cornerSecondaryEdge === Qt.BottomEdge)
+    readonly property bool anchorTop: edge === Qt.TopEdge || (cornerMode && cornerSecondaryEdge === Qt.TopEdge) || sidePanelMode
+    readonly property bool anchorBottom: edge === Qt.BottomEdge || (cornerMode && cornerSecondaryEdge === Qt.BottomEdge) || sidePanelMode
     readonly property bool anchorLeft: edge === Qt.LeftEdge || (cornerMode && cornerSecondaryEdge === Qt.LeftEdge)
     readonly property bool anchorRight: edge === Qt.RightEdge || (cornerMode && cornerSecondaryEdge === Qt.RightEdge)
 
@@ -77,12 +78,12 @@ QtObject {
 
     Behavior on panelWidth {
         Anim {
-            type: Anim.FastSpatial
+            type: Anim.DefaultSpatial
         }
     }
     Behavior on panelHeight {
         Anim {
-            type: Anim.FastSpatial
+            type: Anim.DefaultSpatial
         }
     }
 

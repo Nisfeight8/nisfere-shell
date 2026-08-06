@@ -45,6 +45,28 @@ def _load_and_resize(image_path: str, resize_to: int):
     return img
 
 
+def adjust_min_delta(rgb, factor, min_delta=0.12):
+    """Like adjust(), but guarantees at least `min_delta` absolute
+    lightness difference from the source, IN THE DIRECTION the factor
+    already intends (factor > 1 = lighten, factor < 1 = darken). A
+    pure multiplicative factor collapses toward the source value when
+    that source lightness is already near the relevant boundary —
+    near-black backgrounds barely lighten, near-white backgrounds
+    barely darken — which is what made color8 nearly invisible in
+    BOTH dark mode (couldn't lighten enough) and light mode (couldn't
+    darken enough)."""
+    r, g, b = [c / 255.0 for c in rgb]
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    target = l * factor
+    if factor >= 1.0:
+        target = max(target, l + min_delta)
+    else:
+        target = min(target, l - min_delta)
+    target = max(0.04, min(0.96, target))
+    r, g, b = colorsys.hls_to_rgb(h, target, s)
+    return (int(r * 255), int(g * 255), int(b * 255))
+
+
 def extract_median_cut(image_path: str, num_colors: int = 16, resize_to: int = 200):
     """Pillow's median-cut quantization: recursively splits color space
     into boxes of roughly equal pixel count until reaching the target
@@ -201,12 +223,19 @@ def set_saturation(rgb, target_s):
     return (int(r * 255), int(g * 255), int(b * 255))
 
 
-def boost_saturation(rgb, factor):
-    """Multiplies a color's saturation by 'factor' (>1 = more vivid/
-    intense, <1 = more washed out), keeping hue/lightness unchanged."""
+def boost_saturation(rgb, factor, min_saturation=0.35):
+    """Multiplies saturation by 'factor', but also enforces a MINIMUM
+    absolute saturation floor — pure multiplication breaks down when
+    the source color's saturation is already very low (muted/grayish
+    tones are common in dark or naturalistic wallpapers): 0.1 * 1.3 is
+    still just 0.13, still reads as muddy gray rather than a genuine
+    accent color. The floor guarantees color1-6 always look
+    meaningfully colorful, regardless of how gray the sampled pixel
+    happened to be."""
     r, g, b = [c / 255.0 for c in rgb]
     h, l, s = colorsys.rgb_to_hls(r, g, b)
-    s = max(0.0, min(1.0, s * factor))
+    s = max(s * factor, min_saturation)
+    s = min(1.0, s)
     r, g, b = colorsys.hls_to_rgb(h, l, s)
     return (int(r * 255), int(g * 255), int(b * 255))
 
@@ -355,7 +384,8 @@ def generate_16_palette(
     palette = {}
     palette["color0"] = bg
     palette["color8"] = set_saturation(
-        adjust(bg, 1.4 if not light_mode else 0.85), bg_saturation
+        adjust_min_delta(bg, 1.4 if not light_mode else 0.85, min_delta=0.12),
+        bg_saturation,
     )
 
     # color1..color6: the base colors, lightly normalized. Excludes the

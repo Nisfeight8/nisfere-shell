@@ -5,8 +5,8 @@
 # Installs: Hyprland config, qtengine, GTK settings (all from
 # dots/), the daemon + Quickshell shell + templates/themes
 # (~/.config/nisfere), all required packages (via yay), fonts,
-# systemd --user service for the daemon, XDG user dirs, and a
-# first-run default theme apply.
+# systemd --user socket-activated service for the daemon, XDG user
+# dirs, and a first-run default theme apply.
 #
 # Run from the root of the nisfere repo (the folder containing
 # daemon/, dots/, shell/, templates/, themes/, templates.json).
@@ -20,7 +20,7 @@
 # For active development against a git checkout, use dev-mode.sh
 # instead (switches ~/.config/nisfere between this install and a
 # symlinked, live-editable copy of your repo) — run install.sh once
-# to get everything else (packages, systemd unit, dotfiles) in place.
+# to get everything else (packages, systemd units, dotfiles) in place.
 
 set -euo pipefail
 
@@ -79,9 +79,6 @@ if [[ $DRY_RUN -eq 1 ]]; then
 fi
 
 # ── 1. AUR helper (yay) ──────────────────────────────────────────────────────
-# Everything below goes through yay — it transparently handles both
-# official-repo and AUR packages, so there's no need to track which
-# list each package belongs to.
 
 if ! command -v yay >/dev/null 2>&1; then
     log "yay not found — installing it first"
@@ -98,9 +95,7 @@ fi
 
 log "Installing packages via yay (this will prompt for your password)..."
 
-# Add/remove packages here — one per line, easy to scan and diff.
 PACKAGES=(
-    # Core Hyprland/Wayland session
     hyprland
     hypridle
     xdg-desktop-portal
@@ -113,40 +108,22 @@ PACKAGES=(
     networkmanager
     wl-clipboard
     trash-cli
-
-    # Quickshell shell
     quickshell
-
-    # Wallpaper / theming pipeline
     awww
     adw-gtk-theme
     papirus-icon-theme
     papirus-folders
     breeze
     qtengine
-    # Matches state.json's default cursorTheme ("Bibata-Modern-Classic")
-    # exactly — Bibata is the most commonly used cursor theme in
-    # modern Hyprland setups specifically, pairs well with the flat/
-    # modern adw-gtk3 + Papirus look already in use here.
     bibata-cursor-theme
-
-    # Fonts
     ttf-arimo-nerd
     noto-fonts
-
-    # Audio (PipeWire) — nothing audio-related works without this:
-    # volume controls, cava visualizer, media playback, all of it.
     pipewire
     pipewire-pulse
     pipewire-alsa
     pipewire-jack
     wireplumber
-
-    # GTK settings GUI — handy for eyeballing/adjusting theme, icon
-    # theme, cursor theme; already used once to debug adw-gtk3.
     nwg-look
-
-    # File manager (Thunar) + trash/mount/archive support
     thunar
     thunar-volman
     thunar-archive-plugin
@@ -162,12 +139,8 @@ PACKAGES=(
     unzip
     p7zip
     unrar
-
-    # Terminal + system monitor (already templated — alacritty-colors.toml, bpytop.theme)
     alacritty
     bpytop
-
-    # Shell utilities used by daemon/QML (cava, clipboard, screenshots, etc.)
     zsh
     fastfetch
     cava
@@ -181,11 +154,7 @@ PACKAGES=(
     grim
     slurp
     jq
-
-    # Arch update support (checkupdates command)
     pacman-contrib
-
-    # Python dependencies for the daemon
     python-jinja
     python-psutil
     python-pillow
@@ -203,9 +172,6 @@ log "Enabling bluetooth.service (system-level, not --user)..."
 run sudo systemctl enable --now bluetooth.service || warn "Could not enable bluetooth.service — probably no Bluetooth hardware on this machine, safe to ignore."
 
 # ── 3. XDG user directories ──────────────────────────────────────────────────
-# Creates ~/Desktop, ~/Documents, ~/Downloads, ~/Music, ~/Pictures,
-# ~/Public, ~/Templates, ~/Videos (locale-aware) and writes
-# ~/.config/user-dirs.dirs.
 
 log "Setting up XDG user directories..."
 run xdg-user-dirs-update
@@ -224,19 +190,10 @@ install_dotdir "alacritty"
 install_dotdir "fastfetch"
 
 # ── 4b. Zsh ───────────────────────────────────────────────────────────────────
-# .zshrc goes straight to $HOME (not ~/.config) — that's just where
-# zsh looks by default, unless ZDOTDIR says otherwise, which we're not
-# setting here. Plugins get git-cloned into ~/.config/nisfere/zsh/
-# plugins/ (not shipped in dots/ — nothing to copy, just clones at
-# install time, same idea as ~/.cache/nisfere). Sets zsh as your login
-# shell unconditionally — you asked for that, not a prompt.
 
 install_zsh() {
     log "Configuring Zsh..."
     copy_backed_up "$REPO_DIR/dots/zsh/.zshrc" "$HOME/.zshrc"
-    # greetd doesn't source .zshrc (or any shell rc file) — this is
-    # what actually reaches anything greetd launches, PATH-wise.
-    # Harmless even if you're not using greetd.
     copy_backed_up "$REPO_DIR/dots/zsh/.profile" "$HOME/.profile"
 
     local zsh_dir="$NISFERE_DIR/zsh"
@@ -250,8 +207,6 @@ install_zsh() {
         fi
     done
 
-    # Zsh appends here on every command — needs to exist upfront with
-    # the right permissions (history can contain sensitive stuff).
     local history_file="$HOME/.zsh_history"
     if [[ ! -f "$history_file" ]]; then
         run touch "$history_file"
@@ -268,22 +223,12 @@ install_zsh
 log "Installing daemon + shell + templates/themes -> $NISFERE_DIR"
 run mkdir -p "$NISFERE_DIR"
 copy_backed_up "$REPO_DIR/daemon" "$NISFERE_DIR/daemon"
-# Drop stray log files that shouldn't ship with a fresh install.
 run rm -f "$NISFERE_DIR/daemon/output.log" "$NISFERE_DIR/daemon/output2.log"
 copy_backed_up "$REPO_DIR/shell" "$NISFERE_DIR/shell"
 copy_backed_up "$REPO_DIR/templates" "$NISFERE_DIR/templates"
 copy_backed_up "$REPO_DIR/themes" "$NISFERE_DIR/themes"
 copy_backed_up "$REPO_DIR/templates.json" "$NISFERE_DIR/templates.json"
 
-# `qs ipc call`/`qs ipc show` (bare, no flags) always default to
-# ~/.config/quickshell/shell.qml for identifying the running instance
-# — that's a SEPARATE mechanism from launching via `-p`, so even
-# though `-p` correctly launches the shell from ~/.config/nisfere/shell,
-# IPC lookups against the default path won't find it ("No running
-# instances for ...quickshell/shell.qml"). Symlinking the default
-# location to point at the real shell folder fixes both launch AND
-# IPC lookup the same way, and means `-p` isn't even needed anymore —
-# plain `quickshell` (or `qs`) works for everything.
 QUICKSHELL_DEFAULT_DIR="$HOME/.config/quickshell"
 if [[ -e "$QUICKSHELL_DEFAULT_DIR" || -L "$QUICKSHELL_DEFAULT_DIR" ]]; then
     warn "Existing $QUICKSHELL_DEFAULT_DIR found — backing up to ${QUICKSHELL_DEFAULT_DIR}.bak-$(date +%s)"
@@ -292,11 +237,6 @@ fi
 run ln -s "$NISFERE_DIR/shell" "$QUICKSHELL_DEFAULT_DIR"
 
 # ── 6. Cache/data/media directories ──────────────────────────────────────────
-# state.json is NOT created here — StateManager already handles that
-# correctly on demand (missing file -> sensible default, tested
-# extensively). The other four don't have the same confirmed handling,
-# so they get explicit default content below instead of relying on
-# lazy creation.
 
 log "Creating cache/data directories..."
 run mkdir -p "$HOME/.cache/nisfere"
@@ -304,12 +244,6 @@ run mkdir -p "$HOME/Pictures/Wallpapers"
 run mkdir -p "$HOME/Pictures/Screenshots"
 run mkdir -p "$HOME/Videos/Recordings"
 
-# Default contents are best-guess (array for lists, object for
-# keyed/single state) — only create if missing, never overwrite
-# something already there. Confirm these match what each module
-# actually expects; state.json itself is NOT included here since
-# StateManager already creates it correctly on demand (tested
-# extensively earlier) — adding it here too could conflict with that.
 create_cache_file() {
     local name="$1"
     local default_content="$2"
@@ -324,18 +258,13 @@ create_cache_file() {
     fi
 }
 
-# ── 7. Icon theme + GSettings (best-effort extra; settings.ini from
-# dots/gtk-*.0 above is the mechanism that actually matters under
-# Hyprland — see desktop_integration.py's reload_gtk() for why) ──────────────
+# ── 7. Icon theme + GSettings ─────────────────────────────────────────────────
 
 log "Applying Papirus icon theme (best-effort gsettings, harmless if it no-ops)..."
 run gsettings set org.gnome.desktop.interface icon-theme 'Papirus' || true
 run gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark' || true
 
 # ── 8. Passwordless pacman for in-UI Arch updates (optional) ─────────────────
-# Lets the daemon's update_manager stream `pacman -Syu` live without a
-# polkit dialog. Skippable — falls back to pkexec (needs a polkit
-# agent running) if you say no here.
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the sudoers prompt in dry-run mode."
@@ -352,11 +281,6 @@ else
 fi
 
 # ── 8b. Docker (optional) ────────────────────────────────────────────────────
-# Fully opt-in: neither Docker Engine nor python-docker are installed
-# by default. docker_service.py guards its own `import docker` (see
-# services/docker_service.py) — the daemon starts and runs fine either
-# way, the Dashboard's Docker tab just reports unavailable if you skip
-# this. Nothing else is affected.
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the Docker prompt in dry-run mode."
@@ -366,11 +290,6 @@ else
     if [[ "$install_docker" =~ ^[Yy]$ ]]; then
         run yay -S --needed --noconfirm docker docker-compose python-docker
         run sudo systemctl enable --now docker.service
-        # Needed so python-docker (running as your user, not root) can
-        # actually reach /var/run/docker.sock — without this you'd get
-        # a permission error instead of a working connection. Group
-        # membership only takes effect on your NEXT login, not this
-        # session.
         run sudo usermod -aG docker "$USER"
         log "Docker installed and enabled. Log out and back in for group membership to take effect."
     else
@@ -379,15 +298,6 @@ else
 fi
 
 # ── 8c. Display manager (optional) ───────────────────────────────────────────
-# Without this, you start Hyprland manually each boot (start-hyprland
-# from a TTY, or the prompt at the very end of this script for right
-# now). Enabled but NOT started now — starting it immediately could
-# disrupt the very TTY session you're running this install from.
-#
-# (greetd+tuigreet/regreet were tried and dropped — regreet specifically
-# didn't come up cleanly after reboot in testing; SDDM is the reliable
-# choice here, VT-switch-back quirk addressed separately via
-# hyprshutdown --vt auto + the chvt sudoers rule below.)
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the SDDM prompt in dry-run mode."
@@ -403,40 +313,55 @@ else
     fi
 fi
 
-# ── 9. Daemon systemd --user service ─────────────────────────────────────────
-# Static file, copied as-is (always — a symlinked systemd unit file is
-# more trouble than it's worth) — uses systemd's own %h specifier
+# ── 9. Daemon systemd --user service + socket ────────────────────────────────
+# Static files, copied as-is (always — symlinked systemd unit files are
+# more trouble than they're worth) — uses systemd's own %h specifier
 # (expands to the invoking user's home dir at RUN time) instead of a
-# baked-in path, so the unit file itself never needs to know who's
-# installing it.
+# baked-in path, so the unit files themselves never need to know who's
+# installing them.
+#
+# Socket activation: nisfere-daemon.socket is what actually gets
+# enabled/started here, NOT nisfere-daemon.service directly. systemd
+# owns and creates the socket file itself the moment the .socket unit
+# starts — independent of whether the Python daemon has even started
+# yet. This is what fixes the race where Quickshell (launched via
+# Hyprland's exec-once) could start before the daemon and never
+# recover the connection if the timing landed that way. The matching
+# .service unit has no [Install] section anymore — systemd starts it
+# automatically (same basename convention) the first time something
+# actually connects to the socket, so it's never enabled directly.
 
-log "Installing systemd --user service for the daemon..."
+log "Installing systemd --user service + socket for the daemon..."
 run mkdir -p "$HOME/.config/systemd/user"
 run cp "$REPO_DIR/dots/systemd/nisfere-daemon.service" "$HOME/.config/systemd/user/nisfere-daemon.service"
+run cp "$REPO_DIR/dots/systemd/nisfere-daemon.socket" "$HOME/.config/systemd/user/nisfere-daemon.socket"
 
 run systemctl --user daemon-reload
-run systemctl --user enable --now nisfere-daemon.service
-log "Daemon service enabled and started."
+# Only the .socket gets enabled/started directly. Enabling the
+# .service here too would fight with socket activation — it'd try to
+# bind/create the socket itself independently instead of receiving the
+# already-open fd systemd hands it on first connection.
+run systemctl --user enable --now nisfere-daemon.socket
+log "Daemon socket enabled and listening (daemon service itself starts on-demand, on first connection)."
 
 # ── 10. First-run defaults ───────────────────────────────────────────────────
-# Applies a bundled static theme (no wallpaper image required — themes/
-# already ships tokyo-night-{dark,light}.json) so the shell doesn't
-# start with an unstyled/empty state.json on a completely fresh install.
-# Goes through the daemon's own socket — same "theme"/"set_colors"
-# message ThemeActions.qml's setColors() already sends in normal use —
-# rather than importing ThemeManager directly, so this exercises the
-# real production path instead of a special install-time bypass.
 
 SOCKET_PATH="/tmp/nisfere-shell.sock"
 
 log "Waiting for the daemon socket to come up..."
+# With socket activation (step 9), systemd creates this file the
+# instant nisfere-daemon.socket starts — before the Python process
+# behind it has even run a single line — so this should succeed on the
+# very first check now. The retry loop stays as a cheap safety net
+# (e.g. unusually slow systemd, or this unit somehow not enabled) but
+# shouldn't ever need more than one iteration in practice.
 if [[ $DRY_RUN -eq 0 ]]; then
     for _ in $(seq 1 20); do
         [[ -S "$SOCKET_PATH" ]] && break
         sleep 0.5
     done
     if [[ ! -S "$SOCKET_PATH" ]]; then
-        warn "Daemon socket never appeared at $SOCKET_PATH — skipping default theme apply. Check 'journalctl --user -u nisfere-daemon' and apply a theme manually from the shell once it's running."
+        warn "Daemon socket never appeared at $SOCKET_PATH — skipping default theme apply. Check 'systemctl --user status nisfere-daemon.socket nisfere-daemon.service' and 'journalctl --user -u nisfere-daemon' and apply a theme manually from the shell once it's running."
     fi
 fi
 
@@ -474,10 +399,12 @@ echo "       exec-once = quickshell > ~/.cache/nisfere/quickshell.log 2>&1"
 echo "     (no -p needed anymore — ~/.config/quickshell now symlinks to the"
 echo "     real shell folder, so the default path is already correct, and"
 echo "     'qs ipc call'/'qs ipc show' will find the running instance too)."
-echo "  3. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
+echo "  3. systemctl --user status nisfere-daemon.socket nisfere-daemon.service"
+echo "     -> the .socket should show 'active (listening)'; the .service starts"
+echo "     automatically on first connection, no need to start it yourself."
+echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
 
-# ── 11. Launch Hyprland now? (must be the LAST thing this script does —
-# `exec` replaces the current shell process, nothing after it runs) ──────────
+# ── 11. Launch Hyprland now? ─────────────────────────────────────────────────
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the 'launch Hyprland now' prompt in dry-run mode."
@@ -488,10 +415,6 @@ else
     read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Launch Hyprland now? (replaces this shell session) [y/N] " launch_now
     if [[ "$launch_now" =~ ^[Yy]$ ]]; then
         log "Launching Hyprland via start-hyprland..."
-        # NOT the raw `Hyprland` binary directly — since 0.53, that's
-        # no longer the expected entry point (you'd get a "Hyprland
-        # was started without start-hyprland" warning/error). This
-        # wrapper (same package) adds crash recovery/safe mode too.
         exec start-hyprland
     else
         log "Skipped — log out and start a Hyprland session (or reboot) whenever you're ready."

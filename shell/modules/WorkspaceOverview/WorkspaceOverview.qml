@@ -41,10 +41,10 @@ Item {
         if (!monitorData) return null;
         return Hyprland.monitors.values.find(m => m.id === monitorData.id) ?? null;
     }
-    readonly property var monitorData: HyprlandData.monitors.find(m => m.name === root.screenName)
+    readonly property var monitorData: HyprlandData.monitors.values.find(m => m.name === root.screenName)
 
     // ── Sizes & Calculations (Per-Monitor Isolation) ──────────────────────
-    readonly property var reserved: monitorData?.reserved ?? [0, 0, 0, 0]
+    readonly property var reserved: monitorData?.lastIpcObject?.reserved ?? [0, 0, 0, 0]
     readonly property real availWidth: root.width - reserved[0] - reserved[2]
     readonly property real availHeight: root.height - reserved[1] - reserved[3]
 

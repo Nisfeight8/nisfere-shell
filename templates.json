@@ -11,17 +11,17 @@
     ],
     "scope": "shared"
   },
-  "adw-gtk3.css": {
-    "targets": [
-      "~/.config/gtk-3.0/gtk.css",
-      "~/.config/gtk-4.0/gtk.css"
-    ],
-    "scope": "shell"
-  },
   "thunar.css": {
     "targets": [
       "~/.config/gtk-3.0/thunar.css",
       "~/.config/gtk-4.0/thunar.css"
+    ],
+    "scope": "shell"
+  },
+  "adw-gtk3.css": {
+    "targets": [
+      "~/.config/gtk-3.0/gtk.css",
+      "~/.config/gtk-4.0/gtk.css"
     ],
     "scope": "shell"
   },

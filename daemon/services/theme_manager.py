@@ -33,8 +33,7 @@ _DEFAULT_SETTINGS: dict = {
     "shell": {
         "enableWidgetBorders": True,
         "barHeight": 50,
-        "padding": 6,
-        "panelBorderSize": 10,
+        "screenBorderSize": 10,
         "widgetOpacity": 1.0,
     },
     "hyprland": {
@@ -98,6 +97,44 @@ class ThemeManager:
         logger.info("Setting updated: %s.%s = %r", scope, key, value)
         return {"success": True, "key": key, "value": value, "scope": scope}
 
+    def set_chroma_setting(self, key: str, value) -> dict:
+        """
+        Updates ONE nisfere_chroma extraction knob (algorithm/
+        saturation/bg_saturation/contrast/resize_to) and, if a
+        wallpaper-derived (dynamic) theme is currently active,
+        immediately re-extracts + re-applies colors from that SAME
+        wallpaper — same instant-feedback idea as set_setting() for
+        style values, instead of the change silently sitting inert
+        until the next wallpaper switch.
+
+        Deliberately uses _extract_and_apply() directly rather than
+        set_wallpaper() — set_wallpaper() also re-triggers
+        DesktopIntegration.apply_wallpaper() (the `awww img ...`
+        transition), which would restart the wallpaper-set animation
+        on every single slider tweak in a settings UI even though the
+        image itself never changed, only how it's being color-sampled.
+        """
+        try:
+            state = self.state.set_chroma_setting(key, value)
+        except Exception as e:
+            logger.error("Failed to update chroma setting '%s': %s", key, e)
+            return {"success": False, "error": str(e)}
+
+        reapplied = False
+        if state.source_type == "dynamic" and state.wallpaper:
+            reapplied = self._extract_and_apply(state.wallpaper, state.mode)
+
+        logger.info(
+            "Chroma setting updated: %s = %r (live-reapplied=%s)",
+            key, value, reapplied,
+        )
+        return {
+            "success": True,
+            "key": key,
+            "value": value,
+            "reapplied": reapplied,
+        }
+
     def toggle_mode(self) -> dict:
         state = self.state.load()
         if not state:
@@ -131,6 +168,17 @@ class ThemeManager:
                 self.state.save(state)
             return True
 
+        return self._extract_and_apply(wallpaper_path, mode)
+
+    def _extract_and_apply(self, wallpaper_path: str, mode: str) -> bool:
+        """
+        The actual extract-colors-from-image-and-apply-them step,
+        factored out of set_wallpaper() so set_chroma_setting() can
+        re-run just this part (re-extraction with new tuning knobs)
+        without also re-triggering the desktop wallpaper-set transition
+        via DesktopIntegration.apply_wallpaper() — the image path is
+        the same, only how it gets sampled changed.
+        """
         chroma_settings = self.state.get_chroma_settings()
         raw = self.colors.extract_dynamic(wallpaper_path, mode, **chroma_settings)
         return self._apply_colors(raw, mode, wallpaper_path, "dynamic", None)
@@ -218,8 +266,6 @@ class ThemeManager:
     ) -> bool:
         try:
             shared_vars = self.colors.flatten(raw, mode)
-            shared_vars["wallpaper"] = wallpaper_path
-            shared_vars["mode"] = mode
 
             bg = shared_vars["background"]
             if mode == "light":
@@ -254,7 +300,7 @@ class ThemeManager:
             # place, instead of scattered across services.
             threading.Thread(
                 target=self.desktop.sync_papirus_folders,
-                args=(state.style.get("shared", {}).get("color4", ""),),
+                args=(state.style.get("shared", {}).get("accent", ""),),
                 daemon=True,
             ).start()
             threading.Thread(

@@ -100,7 +100,7 @@ Rectangle {
                 return root.activeColor;
             if (root.isHovered)
                 return root.hoverColor;
-            if (root.borderColor)
+            if (root.borderColor != Theme.borderColor)
                 return root.borderColor;
             return Theme.foreground;
         }

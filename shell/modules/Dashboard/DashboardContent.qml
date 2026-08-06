@@ -1,117 +1,93 @@
+pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Layouts
 import qs.core
 import qs.services
-import "widgets"
-import "widgets/Overview"
-import "widgets/Productivity"
-import "widgets/Notifications"
+import "panels"
+import "panels/DockerManager" as DockerNS // adjust path once files are physically moved
+import "panels/Settings" as SettingsNS   // ditto
 
+// Top-level content host for the Dashboard drawer — the single place
+// that decides which of the 7 top-level components is on screen,
+// driven entirely by ShellState.dashboardActiveComponent:
+//
+//   "tabs"       — info dashboard (TabsComponent)
+//   "search"     — unified search/launcher (SearchComponent) — also
+//                  covers the classic "app launcher" experience,
+//                  scoped to the "apps" provider (browse mode until you
+//                  type, same grid AppLauncherPanel already shows there)
+//   "docker"     — Docker Manager
+//   "sysmon"     — System Monitor
+//   "settings"   — Shell & Hyprland settings
+//   "screenshot" — capture mode picker (full/window/area/delay)
+//   "record"     — screen recording mode picker + recording indicator
+//
+// docker/sysmon/settings/screenshot/record used to live NESTED inside
+// SearchComponent or a separate QuickActions bottom drawer — they're
+// peers of "search" now instead, rendered directly here with no
+// search-bar chrome at all. None of them know about each other or
+// about search; this file is the only place that decides which one is
+// showing. screenshot/record are deliberately small/compact (no
+// anchors.fill on their own root — see their own header comments) —
+// unlike docker/sysmon/settings, they're quick popup-style pickers,
+// not persistent content-heavy tools, so the drawer shrinking to fit
+// them is the intended look, not a bug.
+//
+// (There used to be a 4th standalone component here, "appLauncherFull"
+// — a search-bar-less full app grid. Removed: it was a strict subset
+// of "search" scoped to "apps", which already shows the exact same
+// grid when the query is empty, PLUS lets you type — the search-bar-
+// less version could never offer that. See ShellState.qml's own note
+// on this for the full reasoning.)
 Item {
     id: wrapper
 
-    // Was missing entirely — mainColumn (a ColumnLayout) already
-    // correctly auto-computes its OWN implicit size bottom-up from its
-    // children (standard Layout behavior), but nothing forwarded that
-    // up to wrapper's own implicit size, so it stayed at the default
-    // (0) no matter what any tab actually needed. This is the other
-    // half of Media.qml's own implicit-size fix — without this, a
-    // tab's real content size never reaches DrawerContentHost /
-    // DrawerGeometry, and every tab stays stuck at Dashboard's fixed
-    // minPanelWidth/minPanelHeight regardless of what it actually needs.
-    implicitWidth: mainColumn.implicitWidth
-    implicitHeight: mainColumn.implicitHeight
+    implicitWidth: pageLoader.item?.implicitWidth ?? 0
+    implicitHeight: pageLoader.item?.implicitHeight ?? 0
+
+    readonly property var _componentMap: ({
+            "tabs": tabsComp,
+            "search": searchComp,
+            "docker": dockerComp,
+            "sysmon": sysmonComp,
+            "settings": settingsComp,
+            "screenshot": screenshotComp,
+            "record": recordComp
+        })
 
     Component {
-        id: overviewComp
-        Overview {}
+        id: tabsComp
+        TabsComponent {}
     }
     Component {
-        id: mediaComp
-        Media {}
+        id: searchComp
+        SearchComponent {}
     }
     Component {
-        id: weatherComp
-        Weather {}
+        id: dockerComp
+        DockerNS.DockerManager {
+            color: Theme.background
+        }
     }
     Component {
-        id: notificationsComp
-        Notifications {}
+        id: sysmonComp
+        SystemMonitorTool {}
     }
     Component {
-        id: productivityComp
-        Productivity {}
+        id: settingsComp
+        SettingsNS.Settings {}
+    }
+    Component {
+        id: screenshotComp
+        ScreenshotPanel {}
+    }
+    Component {
+        id: recordComp
+        RecordPanel {}
     }
 
-    ColumnLayout {
-        id: mainColumn
+    AnimLoader {
+        id: pageLoader
         anchors.fill: parent
-        spacing: 15
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 15
-
-            NavTabs {
-                id: navTabs
-                // Was `width: wrapper.implicitWidth` — wrapper (this
-                // file's root Item) never binds its own implicitWidth
-                // to anything (anchors.fill on the ColumnLayout doesn't
-                // feed implicit size upward), so that was always 0,
-                // regardless of how wide the drawer actually rendered.
-                // NavTabs is already the sole child of a
-                // Layout.fillWidth RowLayout — just let it fill that
-                // directly instead of computing width by hand.
-                Layout.fillWidth: true
-                height: 30
-                currentIndex: ShellState.currentDashboardTab
-                onTabClicked: index => ShellState.currentDashboardTab = index
-                tabModel: [
-                    {
-                        icon: "layout-dashboard",
-                        title: "Overview"
-                    },
-                    {
-                        icon: "music",
-                        title: "Media"
-                    },
-                    {
-                        icon: "sun",
-                        title: "Weather"
-                    },
-                    {
-                        icon: "bell",
-                        title: "Alerts"
-                    },
-                    {
-                        icon: "brain",
-                        title: "Productivity"
-                    },
-                ]
-            }
-        }
-
-        AnimLoader {
-            id: animLoader
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            sourceComp: {
-                switch (ShellState.currentDashboardTab) {
-                case 0:
-                    return overviewComp;
-                case 1:
-                    return mediaComp;
-                case 2:
-                    return weatherComp;
-                case 3:
-                    return notificationsComp;
-                case 4:
-                    return productivityComp;
-                default:
-                    return overviewComp;
-                }
-            }
-        }
+        sourceComp: wrapper._componentMap[ShellState.dashboardActiveComponent] ?? tabsComp
     }
 }

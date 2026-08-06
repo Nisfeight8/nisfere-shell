@@ -99,8 +99,8 @@ Item {
                 anchors {
                     bottom: parent.bottom
                     right: parent.right
-                    bottomMargin: Theme.panelBorderSize + 20
-                    rightMargin: Theme.panelBorderSize + 20
+                    bottomMargin: Theme.screenBorderSize + 20
+                    rightMargin: Theme.screenBorderSize + 20
                 }
                 width: 450
                 // FIX — same bug as OSD.qml had: no explicit height

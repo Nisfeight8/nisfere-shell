@@ -39,12 +39,12 @@ _DEFAULT_TEMPLATE_MAP: dict = {
         "targets": ["~/.config/alacritty/colors.toml"],
         "scope": "shared",
     },
-    "adw-gtk3.css": {
-        "targets": ["~/.config/gtk-3.0/gtk.css", "~/.config/gtk-4.0/gtk.css"],
-        "scope": "shell",
-    },
     "thunar.css": {
         "targets": ["~/.config/gtk-3.0/thunar.css", "~/.config/gtk-4.0/thunar.css"],
+        "scope": "shell",
+    },
+    "adw-gtk3.css": {
+        "targets": ["~/.config/gtk-3.0/gtk.css", "~/.config/gtk-4.0/gtk.css"],
         "scope": "shell",
     },
     "bpytop.theme": {
@@ -115,7 +115,7 @@ class TemplateRenderer:
         """
         Backwards-compat: pre-refactor templates.json entries were a
         bare str or list[str] with no scope concept. For any of our
-        own built-in template names (variables.lua.template ...) 
+        own built-in template names (variables.lua.template ...)
         we know the correct scope from
         _DEFAULT_TEMPLATE_MAP and use THAT — not a blind 'shared' —
         so a Hyprland-only template doesn't end up missing hyprland

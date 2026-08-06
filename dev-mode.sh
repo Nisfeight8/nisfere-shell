@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 # dev-mode.sh — toggle ~/.config/nisfere between "installed" (plain
-# copies, daemon managed by systemd) and "dev" (symlinked straight to
-# this repo checkout, daemon stopped so you run it yourself and see
-# live output).
+# copies, daemon managed by systemd via socket activation) and "dev"
+# (symlinked straight to this repo checkout, daemon stopped so you run
+# it yourself and see live output).
 #
 # Run install.sh once first — this only toggles daemon/shell/
 # templates/themes/templates.json, it doesn't touch packages, the
-# systemd unit file itself, or dots/{qtengine,gtk-*,systemd}
+# systemd unit files themselves, or dots/{qtengine,gtk-*,systemd}
 # (those rarely change once set up).
 #
 # Usage:
@@ -50,8 +50,16 @@ switch_on() {
     log "Killing any running quickshell instance..."
     pkill -x quickshell 2>/dev/null || true
 
-    log "Stopping nisfere-daemon.service (you'll run it manually instead)..."
-    systemctl --user stop nisfere-daemon.service 2>/dev/null || true
+    # Stop BOTH units, not just the .service. With socket activation,
+    # nisfere-daemon.socket is what actually owns/binds
+    # /tmp/nisfere-shell.sock — if it's left running while you `python3
+    # main.py` manually, your manual run and systemd's own listening
+    # socket end up fighting over the same filesystem path. Stopping
+    # the socket too means systemd fully releases it, so your manual
+    # run's own fallback (self-managed, no LISTEN_FDS) socket creation
+    # in socket_manager.py has a clean path to bind to.
+    log "Stopping nisfere-daemon.socket/.service (you'll run the daemon manually instead)..."
+    systemctl --user stop nisfere-daemon.socket nisfere-daemon.service 2>/dev/null || true
 
     for name in "${ITEMS[@]}"; do
         dst="$NISFERE_DIR/$name"
@@ -68,6 +76,8 @@ switch_on() {
     log "Dev mode ON. Edits in $REPO_DIR are live. Run these yourself, in separate terminals, so you can see output/errors:"
     echo "    cd $NISFERE_DIR/daemon && python3 main.py"
     echo "    quickshell"
+    echo
+    warn "Note: nisfere-daemon.socket is stopped for the whole session now, not just this moment — if you log out/in (or reboot) while still in dev mode, it WILL come back via graphical-session.target on the next session start and could conflict with a manual run you start again afterward. Run '$0 off' before ending your session if you're not sure."
 }
 
 switch_off() {
@@ -75,6 +85,8 @@ switch_off() {
 
     log "Killing any running (dev) quickshell instance..."
     pkill -x quickshell 2>/dev/null || true
+
+    warn "If you still have a manual 'python3 main.py' running in another terminal from dev mode, Ctrl+C it now before continuing — it's holding /tmp/nisfere-shell.sock itself, and starting nisfere-daemon.socket below will fail to bind while that's still alive."
 
     for name in "${ITEMS[@]}"; do
         dst="$NISFERE_DIR/$name"
@@ -85,33 +97,40 @@ switch_off() {
     # Stray logs shouldn't ship in the fresh copy.
     rm -f "$NISFERE_DIR/daemon/output.log" "$NISFERE_DIR/daemon/output2.log"
 
-    log "Restarting nisfere-daemon.service..."
+    # Restart the SOCKET, not the service directly. Directly starting/
+    # restarting nisfere-daemon.service here would spawn it without
+    # the LISTEN_FDS/LISTEN_PID env vars systemd only sets when a unit
+    # is triggered THROUGH its socket — the daemon would just fall
+    # back to self-managed socket creation (see socket_manager.py),
+    # sidestepping socket activation entirely and putting you right
+    # back to the original race this whole setup was meant to fix.
+    log "Restarting nisfere-daemon.socket..."
     systemctl --user daemon-reload
-    systemctl --user restart nisfere-daemon.service
+    systemctl --user restart nisfere-daemon.socket
 
     echo
-    log "Normal mode ON. Daemon is running via systemd again. Start quickshell yourself now, or it'll come up on your next Hyprland login via exec-once:"
+    log "Normal mode ON. Daemon socket is listening again via systemd; the daemon service itself starts automatically on first connection. Start quickshell yourself now, or it'll come up on your next Hyprland login via exec-once:"
     echo "    quickshell"
 }
 
 case "${1:-}" in
-    on)
-        switch_on
-        ;;
-    off)
+on)
+    switch_on
+    ;;
+off)
+    switch_off
+    ;;
+"")
+    if is_dev_mode; then
+        log "Currently in dev mode -> switching to normal."
         switch_off
-        ;;
-    "")
-        if is_dev_mode; then
-            log "Currently in dev mode -> switching to normal."
-            switch_off
-        else
-            log "Currently in normal mode -> switching to dev."
-            switch_on
-        fi
-        ;;
-    *)
-        err "Usage: $0 [on|off]"
-        exit 1
-        ;;
+    else
+        log "Currently in normal mode -> switching to dev."
+        switch_on
+    fi
+    ;;
+*)
+    err "Usage: $0 [on|off]"
+    exit 1
+    ;;
 esac

@@ -19,6 +19,16 @@ Singleton {
     property string sourceType: "dynamic"
     property string sourceName: ""
 
+    // nisfere_chroma.py's own extraction tuning knobs — a separate
+    // top-level state.json field, NOT part of style/shared/shell/
+    // hyprland (see the daemon's StateManager: these affect HOW
+    // colors get extracted from a wallpaper, not the resulting visual
+    // style itself, so no template ever reads them). Was entirely
+    // missing from this file before — needed so a settings UI can
+    // show the CURRENT algorithm/saturation/etc before letting
+    // someone change them via ThemeActions.setChromaSetting().
+    property var chromaSettings: ({})
+
     // ── Style, split into the SAME three scopes the daemon uses ────
     // shared:   colorN, background, foreground, radius, fontName —
     //           anything both the shell and Hyprland need.
@@ -44,6 +54,7 @@ Singleton {
                 root.mode = state.mode ?? "dark";
                 root.sourceType = state.source_type ?? "dynamic";
                 root.sourceName = state.source_name ?? "";
+                root.chromaSettings = state.chroma_settings ?? {};
 
                 const style = state.style ?? {};
                 root.shared = style.shared ?? {};

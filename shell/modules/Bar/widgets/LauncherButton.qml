@@ -23,8 +23,8 @@ BarWidget {
     TapHandler {
         parent: launcherBtn
         onTapped: {
-            const screenName = QsWindow.window?.screen?.name ?? "";
-            ShellState.toggleAppLauncher(screenName);
+            const screenName = QsWindow.window?.screen?.name;
+            ShellState.toggleDashboardSearch(screenName);
         }
     }
 }

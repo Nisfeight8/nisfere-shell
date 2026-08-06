@@ -72,6 +72,16 @@ class SetSettingPayload:
             )
 
 
+@dataclass
+class SetChromaSettingPayload:
+    key: str
+    value: object
+
+    def __post_init__(self):
+        if not self.key:
+            raise ValueError("key is required")
+
+
 # ── Command handler ───────────────────────────────────────────────────────────
 
 
@@ -160,6 +170,30 @@ async def handle_command(action: str, payload: dict, sock) -> None:
                 await sock.send(
                     {
                         "type": "setting_updated",
+                        "payload": result,
+                    }
+                )
+
+            case "set_chroma_setting":
+                # Entry point for a future settings UI's "chroma
+                # extraction" tab (algorithm/saturation/bg_saturation/
+                # contrast/resize_to). Deliberately a SEPARATE action
+                # from set_setting — chroma_settings live outside the
+                # shared/shell/hyprland style scopes entirely (see
+                # StateManager's _DEFAULT_CHROMA_SETTINGS), and unlike
+                # a style setting, changing one of these live-reapplies
+                # colors from the CURRENT wallpaper if one's active —
+                # see ThemeManager.set_chroma_setting for why that's
+                # done via _extract_and_apply() rather than
+                # set_wallpaper() (avoids re-triggering the awww
+                # transition on every slider tweak).
+                p = SetChromaSettingPayload(**payload)
+                result = await asyncio.to_thread(
+                    theme_manager.set_chroma_setting, p.key, p.value
+                )
+                await sock.send(
+                    {
+                        "type": "chroma_setting_updated",
                         "payload": result,
                     }
                 )

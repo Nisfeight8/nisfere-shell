@@ -13,30 +13,32 @@ QtObject {
     readonly property string fontName: StyleSettings.fontName
     readonly property int radius: StyleSettings.radius
     readonly property int barHeight: StyleSettings.barHeight
-    readonly property int padding: StyleSettings.padding
-    readonly property int panelBorderSize: StyleSettings.panelBorderSize
+    readonly property int screenBorderSize: StyleSettings.screenBorderSize
     readonly property int widgetBorderWidth: enableWidgetBorders ? 1 : 0
 
-    // ── Base colors → from Colors.qml, with widgetOpacity baked in ──
-    // Computed from the OPAQUE source colors first (tint/mix math
-    // assumes opaque inputs), THEN widgetOpacity is applied as the
-    // final alpha step — this means every widget that already does
-    // `color: Theme.background` gets opacity control for free, with
-    // ZERO changes needed anywhere else in the shell.
+    // ── Base colors → from Colors.qml, with widgetOpacity ACTUALLY
+    // applied this time. background/backgroundAlt take widgetOpacity
+    // as their alpha channel — every widget that already does
+    // `color: Theme.background` gets real opacity control, with ZERO
+    // changes needed anywhere else in the shell. foreground/selected/
+    // cursor stay fully opaque — text/icons fading out with the
+    // widget backdrop would hurt readability, not help it.
     readonly property color _opaqueBackground: Colors.background
-    readonly property color _opaqueBackgroundAlt: Qt.tint(_opaqueBackground, Qt.rgba(Colors.foreground.r, Colors.foreground.g, Colors.foreground.b, 0.06))
 
-    property color background: Colors.background
-    property color backgroundAlt: Colors.backgroundAlt
+    property color background: Qt.rgba(_opaqueBackground.r, _opaqueBackground.g, _opaqueBackground.b, StyleSettings.widgetOpacity)
+    property color backgroundAlt: Qt.rgba(Colors.backgroundAlt.r, Colors.backgroundAlt.g, Colors.backgroundAlt.b, StyleSettings.widgetOpacity)
     property color foreground: Colors.foreground
+    property color foregroundAlt: Colors.foregroundAlt
+
     property color selected: Colors.selected
     property color cursor: Colors.cursor
 
     // Border stays fully opaque regardless of widgetOpacity — thin
     // outlines need definition, translucency here would just make
-    // them look faded/broken rather than "glassy".
-    property color borderColor: Qt.tint(_opaqueBackground, Qt.rgba(Colors.foreground.r, Colors.foreground.g, Colors.foreground.b, 0.14))
-    property color highlightBorderColor: selected
+    // them look faded/broken rather than "glassy". Built from
+    // _opaqueBackground (not the now-translucent `background` above)
+    // since Qt.tint's mix math assumes an opaque base.
+    property color borderColor: Qt.rgba(Colors.borderColor.r, Colors.borderColor.g, Colors.borderColor.b, StyleSettings.widgetOpacity)
 
     // ── Full palette → from Colors.qml ─────────────────────────────
     property color color0: Colors.color0

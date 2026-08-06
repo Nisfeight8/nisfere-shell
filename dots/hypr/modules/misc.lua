@@ -15,5 +15,7 @@ hl.config({
         key_press_enables_dpms       = true,
         
         background_color             = vars.bg_color,
+
+        allow_session_lock_restore = true
     }
 })

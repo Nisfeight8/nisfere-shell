@@ -1,0 +1,421 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import qs.services
+
+Singleton {
+    id: root
+
+    // Each entry:
+    //   id: string, unique
+    //   keyword: string — "" means "default provider" (no keyword needed).
+    //            Word-based keywords now carry their own "@" prefix as
+    //            part of the string (e.g. "@tools", not "tools") — this
+    //            disambiguates an explicit scope request ("@git") from
+    //            someone just typing a plain app name that happens to
+    //            match a provider name (typing "git" to find GitKraken
+    //            used to force you into Git-Repos mode instead of
+    //            searching apps; now only "@git" does that).
+    //            ">" (commands) deliberately keeps NO "@" — single-char,
+    //            no-space prefixes are handled separately below and are
+    //            exclusive-only by nature (you don't want fuzzy-matched
+    //            apps mixed into ">restart" style command entry).
+    //   label, icon: shown in the dropdown picker + rotating placeholder
+    //   pushOnActivate: bool — true = selecting a result pushes a panel
+    //                    (stack), false = selecting a result executes
+    //                    the action immediately and closes the launcher
+    //   component: optional Component — full custom UI, bypasses the
+    //              generic result-row rendering entirely (only "apps"
+    //              needs this today, for its SideMenu+categories)
+    //   search(query): function(string) -> array of
+    //              { id, title, subtitle, icon, action }
+    //
+    // NOTE: `component` for "apps" is set from CentralLauncher.qml at
+    // startup (root.providers[0].component = appLauncherComponent),
+    // not here — importing the AppLauncher component from inside a
+    // services/ singleton would be a backwards dependency direction.
+    property var providers: [
+        {
+            id: "apps",
+            keyword: "",
+            label: "Apps",
+            icon: "layout-grid",
+            pushOnActivate: false,
+            component: null,
+            // Reuses DesktopEntryService.toResultRow — the same
+            // mapping AppLauncherPanel's browse mode uses, so there's
+            // one canonical "what does an app look like as a result
+            // row" instead of two copies drifting apart. Capped at 50
+            // — this feeds the unified flat search (searchAll below),
+            // which can otherwise render hundreds of rows for a single
+            // common letter.
+            search: function (query) {
+                const q = query.toLowerCase();
+                return DesktopEntries.applications.values.filter(a => a.name.toLowerCase().includes(q)).slice(0, 50).map(a => DesktopEntryService.toResultRow(a));
+            }
+        },
+        {
+            id: "docker",
+            keyword: "@docker",
+            label: "Docker Manager",
+            icon: "container",
+            pushOnActivate: false,
+            // Full standalone tool, not something you filter with
+            // search text — SearchComponent hides the search bar while
+            // one of these is the active provider (see its
+            // `hideSearchBar`). Discoverability comes for free from
+            // the "@" provider-picker (typing "@" lists every
+            // provider, keyword included), so there's no "tools" menu
+            // needed as a separate hop.
+            standalone: true,
+            component: null // set from CentralLauncher.qml, same as apps/wallpapers/colors
+        },
+        {
+            id: "sysmon",
+            keyword: "@sysmon",
+            label: "System Monitor",
+            icon: "activity",
+            pushOnActivate: false,
+            standalone: true,
+            component: null
+        },
+        {
+            id: "settings",
+            keyword: "@settings",
+            label: "Settings",
+            icon: "settings",
+            pushOnActivate: false,
+            standalone: true,
+            component: null
+        },
+        {
+            id: "screenshot",
+            keyword: "@screenshot",
+            label: "Screenshot",
+            icon: "camera",
+            pushOnActivate: false,
+            standalone: true,
+            component: null
+        },
+        {
+            id: "record",
+            keyword: "@record",
+            label: "Screen Recording",
+            icon: "circle-dot",
+            pushOnActivate: false,
+            standalone: true,
+            component: null
+        },
+        {
+            id: "ssh",
+            keyword: "@ssh",
+            label: "SSH Servers",
+            icon: "key",
+            pushOnActivate: false // connects + closes launcher immediately
+            ,
+            search: function (query) {
+                return []; // TODO: wire to real ssh-config parsing later
+            }
+        },
+        {
+            id: "git",
+            keyword: "@git",
+            label: "Git Repos",
+            icon: "git-branch",
+            pushOnActivate: true // pushes a repo-browser panel
+            ,
+            search: function (query) {
+                return [];
+            }
+        },
+        {
+            id: "clipboard",
+            keyword: "@clip",
+            label: "Clipboard History",
+            icon: "clipboard-list",
+            pushOnActivate: false,
+            component: null // set from CentralLauncher.qml, same as apps/wallpapers/colors
+        },
+        {
+            id: "files",
+            keyword: "@files",
+            label: "File Search",
+            icon: "file-search",
+            pushOnActivate: false,
+            component: null // set from CentralLauncher.qml, same as apps/wallpapers/colors
+        },
+        {
+            id: "colorpicker",
+            keyword: "@pick",
+            label: "Color Picker",
+            icon: "pipette",
+            pushOnActivate: false,
+            // No list to show at all — this used to return a single
+            // fixed search() result you still had to click/Enter on,
+            // which was a pointless extra step (nothing to actually
+            // pick). `immediate: true` + this top-level `action` make
+            // SearchComponent's onParsedChanged (same place that
+            // redirects "standalone" providers like docker/settings)
+            // run this the INSTANT the "@pick" keyword locks in —
+            // typing it, or selecting it from the "@" picker, both go
+            // through dashboardSearchText changing, so both trigger
+            // it the same way, automatically.
+            immediate: true,
+            action: function () {
+                root.runColorPicker();
+            }
+        },
+        {
+            id: "wallpapers",
+            keyword: "@wp",
+            label: "Wallpapers",
+            icon: "image",
+            pushOnActivate: false,
+            component: null // set from CentralLauncher.qml, same as apps/colors
+        },
+        {
+            id: "colors",
+            keyword: "@color",
+            label: "Color Themes",
+            icon: "pipette",
+            pushOnActivate: false,
+            component: null // set from CentralLauncher.qml, same reason as "apps"
+        },
+        {
+            id: "websearch",
+            keyword: "@web",
+            label: "Web Search",
+            icon: "globe",
+            pushOnActivate: false,
+            // Same "one row = exactly what you typed" shape as
+            // "commands" above — nothing to filter, the query itself
+            // IS the result.
+            search: function (query) {
+                if (query.trim() === "")
+                    return [];
+                return [
+                    {
+                        id: "web-search-run",
+                        title: query,
+                        subtitle: "Search the web",
+                        icon: "globe",
+                        action: () => root.runWebSearch(query)
+                    }
+                ];
+            }
+        },
+        {
+            id: "commands",
+            keyword: ">",
+            label: "Run Command",
+            icon: "terminal",
+            pushOnActivate: false // executes immediately
+            ,
+            // Single result mirroring exactly what you typed after
+            // ">" — this isn't a search over a fixed list, so there's
+            // nothing to filter; the "match" IS the command itself.
+            // Empty query = nothing to run yet, so no row at all
+            // (matches every other provider's "type something first"
+            // convention rather than showing a dead/empty entry).
+            //
+            // AUTOCOMPLETE HOOK (not implemented yet — see chat): once
+            // the daemon's compgen-based completion endpoint exists,
+            // this is the place to request suggestions (e.g.
+            // SocketService.sendCommand("shell", "complete", { input:
+            // query }), debounced ~120ms) and surface them as
+            // additional rows above/alongside this one. For now it's
+            // just the single "run exactly this" row.
+            search: function (query) {
+                if (query.trim() === "")
+                    return [];
+                return [
+                    {
+                        id: "run-command",
+                        title: query,
+                        subtitle: "Run in terminal",
+                        icon: "terminal",
+                        action: () => root.runTerminalCommand(query)
+                    }
+                ];
+            }
+        }
+    ]
+
+    // Terminal emulator to launch commands in — reads $TERMINAL first
+    // (respects whatever you've already set in your shell/Hyprland
+    // config), falls back to alacritty if that's unset. A Settings
+    // toggle to override this explicitly is a natural future addition
+    // (mentioned in chat) — not wired up yet, this is the whole
+    // decision for now.
+    function _terminalEmulator() {
+        const fromEnv = Quickshell.env("TERMINAL");
+        return (fromEnv && fromEnv !== "") ? fromEnv : "alacritty";
+    }
+
+    // Same reasoning as _terminalEmulator() above — was hardcoded to
+    // "bash" regardless of your actual login shell, so commands ran
+    // fine but you never got zsh (oh-my-zsh prompt/aliases/etc).
+    // $SHELL is the standard place this is recorded; falls back to
+    // /bin/sh only if that's somehow unset.
+    function _userShell() {
+        const fromEnv = Quickshell.env("SHELL");
+        return (fromEnv && fromEnv !== "") ? fromEnv : "/bin/sh";
+    }
+
+    // Safe single-quote wrapping for embedding arbitrary text inside a
+    // shell -c string — escapes any embedded single quotes.
+    function _shellQuote(str) {
+        return "'" + str.replace(/'/g, "'\\''") + "'";
+    }
+
+    // Fills the command into the terminal's prompt WITHOUT running it
+    // — you see it pre-typed, editable, and press Enter yourself (or
+    // change your mind first). Uses zsh's `print -z`, which pushes a
+    // string onto zle's buffer stack; the next prompt draw pulls from
+    // it instead of starting empty. This is zsh-specific (no simple
+    // bash equivalent — bash would need a more involved
+    // READLINE_LINE/bind setup), so non-zsh shells fall back to
+    // running the command directly instead.
+    //
+    // Quickshell.execDetached() rather than a Process object — a
+    // reused Process property stays "busy" for as long as the spawned
+    // window is open (a terminal/browser isn't a quick command like
+    // `cliphist list`, it runs until you close it), so a second call
+    // while the first window was still open silently did nothing
+    // until you closed it. execDetached has no such lifecycle to get
+    // stuck on — every call is fully independent.
+    function runTerminalCommand(cmd) {
+        const shell = root._userShell();
+        const isZsh = shell.indexOf("zsh") !== -1;
+        if (isZsh) {
+            const quoted = root._shellQuote(cmd);
+            Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-i", "-c", "print -z " + quoted + "; exec " + shell + " -i"]);
+        } else {
+            Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-c", cmd + "; exec " + shell]);
+        }
+    }
+
+    // Default search engine — one line to change if you'd rather use
+    // DuckDuckGo/Bing/etc (e.g. "https://duckduckgo.com/?q=%s"). A
+    // Settings toggle for this is a natural future addition, same as
+    // the terminal emulator override mentioned earlier — not wired up
+    // yet, this is the whole decision for now.
+    readonly property string _searchEngineUrlTemplate: "https://www.google.com/search?q=%s"
+
+    // xdg-open respects whatever you've set as your default browser
+    // (xdg-settings/mimeapps.list) — no need to hardcode a specific
+    // browser binary. Opening a URL while that browser is already
+    // running opens a new TAB in the existing window automatically;
+    // that's the browser's own single-instance IPC behavior (every
+    // major browser does this), not something we need to detect or
+    // implement ourselves. Same execDetached() fix as
+    // runTerminalCommand above — same reused-Process bug applied here
+    // too (had to close the browser window before a second search
+    // would open anything).
+    function runWebSearch(query) {
+        const url = root._searchEngineUrlTemplate.replace("%s", encodeURIComponent(query));
+        Quickshell.execDetached(["xdg-open", url]);
+    }
+
+    // Delay before actually running the color picker — closeDashboard()
+    // (called by GenericResultsList's activation logic before
+    // r.action() runs) starts the drawer's close animation, but
+    // hyprpicker needs the screen actually clear of any overlay first.
+    // Same 200ms the old bottom-drawer's QuickActions used.
+    Timer {
+        id: _pickerDelayTimer
+        interval: 200
+        onTriggered: ColorPickerService.run()
+    }
+
+    // Public entry point for anything that wants to trigger the color
+    // picker directly without going through search at all (e.g. the
+    // Dashboard footer's 1-click shortcut) — same delay mechanism the
+    // "colorpicker" provider's own search() result uses above, just
+    // exposed so callers don't need to fake a search interaction to
+    // reach it.
+    function runColorPicker() {
+        _pickerDelayTimer.restart();
+    }
+
+    // Providers with a non-empty keyword — used both for parsing and
+    // for populating the rotating placeholder / dropdown list.
+    readonly property var keywordProviders: providers.filter(p => p.keyword !== "")
+
+    // The providers that participate in the unified, no-prefix flat
+    // search — i.e. typing plain text with no "@keyword" searches all
+    // of these together, apps included, each result tagged with its
+    // providerId/providerIcon below (GenericResultsList uses this tag
+    // to know which provider "owns" a given row when the results are
+    // merged from more than one source). Deliberately excludes:
+    // "wallpapers"/"colors" (own custom panel UI, not generic rows),
+    // "commands" (exclusive-only by design — see the note on ">" above).
+    readonly property var flatSearchProviderIds: ["apps", "ssh", "git"]
+
+    // Merged results from every flatSearchProviderIds entry, each
+    // tagged with providerId/providerIcon so a generic result row can
+    // show a small "came from Tools/SSH/Git" badge.
+    function searchAll(query) {
+        let out = [];
+        for (const id of root.flatSearchProviderIds) {
+            const p = root.findById(id);
+            if (!p || !p.search)
+                continue;
+            const tagged = p.search(query).map(r => Object.assign({}, r, {
+                        providerId: id,
+                        providerIcon: p.icon
+                    }));
+            out = out.concat(tagged);
+        }
+        return out;
+    }
+
+    function findById(id) {
+        return providers.find(p => p.id === id) ?? null;
+    }
+
+    // "@ssh myserver" -> { providerId: "ssh", rest: "myserver" }
+    // "firefox"       -> { providerId: "apps", rest: "firefox" }
+    // ">htop"         -> { providerId: "commands", rest: "htop" } (no-space keyword)
+    function parseQuery(text) {
+        // No-space keywords (like ">") first — these match as a pure
+        // prefix, not a whole first word.
+        for (const p of root.keywordProviders) {
+            if (p.keyword.length > 0 && !/\s/.test(p.keyword) && text.startsWith(p.keyword) && p.keyword.length === 1) {
+                return {
+                    providerId: p.id,
+                    rest: text.substring(p.keyword.length)
+                };
+            }
+        }
+
+        const spaceIdx = text.indexOf(" ");
+        const firstWord = spaceIdx === -1 ? text : text.substring(0, spaceIdx);
+        const provider = root.keywordProviders.find(p => p.keyword === firstWord);
+
+        if (provider) {
+            return {
+                providerId: provider.id,
+                rest: spaceIdx === -1 ? "" : text.substring(spaceIdx + 1)
+            };
+        }
+
+        // "@..." that hasn't (yet) matched a full keyword above — live
+        // provider-picker suggestions, filtered by whatever's typed
+        // after the "@" so far. Covers "@", "@t", "@too", and even a
+        // mistyped "@xyz" that never resolves to a real provider
+        // (rather than silently falling through to a plain apps
+        // search, which would be confusing right after typing "@").
+        if (firstWord.startsWith("@")) {
+            return {
+                providerId: "providerSuggest",
+                rest: firstWord.substring(1)
+            };
+        }
+
+        return {
+            providerId: "apps",
+            rest: text
+        };
+    }
+}

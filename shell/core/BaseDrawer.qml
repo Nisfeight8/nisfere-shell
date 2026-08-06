@@ -23,16 +23,16 @@ Item {
     // never set `screen:` (stays null), so their `opened` is just
     // `openedRequest` unchanged — this centralizes the multi-screen
     // gating in one place instead of repeating it in every drawer file
-    // that does care about it (Dashboard/ControlCenter/SystemDrawer/
-    // QuickActions).
+    // that does care about it (Dashboard/ControlCenter/SystemDrawer).
     property bool openedRequest: false
     readonly property bool opened: screen !== null ? (openedRequest && ShellState.activeScreenName === screenName) : openedRequest
 
     // ── Public API ───────────────────────────────────────────────────
     property int edge: Qt.LeftEdge
     property bool cornerMode: false
+    property bool sidePanelMode: false
     property int cornerSecondaryEdge: Qt.TopEdge
-    property real edgeMargin: Theme.panelBorderSize
+    property real edgeMargin: Theme.screenBorderSize
 
     property real minPanelWidth: 0
     property real minPanelHeight: 0
@@ -82,6 +82,7 @@ Item {
         id: geometry
         edge: root.edge
         cornerMode: root.cornerMode
+        sidePanelMode: root.sidePanelMode
         cornerSecondaryEdge: root.cornerSecondaryEdge
         edgeMargin: root.edgeMargin
 
@@ -108,8 +109,16 @@ Item {
 
     Item {
         id: panelItem
-
-        height: (root.isHorizontal && !root.cornerMode) ? parent.height : root.panelHeight
+        height: {
+            if (root.isHorizontal && !root.cornerMode) {
+                if (root.sidePanelMode) {
+                    return parent.height - root.screenOffset - root.edgeMargin;
+                }
+                return parent.height;
+            }
+            return root.panelHeight;
+        }
+        // height: (root.isHorizontal && !root.cornerMode) ? parent.height : root.panelHeight
         width: (!root.isHorizontal && !root.cornerMode) ? root.panelWidth : root.panelWidth
 
         clip: true
@@ -143,7 +152,9 @@ Item {
                 if (root.cornerSecondaryEdge === Qt.BottomEdge)
                     return parent.height - height - root.edgeMargin;
             }
-
+            if (root.sidePanelMode) {
+                return root.screenOffset;
+            }
             return (parent.height - height) / 2;
         }
 
@@ -159,6 +170,7 @@ Item {
             anchors.fill: parent
             edge: root.edge
             cornerMode: root.cornerMode
+            sidePanelMode: root.sidePanelMode
             cornerSecondaryEdge: root.cornerSecondaryEdge
             opened: root.opened
             bgColor: Theme.background

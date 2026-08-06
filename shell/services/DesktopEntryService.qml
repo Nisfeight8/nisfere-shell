@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import qs.services
 
 // Shared wrapper around Quickshell's DesktopEntries singleton:
 //   1. Warm-up — touches DesktopEntries.applications once at shell
@@ -14,6 +15,13 @@ import Quickshell
 //      DesktopEntries.heuristicLookup() for the same app classes.
 //      Caching by class/appId avoids redoing that matching work
 //      repeatedly across components.
+//   3. toResultRow() — the single canonical mapping from a
+//      DesktopEntry to the {id,title,subtitle,thumbnail,actions,action}
+//      shape SearchResultRow expects. Used by both SearchProviders'
+//      "apps" provider search() and AppLauncherPanel's browse-mode
+//      list, so there's exactly one place that decides what an app
+//      result row looks like (subtitle, favorite-star action, launch
+//      behavior) instead of two independently-maintained copies.
 Singleton {
     id: root
 
@@ -66,6 +74,29 @@ Singleton {
         // property binding.
         root._pathCache[key] = path;
         return path;
+    }
+
+    // DesktopEntry -> SearchResultRow shape. `thumbnail` (not `icon`)
+    // is used deliberately — apps have real icon file paths, not
+    // Lucide icon names, and SearchResultRow renders `thumbnail` via
+    // an actual rounded Image instead of a LucideIcon.
+    function toResultRow(app) {
+        return {
+            id: "app-" + app.name,
+            title: app.name,
+            subtitle: (app.categories || [])[0] || "",
+            thumbnail: root.resolveIconPath(app.icon),
+            actions: [
+                {
+                    icon: AppUsageService.isFavorite(app.name) ? "star" : "star-off",
+                    trigger: () => AppUsageService.toggleFavorite(app.name)
+                }
+            ],
+            action: () => {
+                app.execute();
+                AppUsageService.recordLaunch(app.name);
+            }
+        };
     }
 
     Component.onCompleted: {

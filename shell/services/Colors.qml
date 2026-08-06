@@ -16,6 +16,8 @@ Singleton {
     property color background: "#1e1e2e"
     property color backgroundAlt: "#252535"
     property color foreground: "#cdd6f4"
+    property color foregroundAlt: "#8f95aa"
+
     property color cursor: "#cdd6f4"
     property color borderColor: "#313244"
     property color selected: "#cba6f7"

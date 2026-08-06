@@ -16,6 +16,7 @@ writes that file.
 
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -42,15 +43,82 @@ _DEFAULT_CHROMA_SETTINGS = {
 # keeps colors and any future/unknown key visible to both consumers
 # instead of silently dropping it from one of them.
 _HYPRLAND_ONLY_KEYS = {
-    "workspaceGaps", "windowGapsIn", "windowGapsOut", "windowBorderSize",
-    "opacityActive", "opacityInactive", "opacityFullscreen",
-    "blurEnabled", "blurSize", "blurPasses", "blurPopups",
-    "shadowEnabled", "shadowRange", "shadowRenderPower",
-    "cursorTheme", "cursorSize",
+    "workspaceGaps",
+    "windowGapsIn",
+    "windowGapsOut",
+    "windowBorderSize",
+    "opacityActive",
+    "opacityInactive",
+    "opacityFullscreen",
+    "blurEnabled",
+    "blurSize",
+    "blurPasses",
+    "blurPopups",
+    "shadowEnabled",
+    "shadowRange",
+    "shadowRenderPower",
+    "cursorTheme",
+    "cursorSize",
 }
 _SHELL_ONLY_KEYS = {
-    "enableWidgetBorders", "barHeight", "padding", "panelBorderSize", "widgetOpacity",
+    "enableWidgetBorders",
+    "barHeight",
+    "screenBorderSize",
+    "widgetOpacity",
 }
+
+# Keys inside style.shared that are COMPUTED/DERIVED from the current
+# wallpaper/theme — ColorSource.flatten() + StateManager.update_shared()
+# overwrite ALL of these wholesale on every theme change (wallpaper
+# switch, static theme pick, dark/light toggle). NOT durable user
+# preferences in the same sense as radius/fontName/workspacesPerMonitor,
+# even though they live in the same "shared" bucket (both kinds need to
+# be flat/top-level for Jinja templates like variables.lua.template,
+# which read colors AND prefs as plain {{ var }} in the same namespace
+# — see the conversation this was hashed out in). A settings UI should
+# treat these as READ-ONLY display (palette swatches), never as
+# editable persistent fields — editing them directly would just get
+# silently wiped on the next wallpaper/theme change.
+#
+# wallpaper/mode are deliberately NOT listed here — they used to be
+# duplicated into shared for template convenience, but no template
+# actually reads {{ wallpaper }} or {{ mode }} (confirmed via grep), so
+# that duplication was removed entirely. They only exist at the
+# top-level ThemeState fields now.
+_PALETTE_KEYS = {
+    "color0",
+    "color1",
+    "color2",
+    "color3",
+    "color4",
+    "color5",
+    "color6",
+    "color7",
+    "color8",
+    "color9",
+    "color10",
+    "color11",
+    "color12",
+    "color13",
+    "color14",
+    "color15",
+    "background",
+    "foreground",
+    "cursor",
+    "backgroundAlt",
+    "foregroundAlt",
+    "accent",
+    "borderColor",
+}
+
+
+def is_palette_key(key: str) -> bool:
+    """True if `key` is a computed/derived palette value rather than a
+    durable user preference — see _PALETTE_KEYS above for the full
+    reasoning. Use this (not a hardcoded list elsewhere) anywhere that
+    needs to distinguish the two, so there's exactly one place that
+    knows the difference."""
+    return key in _PALETTE_KEYS
 
 
 def _migrate_flat_style(flat: dict) -> dict:
@@ -127,6 +195,7 @@ class ThemeState:
             style=style,
         )
 
+
 class StateManager:
     """The ONLY class that reads or writes state.json."""
 
@@ -147,8 +216,25 @@ class StateManager:
             return None
 
     def save(self, state: ThemeState) -> None:
+        """
+        Writes via a temp file + os.replace() rather than a direct
+        write_text() — that was NOT atomic (open-with-truncate, then
+        write, as two separate steps), which left a window where
+        Quickshell's FileView (watchChanges: true) could catch the
+        file mid-truncate or mid-write and choke on invalid/empty
+        JSON. os.replace() is atomic on the same filesystem: any
+        reader sees either the complete old file or the complete new
+        one, never a torn intermediate state. This was hit in
+        practice specifically on toggle_mode, since _apply_colors()
+        writes state.json TWICE per call (update_shared() + the
+        cursorTheme set_setting() right after) — twice the chances to
+        land in the old race window.
+        """
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        self.state_path.write_text(json.dumps(state.to_dict(), indent=2))
+        data = json.dumps(state.to_dict(), indent=2)
+        tmp_path = self.state_path.with_suffix(self.state_path.suffix + ".tmp")
+        tmp_path.write_text(data)
+        os.replace(tmp_path, self.state_path)
         logger.debug("State saved -> %s", self.state_path)
 
     def _load_or_new(self) -> ThemeState:
@@ -177,6 +263,43 @@ class StateManager:
             if key in bucket:
                 return bucket[key]
         return default
+
+    def get_editable_shared_settings(self) -> dict:
+        """
+        The subset of style.shared that's safe for a settings UI to
+        list as editable durable preferences — excludes computed
+        palette values (see _PALETTE_KEYS/is_palette_key above), which
+        get silently overwritten wholesale on the next wallpaper/theme
+        change and would confuse a UI that treated them like ordinary
+        persistent settings.
+
+        e.g. today this returns {"radius": 20, "fontName": "...",
+        "workspacesPerMonitor": 10} — NOT color0..15/background/
+        foreground/accent/etc, even though those also live in the same
+        shared bucket on disk.
+        """
+        state = self.load()
+        if not state:
+            return {}
+        shared = state.style.get("shared", {})
+        return {k: v for k, v in shared.items() if not is_palette_key(k)}
+
+    def get_palette(self) -> dict:
+        """
+        The complementary view to get_editable_shared_settings() —
+        just the computed palette values, for read-only display (color
+        swatches) in a settings UI. Includes 'alpha' too: currently a
+        hardcoded constant from ColorSource.flatten() (always 100, not
+        actually derived from anything), not read by any template
+        right now, but grouped here rather than in the editable-prefs
+        view since it isn't a real user preference either — revisit if
+        it ever becomes one.
+        """
+        state = self.load()
+        if not state:
+            return {}
+        shared = state.style.get("shared", {})
+        return {k: v for k, v in shared.items() if is_palette_key(k) or k == "alpha"}
 
     def set_setting(self, key: str, value, scope: str = "shared") -> ThemeState:
         """Updates ONE key in the given scope, preserving everything else."""
@@ -230,7 +353,11 @@ class StateManager:
             source_type=source_type,
             source_name=source_name,
             style=style,
-            chroma_settings=dict(existing.chroma_settings) if existing else dict(_DEFAULT_CHROMA_SETTINGS),
+            chroma_settings=(
+                dict(existing.chroma_settings)
+                if existing
+                else dict(_DEFAULT_CHROMA_SETTINGS)
+            ),
         )
         self.save(state)
         return state

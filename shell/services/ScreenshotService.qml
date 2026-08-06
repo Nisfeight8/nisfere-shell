@@ -54,7 +54,7 @@ Singleton {
     // animation before grim actually fires — otherwise "Full screen" and
     // "Window" modes catch the drawer itself mid-close in the screenshot.
     property Timer _pendingCaptureTimer: Timer {
-        interval: 300
+        interval: 320
         property string pendingCmd: ""
         onTriggered: root._run(pendingCmd)
     }

@@ -2,11 +2,12 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 import qs.services
+import "widgets"
 
 Item {
     id: root
-    implicitWidth: col.implicitWidth
-    implicitHeight: col.implicitHeight
+    implicitWidth: mainLayout.implicitWidth
+    implicitHeight: mainLayout.implicitHeight
 
     function _statColor(usage) {
         if (usage > 0.8)
@@ -17,140 +18,226 @@ Item {
     }
 
     ColumnLayout {
-        id: col
+        id: mainLayout
         anchors.fill: parent
-        spacing: 12
+        spacing: 16
 
-        // ── Circular gauges ───────────────────────────────────────
-        // Was a Repeater over an inline array literal that referenced
-        // SystemStatsService.* directly — since that array expression
-        // re-evaluates (producing a brand-new array object) every
-        // time ANY of those stats changes, Repeater treated it as "the
-        // model changed" and destroyed+recreated all 3 delegates on
-        // every stats refresh tick. That meant CircularGauge's own
-        // skip-reveal-on-mount fix (see core/CircularGauge.qml) kicked
-        // in on every single tick too, since each recreation looked
-        // like a fresh mount — so these gauges likely never actually
-        // animated a value change smoothly, just silently snapped.
-        // Unrolled into 3 explicit gauges instead (same approach
-        // Weather.qml already uses for its own small fixed set of
-        // cards) — each one's own bindings stay reactive normally,
-        // with nothing ever recreating the Item/CircularGauge itself.
-        RowLayout {
+        // ── 1. OVERVIEW GAUGES ───────────────────
+        GlassCard {
             Layout.fillWidth: true
-            spacing: 0
+            Layout.preferredHeight: 160
 
-            // Explicit height on wrapper item — prevents gauges rendering
-            // at height:0 and disappearing behind subsequent elements
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 140
-                height: 140
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 0
 
-                CircularGauge {
-                    anchors.centerIn: parent
-                    width: 130
-                    height: 130
-                    value: SystemStatsService.cpuUsage
-                    mainText: SystemStatsService.cpuTempText
-                    subText: "CPU"
-                    sideTextTitle: Math.round(SystemStatsService.cpuUsage * 100) + "%"
-                    sideTextSubtitle: "Usage"
-                    progressColor: root._statColor(SystemStatsService.cpuUsage)
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    CircularGauge {
+                        anchors.centerIn: parent
+                        width: 120
+                        height: 120
+                        value: SystemStatsService.cpuUsage
+                        mainText: SystemStatsService.cpuTempText
+                        subText: "CPU"
+                        sideTextTitle: Math.round(SystemStatsService.cpuUsage * 100) + "%"
+                        sideTextSubtitle: "Usage"
+                        trackColor: Theme.background
+                        progressColor: root._statColor(SystemStatsService.cpuUsage)
+                    }
                 }
-            }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 140
-                height: 140
-
-                CircularGauge {
-                    anchors.centerIn: parent
-                    width: 130
-                    height: 130
-                    value: SystemStatsService.ramUsage
-                    mainText: SystemStatsService.ramUsedText
-                    subText: "RAM"
-                    sideTextTitle: (SystemStatsService.ramUsage * 100).toFixed(0) + "%"
-                    sideTextSubtitle: SystemStatsService.ramTotalText
-                    progressColor: root._statColor(SystemStatsService.ramUsage)
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    CircularGauge {
+                        anchors.centerIn: parent
+                        width: 120
+                        height: 120
+                        value: SystemStatsService.ramUsage
+                        mainText: SystemStatsService.ramUsedText
+                        subText: "RAM"
+                        sideTextTitle: (SystemStatsService.ramUsage * 100).toFixed(0) + "%"
+                        sideTextSubtitle: SystemStatsService.ramTotalText
+                        trackColor: Theme.background
+                        progressColor: root._statColor(SystemStatsService.ramUsage)
+                    }
                 }
-            }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 140
-                height: 140
-
-                CircularGauge {
-                    anchors.centerIn: parent
-                    width: 130
-                    height: 130
-                    value: parseFloat(SystemStatsService.diskUsage) / 100
-                    mainText: SystemStatsService.diskUsedText
-                    subText: "DISK"
-                    sideTextTitle: SystemStatsService.diskUsage
-                    sideTextSubtitle: SystemStatsService.diskTotalText
-                    progressColor: root._statColor(parseFloat(SystemStatsService.diskUsage) / 100)
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    CircularGauge {
+                        anchors.centerIn: parent
+                        width: 120
+                        height: 120
+                        value: parseFloat(SystemStatsService.diskUsage) / 100
+                        mainText: SystemStatsService.diskUsedText
+                        subText: "DISK"
+                        sideTextTitle: SystemStatsService.diskUsage
+                        sideTextSubtitle: SystemStatsService.diskTotalText
+                        trackColor: Theme.background
+                        progressColor: root._statColor(parseFloat(SystemStatsService.diskUsage) / 100)
+                    }
                 }
             }
         }
 
-        // ── Network speed ─────────────────────────────────────────
-        Rectangle {
+        // ── 2. DETAILED CARDS  ────────────
+
+
+        // -- CPU CARD --
+        StatChartCard {
             Layout.fillWidth: true
-            height: 32
-            radius: Theme.radius
-            color: Theme.backgroundAlt
+            Layout.alignment: Qt.AlignTop
+            icon: "cpu"
+            title: "CPU History"
+            accentColor: SystemStatsService.cpuUsage > 0.8 ? Theme.color1 : Theme.selected
+            chartValues: SystemStatsService.cpuHistory
 
             RowLayout {
-                anchors {
-                    fill: parent
-                    leftMargin: 16
-                    rightMargin: 16
-                }
-                spacing: 0
-
-                RowLayout {
+                Layout.fillWidth: true
+                Text {
                     Layout.fillWidth: true
-                    spacing: 6
-                    LucideIcon {
-                        icon: "arrow-down-to-line"
-                        size: 13
-                        color: Theme.color2
-                    }
-                    Text {
-                        text: SystemStatsService.netDownText
-                        color: Theme.foreground
-                        font.family: Theme.fontName
-                        font.pixelSize: 12
-                    }
+                    text: "Usage"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
                 }
-
-                Rectangle {
-                    width: 1
-                    height: 14
-                    color: Theme.borderColor
-                    opacity: 0.4
+                Text {
+                    text: Math.round(SystemStatsService.cpuUsage * 100) + "%"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
                 }
-
-                RowLayout {
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 16
-                    spacing: 6
-                    LucideIcon {
-                        icon: "arrow-up-from-line"
-                        size: 13
-                        color: Theme.color4
-                    }
-                    Text {
-                        text: SystemStatsService.netUpText
-                        color: Theme.foreground
-                        font.family: Theme.fontName
-                        font.pixelSize: 12
-                    }
+                    text: "Temperature"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
                 }
+                Text {
+                    text: SystemStatsService.cpuTempText
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+        }
+
+        // -- RAM CARD --
+        StatChartCard {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
+            icon: "memory-stick"
+            title: "Memory"
+            accentColor: Theme.color2
+            chartValues: SystemStatsService.ramHistory
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    Layout.fillWidth: true
+                    text: "Used"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
+                }
+                Text {
+                    text: SystemStatsService.ramUsedText
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    Layout.fillWidth: true
+                    text: "Total"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
+                }
+                Text {
+                    text: SystemStatsService.ramTotalText
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+        }
+
+        // -- NETWORK CARD --
+        StatChartCard {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
+            icon: "arrow-up-down"
+            title: "Network"
+            accentColor: Theme.color5
+            chartValues: SystemStatsService.netHistory
+
+            RowLayout {
+                Layout.fillWidth: true
+                LucideIcon {
+                    icon: "arrow-down"
+                    size: 12
+                    color: Theme.color2
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: "Download"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
+                }
+                Text {
+                    text: SystemStatsService.netDownText
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                LucideIcon {
+                    icon: "arrow-up"
+                    size: 12
+                    color: Theme.color4
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: "Upload"
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    opacity: 0.75
+                }
+                Text {
+                    text: SystemStatsService.netUpText
+                    color: Theme.foreground
+                    font.pixelSize: 12
+                    font.bold: true
+                }
+            }
+        }
+
+        // ── 3. BOTTOM BUTTON (Full System Monitor) ──────────────────
+        NavTile {
+            Layout.fillWidth: true
+            Layout.topMargin: 8
+            icon: "activity"
+            label: "Full System Monitor"
+            onTapped: {
+                ShellState.appLauncherOpened = true;
+                ShellState.launcherActiveTab = 1;
+                ShellState.launcherActiveTool = "sysmon";
+                ShellState.systemDrawerOpened = false; // Κλείνουμε το drawer
             }
         }
     }

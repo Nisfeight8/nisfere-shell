@@ -32,10 +32,11 @@ Item {
                 opacity: 0.35
             }
 
-            SystemDrawerStats {
+            SystemDrawerUpdates {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
+
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
@@ -48,6 +49,7 @@ Item {
                 Layout.fillWidth: true
                 visible: BatteryService.hasBattery
             }
+
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
@@ -55,19 +57,9 @@ Item {
                 opacity: 0.35
             }
 
-            SystemDrawerUpdates {
+            SystemDrawerStats {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Theme.borderColor
-                opacity: 0.35
-            }
-            SystemDrawerAppearance {
-                Layout.fillWidth: true
             }
         }
     }

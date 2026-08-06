@@ -5,18 +5,17 @@ import Quickshell
 import Quickshell.Wayland
 
 import qs.core
+import qs.services
 
 BarWidget {
     id: root
 
     readonly property string screenName: QsWindow.window?.screen?.name ?? ""
 
-    readonly property var activeWin: {
-        return ToplevelManager.toplevels.values.find(t => t.activated && t.screens.some(s => s.name === root.screenName)) ?? null;
-    }
+    readonly property var activeWin: HyprlandData.activeWindowForScreen(screenName)
 
     readonly property bool hasWindow: activeWin !== null
-    readonly property string windowClass: hasWindow ? activeWin.appId : ""
+    readonly property string windowClass: hasWindow ? activeWin.lastIpcObject.class : ""
     readonly property string windowTitle: hasWindow ? activeWin.title : "Desktop"
     readonly property string iconName: hasWindow && windowClass !== "" ? Icons.getAppIcon(windowClass) : Icons.getAppIcon("desktop")
     useGradient: true
@@ -137,7 +136,7 @@ BarWidget {
 
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 8
-                captureSource: root.captureActive ? root.activeWin : null
+                captureSource: root.captureActive ? root.activeWin.wayland : null
                 constraintSize: Qt.size(320, 200)
                 live: true
                 visible: false

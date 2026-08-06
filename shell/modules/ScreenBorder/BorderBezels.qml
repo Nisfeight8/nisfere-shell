@@ -10,7 +10,7 @@ import qs.core
 Item {
     id: root
 
-    property real bezelSize: Theme.panelBorderSize
+    property real bezelSize: Theme.screenBorderSize
     property color borderLineColor: Theme.borderColor
     property int cornerRadius: Theme.radius
     property real topBarHeight: Theme.barHeight

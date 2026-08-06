@@ -149,6 +149,20 @@ class DesktopIntegration:
                     "set",
                     "org.gnome.desktop.interface",
                     "gtk-theme",
+                    "",
+                ],
+                check=False,
+            )
+        except Exception as e:
+            logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
+
+        try:
+            subprocess.run(
+                [
+                    "gsettings",
+                    "set",
+                    "org.gnome.desktop.interface",
+                    "gtk-theme",
                     gtk_theme,
                 ],
                 check=False,

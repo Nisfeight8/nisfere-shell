@@ -16,14 +16,40 @@ Singleton {
     property string location: ""
     property bool ready: false
     readonly property int refreshInterval: 60 * 60 * 1000
+    // Was gated on `root.ready` — meant that if the very first update()
+    // ever failed (or hung with no timeout, see below), `ready` never
+    // became true, so this timer never started, and the service was
+    // stuck forever with no way to recover without a manual restart.
+    // Now always running, so a successful refresh always gets
+    // scheduled regardless of how earlier attempts went.
     property Timer refreshTimer: Timer {
         interval: root.refreshInterval
         repeat: true
-        running: root.ready
+        running: true
+
+        onTriggered: root.update()
+    }
+    // New: short-interval retry specifically for the "still broken"
+    // case — only active while there's an error and we're not ready
+    // yet, so a hung/failed first attempt gets retried in 30s instead
+    // of waiting up to a full hour for refreshTimer.
+    property Timer retryTimer: Timer {
+        interval: 30 * 1000
+        repeat: true
+        running: root.error !== "" && !root.ready
 
         onTriggered: root.update()
     }
     property real temperature: 0
+    // How long an individual request is allowed to hang before we
+    // treat it as failed. Neither xhr below had this before — with no
+    // timeout, a request that never reaches readyState DONE (e.g. DNS
+    // not up yet right after boot, no route to host) just hangs
+    // forever: onreadystatechange never fires, loading never clears,
+    // ready never becomes true, and (before the fix above) the retry
+    // timer never even started. This is what caused the "stuck on
+    // loading if Weather is the first tab opened" bug.
+    readonly property int requestTimeoutMs: 10000
     property int weatherCode: 0
     readonly property var weatherMap: {
         0: "Clear",
@@ -61,6 +87,7 @@ Singleton {
         const xhr = new XMLHttpRequest();
 
         xhr.open("GET", "http://ip-api.com/json/");
+        xhr.timeout = root.requestTimeoutMs;
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== XMLHttpRequest.DONE)
@@ -99,6 +126,21 @@ Singleton {
             }
         };
 
+        // Without this, a hung request (no network yet, DNS not up,
+        // etc.) never reaches DONE, so onreadystatechange never runs,
+        // loading/error never update, and — before the timer fix above
+        // — nothing would ever retry.
+        xhr.ontimeout = function () {
+            console.error("Location request timed out");
+            root.loading = false;
+            root.error = "Location request timed out";
+        };
+        xhr.onerror = function () {
+            console.error("Location request failed");
+            root.loading = false;
+            root.error = "Failed to fetch location";
+        };
+
         xhr.send();
     }
     function fetchWeather() {
@@ -117,6 +159,7 @@ Singleton {
         const xhr = new XMLHttpRequest();
 
         xhr.open("GET", url);
+        xhr.timeout = root.requestTimeoutMs;
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== XMLHttpRequest.DONE)
@@ -165,6 +208,17 @@ Singleton {
                 console.error("Weather Parse Error:", e);
                 root.error = "Invalid weather response";
             }
+        };
+
+        xhr.ontimeout = function () {
+            console.error("Weather request timed out");
+            root.loading = false;
+            root.error = "Weather request timed out";
+        };
+        xhr.onerror = function () {
+            console.error("Weather request failed");
+            root.loading = false;
+            root.error = "Failed to fetch weather";
         };
 
         xhr.send();

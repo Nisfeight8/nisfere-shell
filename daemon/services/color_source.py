@@ -84,7 +84,7 @@ class ColorSource:
         still handles that OLD nested shape too, for static theme
         JSONs under themes/ that were authored in that format.
         """
-        vars_dict: dict = {"mode": mode, "alpha": 100}
+        vars_dict: dict = {}
 
         for k, v in raw_data.items():
             if not isinstance(v, dict):

@@ -10,7 +10,7 @@ Scope {
 
     property var screen: null
     property real barHeight: Theme.barHeight
-    property real bezelSize: Theme.panelBorderSize
+    property real bezelSize: Theme.screenBorderSize
 
     ExclusionZone {
         screen: root.screen

@@ -63,8 +63,8 @@
 .thunar toolbar button:active,
 .thunar .toolbar button:checked,
 .thunar .toolbar button:active {
-    background-color: alpha({{color4}}, 0.13);
-    color: {{color4}};
+    background-color: alpha({{accent}}, 0.13);
+    color: {{accent}};
 }
 
 /* =============================================================================
@@ -101,8 +101,8 @@
 }
 
 .thunar .rubberband {
-    background-color: alpha({{color4}}, 0.12);
-    border: 1px solid alpha({{color4}}, 0.2);
+    background-color: alpha({{accent}}, 0.12);
+    border: 1px solid alpha({{accent}}, 0.2);
 }
 
 /* =============================================================================
@@ -126,12 +126,12 @@
 }
 
 .thunar header.top tabs .reorderable-page:hover {
-    background-color: alpha({{color4}}, 0.07);
+    background-color: alpha({{accent}}, 0.07);
 }
 
 .thunar header.top tabs .reorderable-page:checked {
-    color: {{color4}};
-    background-color: alpha({{color4}}, 0.13);
+    color: {{accent}};
+    background-color: alpha({{accent}}, 0.13);
 }
 
 /* =============================================================================

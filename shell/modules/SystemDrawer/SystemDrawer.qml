@@ -5,12 +5,12 @@ import qs.services
 BaseDrawer {
     id: root
     z: 10
-    cornerMode: true
+    sidePanelMode: true
     edge: Qt.LeftEdge
     screenOffset: Theme.barHeight
     openedRequest: ShellState.systemDrawerOpened
     minPanelWidth: 480
-    minPanelHeight: 300
+    // mPanelHeight: Screen.height - Theme.screenBorderSize - Theme.barHeight
     onCloseRequest: ShellState.systemDrawerOpened = false
     onOpenedChanged: if (opened)
         UpdateService.loadCached()

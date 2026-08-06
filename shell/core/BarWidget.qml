@@ -25,6 +25,12 @@ Item {
         implicitWidth: contentRow.implicitWidth + (root.paddingX * 2)
         radius: Theme.radius
 
+        Behavior on implicitWidth {
+            Anim {
+                type: Anim.FastSpatial
+            }
+        }
+
         GlassBackground {
             visible: root.useGradient
         }

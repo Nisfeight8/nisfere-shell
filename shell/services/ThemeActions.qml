@@ -28,6 +28,7 @@ Singleton {
     signal wallpapersLoaded(var list)
     signal themesLoaded(var list)
     signal settingUpdated(bool success, string key, string scope)
+    signal chromaSettingUpdated(bool success, string key, var value, bool reapplied)
 
     Component.onCompleted: {
         SocketService.messageReceived.connect(_handleMessage);
@@ -53,6 +54,9 @@ Singleton {
             break;
         case "setting_updated":
             root.settingUpdated(payload.success ?? false, payload.key ?? "", payload.scope ?? "shared");
+            break;
+        case "chroma_setting_updated":
+            root.chromaSettingUpdated(payload.success ?? false, payload.key ?? "", payload.value, payload.reapplied ?? false);
             break;
         case "error":
             console.warn("ThemeActions: daemon error for action '" + (payload.action ?? "?") + "':", payload.error);
@@ -95,6 +99,22 @@ Singleton {
             key: key,
             value: value,
             scope: scope ?? "shared"
+        });
+    }
+
+    // ── Chroma extraction settings — algorithm, saturation,
+    // bg_saturation, contrast, resize_to. Separate from setSetting()
+    // above: these live outside the shared/shell/hyprland style
+    // scopes entirely (see the daemon's StateManager), so there's no
+    // scope parameter here. If a wallpaper-derived theme is currently
+    // active, the daemon live-reapplies colors from it immediately —
+    // reflected in the chromaSettingUpdated signal's `reapplied` flag,
+    // and (separately) in ThemeState reacting to the resulting
+    // state.json change, same as any other theme update. ───────────
+    function setChromaSetting(key, value) {
+        SocketService.sendCommand("theme", "set_chroma_setting", {
+            key: key,
+            value: value
         });
     }
 

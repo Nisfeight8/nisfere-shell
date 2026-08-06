@@ -23,7 +23,7 @@ Singleton {
     property int radius: 20
     property int barHeight: 50
     property int padding: 6
-    property int panelBorderSize: 10
+    property int screenBorderSize: 10
 
     // General widget opacity (background/backgroundAlt alpha).
     // Deliberately a SINGLE value, not an active/inactive pair like
@@ -44,7 +44,7 @@ Singleton {
         if (shell.enableWidgetBorders !== undefined) root.enableWidgetBorders = shell.enableWidgetBorders;
         if (shell.barHeight !== undefined) root.barHeight = shell.barHeight;
         if (shell.padding !== undefined) root.padding = shell.padding;
-        if (shell.panelBorderSize !== undefined) root.panelBorderSize = shell.panelBorderSize;
+        if (shell.screenBorderSize !== undefined) root.screenBorderSize = shell.screenBorderSize;
         if (shell.widgetOpacity !== undefined) root.widgetOpacity = shell.widgetOpacity;
     }
 
