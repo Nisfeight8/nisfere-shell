@@ -130,7 +130,7 @@ BarWidget {
                 acceptedButtons: Qt.LeftButton
                 onTapped: {
                     const screenName = QsWindow.window?.screen?.name ?? "";
-                    ShellState.openDashboardComponent(screenName, ShellState.dashboardResumableComponent);
+                    ShellState.toggleDashboardComponent(screenName, ShellState.dashboardResumableComponent);
                 }
             }
             TapHandler {

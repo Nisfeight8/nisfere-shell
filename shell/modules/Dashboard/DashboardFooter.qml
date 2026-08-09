@@ -213,7 +213,7 @@ Item {
             borderColor: Theme.borderColor
             onTapped: {
                 root.moreExpanded = false;
-                ShellState.openDashboardSearch(ShellState.activeScreenName, "clip")
+                ShellState.openRecord(ShellState.activeScreenName)
             }
         }
 

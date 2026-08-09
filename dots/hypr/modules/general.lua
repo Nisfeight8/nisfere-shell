@@ -1,6 +1,12 @@
 local vars = require("modules.variables")
 
 hl.config({
+    binds = {
+        hide_special_on_workspace_change = false,  -- keep the scratchpad open when switching workspaces (set true if you want it to auto-hide)
+    },
+    cursor = {
+        warp_on_toggle_special = 1,  -- moves the mouse to the last focused window inside the scratchpad when it's toggled on
+    },
     general = {
         layout = "dwindle",
         

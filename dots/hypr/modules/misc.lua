@@ -3,6 +3,7 @@ local vars = require("modules.variables")
 
 hl.config({
     misc = {
+        dim_special                  = 0.4,
         disable_hyprland_logo        = true,
         force_default_wallpaper      = 0,
 

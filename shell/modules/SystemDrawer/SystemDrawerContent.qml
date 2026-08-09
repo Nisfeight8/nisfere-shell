@@ -7,60 +7,61 @@ import "widgets"
 
 Item {
     id: root
+    property var screen
+    readonly property real uiScale: screen ? screen.height / 1080 : 1.0
 
-    implicitHeight: mainColumn.implicitHeight
+    anchors.fill: parent
 
-    ScrollView {
-        id: scroll
+    ColumnLayout {
+        id: mainColumn
         anchors.fill: parent
-        contentWidth: availableWidth
-        clip: true
+        spacing: 12
 
-        ColumnLayout {
-            id: mainColumn
-            width: parent.width
-            spacing: 16
+        SystemDrawerHeader {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            uiScale: root.uiScale
+        }
 
-            SystemDrawerHeader {
-                Layout.fillWidth: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Theme.borderColor
+            opacity: 0.35
+        }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Theme.borderColor
-                opacity: 0.35
-            }
+        SystemDrawerUpdates {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            uiScale: root.uiScale
+        }
 
-            SystemDrawerUpdates {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Theme.borderColor
+            opacity: 0.35
+            visible: BatteryService.hasBattery
+        }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Theme.borderColor
-                opacity: 0.35
-                visible: BatteryService.hasBattery
-            }
+        BatteryCard {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            uiScale: root.uiScale
+            visible: BatteryService.hasBattery
+        }
 
-            BatteryCard {
-                Layout.fillWidth: true
-                visible: BatteryService.hasBattery
-            }
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Theme.borderColor
+            opacity: 0.35
+        }
 
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Theme.borderColor
-                opacity: 0.35
-            }
-
-            SystemDrawerStats {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
+        SystemDrawerStats {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            uiScale: root.uiScale
         }
     }
 }

@@ -32,18 +32,18 @@ hl.window_rule({
 })
 
 -- ═══════════════════════════════════════════════════════════════════
--- YOUR APP-SPECIFIC RULES — translated 1:1 from your old config
+-- YOUR APP-SPECIFIC RULES
 -- ═══════════════════════════════════════════════════════════════════
 hl.window_rule({
     name = "apply-thunar",
     match = { class = "^(thunar)$" },
-    float = true, center = true, size = "800 600",
+    float = true, center = true, size = {800, 600},
 })
 
 hl.window_rule({
     name = "apply-alacritty",
     match = { class = "^(Alacritty)$" },
-    float = true, center = true, size = "800 600",
+    float = true, center = true, size = {800, 600},
 })
 
 hl.window_rule({
@@ -53,7 +53,7 @@ hl.window_rule({
 })
 
 hl.window_rule({
-    name = "spotify-tile",   -- was mislabeled "firefox-tile" twice in your old conf
+    name = "spotify-tile",
     match = { class = "^(spotify)$" },
     tile = true,
 })
@@ -70,9 +70,10 @@ hl.window_rule({
 -- Uses the tag pattern (assign a tag, then apply properties to
 -- anything with that tag) — cleaner than repeating the same match
 -- criteria twice, and matches how caelestia organizes similar rules.
+-- Additional JetBrains XWayland fix ...
 hl.window_rule({
     name = "jb-tag",
-    match = { class = "^jetbrains-.*", initial_title = "" },
+    match = { class = "^jetbrains-.*", initial_title = "^$" },
     tag = "+jb",
 })
 hl.window_rule({
@@ -82,7 +83,6 @@ hl.window_rule({
     no_initial_focus = true,
     float = false,
 })
-
 -- ═══════════════════════════════════════════════════════════════════
 -- GAMING — Steam/Proton/gamescope. This is the well-known, standard
 -- community fix — `immediate` reduces input/render latency for fullscreen

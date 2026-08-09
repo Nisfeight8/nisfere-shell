@@ -10,12 +10,13 @@ BaseDrawer {
     screenOffset: Theme.barHeight
     openedRequest: ShellState.systemDrawerOpened
     minPanelWidth: 480
-    // mPanelHeight: Screen.height - Theme.screenBorderSize - Theme.barHeight
     onCloseRequest: ShellState.systemDrawerOpened = false
     onOpenedChanged: if (opened)
         UpdateService.loadCached()
 
     contentComponent: Component {
-        SystemDrawerContent {}
+        SystemDrawerContent {
+            screen: root.screen
+        }
     }
 }

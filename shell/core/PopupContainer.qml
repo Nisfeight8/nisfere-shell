@@ -32,7 +32,7 @@ Item {
     Behavior on opacity {
         enabled: container.selfAnimated
         Anim {
-            type: Anim.DefaultEffects
+            type: Anim.FastEffects
         }
     }
     Behavior on y {

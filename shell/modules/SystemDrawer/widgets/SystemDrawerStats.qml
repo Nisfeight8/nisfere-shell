@@ -6,6 +6,8 @@ import "widgets"
 
 Item {
     id: root
+    property real uiScale: 1.0
+
     implicitWidth: mainLayout.implicitWidth
     implicitHeight: mainLayout.implicitHeight
 
@@ -20,16 +22,16 @@ Item {
     ColumnLayout {
         id: mainLayout
         anchors.fill: parent
-        spacing: 16
+        spacing: 16 * root.uiScale
 
         // ── 1. OVERVIEW GAUGES ───────────────────
         GlassCard {
             Layout.fillWidth: true
-            Layout.preferredHeight: 160
+            Layout.preferredHeight: 160 * root.uiScale
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 12
+                anchors.margins: 12 * root.uiScale
                 spacing: 0
 
                 Item {
@@ -37,8 +39,8 @@ Item {
                     Layout.fillHeight: true
                     CircularGauge {
                         anchors.centerIn: parent
-                        width: 120
-                        height: 120
+                        width: 120 * root.uiScale
+                        height: 120 * root.uiScale
                         value: SystemStatsService.cpuUsage
                         mainText: SystemStatsService.cpuTempText
                         subText: "CPU"
@@ -54,8 +56,8 @@ Item {
                     Layout.fillHeight: true
                     CircularGauge {
                         anchors.centerIn: parent
-                        width: 120
-                        height: 120
+                        width: 120 * root.uiScale
+                        height: 120 * root.uiScale
                         value: SystemStatsService.ramUsage
                         mainText: SystemStatsService.ramUsedText
                         subText: "RAM"
@@ -71,8 +73,8 @@ Item {
                     Layout.fillHeight: true
                     CircularGauge {
                         anchors.centerIn: parent
-                        width: 120
-                        height: 120
+                        width: 120 * root.uiScale
+                        height: 120 * root.uiScale
                         value: parseFloat(SystemStatsService.diskUsage) / 100
                         mainText: SystemStatsService.diskUsedText
                         subText: "DISK"
@@ -86,7 +88,6 @@ Item {
         }
 
         // ── 2. DETAILED CARDS  ────────────
-
 
         // -- CPU CARD --
         StatChartCard {
@@ -103,13 +104,13 @@ Item {
                     Layout.fillWidth: true
                     text: "Usage"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: Math.round(SystemStatsService.cpuUsage * 100) + "%"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -119,13 +120,13 @@ Item {
                     Layout.fillWidth: true
                     text: "Temperature"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: SystemStatsService.cpuTempText
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -146,13 +147,13 @@ Item {
                     Layout.fillWidth: true
                     text: "Used"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: SystemStatsService.ramUsedText
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -162,13 +163,13 @@ Item {
                     Layout.fillWidth: true
                     text: "Total"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: SystemStatsService.ramTotalText
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -187,20 +188,20 @@ Item {
                 Layout.fillWidth: true
                 LucideIcon {
                     icon: "arrow-down"
-                    size: 12
+                    size: 12 * root.uiScale
                     color: Theme.color2
                 }
                 Text {
                     Layout.fillWidth: true
                     text: "Download"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: SystemStatsService.netDownText
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -208,20 +209,20 @@ Item {
                 Layout.fillWidth: true
                 LucideIcon {
                     icon: "arrow-up"
-                    size: 12
+                    size: 12 * root.uiScale
                     color: Theme.color4
                 }
                 Text {
                     Layout.fillWidth: true
                     text: "Upload"
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.75
                 }
                 Text {
                     text: SystemStatsService.netUpText
                     color: Theme.foreground
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     font.bold: true
                 }
             }
@@ -230,14 +231,12 @@ Item {
         // ── 3. BOTTOM BUTTON (Full System Monitor) ──────────────────
         NavTile {
             Layout.fillWidth: true
-            Layout.topMargin: 8
+            Layout.topMargin: 8 * root.uiScale
             icon: "activity"
             label: "Full System Monitor"
             onTapped: {
-                ShellState.appLauncherOpened = true;
-                ShellState.launcherActiveTab = 1;
-                ShellState.launcherActiveTool = "sysmon";
-                ShellState.systemDrawerOpened = false; // Κλείνουμε το drawer
+                ShellState.openDashboardComponent(ShellState.focusedScreenName, "sysmon");
+                ShellState.systemDrawerOpened = false;
             }
         }
     }

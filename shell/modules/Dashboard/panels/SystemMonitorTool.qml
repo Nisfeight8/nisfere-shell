@@ -390,11 +390,11 @@ Item {
                 radius: 8
                 color: isHovered ? Theme.backgroundAlt : "transparent"
                 clip: true
-                Behavior on color {
-                    AnimColor {
-                        type: Anim.FastEffects
-                    }
-                }
+                // Behavior on color {
+                //     AnimColor {
+                //         type: Anim.FastEffects
+                //     }
+                // }
                 Behavior on height {
                     Anim {
                         type: Anim.FastSpatial

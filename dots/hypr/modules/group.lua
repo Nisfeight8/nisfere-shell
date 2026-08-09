@@ -3,6 +3,7 @@ local vars = require("modules.variables")
 
 hl.config({
     group = {
+        auto_group = true,  -- windows only join a group when explicitly moved/dragged into one
         col = {
             border_active          = vars.active_border,
             border_inactive        = vars.inactive_border,

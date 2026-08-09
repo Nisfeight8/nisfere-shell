@@ -19,6 +19,7 @@ hl.config({
             ignore_opacity = true,
             new_optimizations = true,
             popups = vars.blurPopups,
+            special = true,
         },
 
         -- Shadow settings

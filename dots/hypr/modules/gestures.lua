@@ -5,6 +5,7 @@ hl.config({
         workspace_swipe_min_speed_to_force = 20,
         workspace_swipe_direction_lock     = true,
         workspace_swipe_create_new         = true, 
+    }
 })
 
 hl.gesture({
