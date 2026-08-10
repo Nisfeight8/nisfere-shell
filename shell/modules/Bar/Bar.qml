@@ -53,6 +53,7 @@ Item {
             }
         }
 
+
         Clock {
             id: clockWidget
             anchors.centerIn: parent
@@ -70,6 +71,7 @@ Item {
             RecordingIndicator {
                 id: recordingIndicator
             }
+
             // SystemStatsWidget {
             //     id: systemStats
             // }

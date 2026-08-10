@@ -7,12 +7,11 @@ Item {
 
     // result: { id, title, subtitle, icon, thumbnail?, actions?, swatches?, confirmed? }
     //   thumbnail: optional image path — when present, replaces the
-    //              LucideIcon with a small rounded-corner preview
-    //              (e.g. a wallpaper thumbnail, or an app icon path
-    //              from DesktopEntryService.resolveIconPath). Uses the
-    //              same OpacityMask trick as the old WallpapersTab,
-    //              since plain clip:true doesn't round an Image's
-    //              corners.
+    //              LucideIcon with a small preview image (e.g. a
+    //              wallpaper thumbnail, or an app icon path from
+    //              DesktopEntryService.resolveIconPath). No corner
+    //              masking here — square corners are fine at this
+    //              size/context, unlike the wallpaper grid/list cards.
     required property var result
     property bool isSelected: false
     readonly property bool isHovered: rowHover.hovered
@@ -97,6 +96,9 @@ Item {
                         source: root._thumbnailSource
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
+                        cache: true
+                        sourceSize.width: 40 * 2
+                        sourceSize.height: 40 * 2
                     }
                 }
 

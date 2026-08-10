@@ -37,12 +37,15 @@ GlassCard {
             clip: true
             color: Theme.background
             radius: Theme.radius - 4
-
             Image {
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
                 source: MediaService.albumArt
                 visible: MediaService.albumArt !== ""
+                asynchronous: true
+                cache: false
+                sourceSize.width: artSize * 2
+                sourceSize.height: artSize * 2
             }
             LucideIcon {
                 anchors.centerIn: parent

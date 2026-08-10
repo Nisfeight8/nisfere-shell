@@ -284,6 +284,19 @@ fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the Docker prompt in dry-run mode."
+elif command -v docker >/dev/null 2>&1; then
+    log "Docker is already installed — skipping the install prompt."
+    if systemctl is-enabled --quiet docker.service 2>/dev/null; then
+        log "docker.service is already enabled."
+    else
+        run sudo systemctl enable --now docker.service
+    fi
+    if groups "$USER" | grep -qw docker; then
+        log "$USER is already in the docker group."
+    else
+        run sudo usermod -aG docker "$USER"
+        log "Added $USER to the docker group — log out and back in for it to take effect."
+    fi
 else
     echo
     read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install Docker Engine (for the Dashboard's Docker tab)? [y/N] " install_docker
@@ -296,20 +309,39 @@ else
         warn "Skipped — the Docker tab won't have anything to show, but nothing else is affected."
     fi
 fi
-
 # ── 8c. Display manager (optional) ───────────────────────────────────────────
+
+# Common display managers we might find already active, in case the
+# user set one up manually or via a different tool before running this.
+KNOWN_DMS=(sddm gdm lightdm ly greetd)
+
+detect_active_dm() {
+    local dm
+    for dm in "${KNOWN_DMS[@]}"; do
+        if systemctl is-enabled --quiet "${dm}.service" 2>/dev/null; then
+            echo "$dm"
+            return 0
+        fi
+    done
+    return 1
+}
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the SDDM prompt in dry-run mode."
 else
-    echo
-    read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install SDDM (graphical login screen)? [y/N] " install_sddm
-    if [[ "$install_sddm" =~ ^[Yy]$ ]]; then
-        run yay -S --needed --noconfirm sddm
-        run sudo systemctl enable sddm.service
-        log "SDDM installed and enabled — will show a login screen starting your NEXT boot."
+    active_dm="$(detect_active_dm || true)"
+    if [[ -n "$active_dm" ]]; then
+        log "A display manager is already enabled (${active_dm}.service) — skipping the SDDM prompt."
     else
-        warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
+        echo
+        read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Install SDDM (graphical login screen)? [y/N] " install_sddm
+        if [[ "$install_sddm" =~ ^[Yy]$ ]]; then
+            run yay -S --needed --noconfirm sddm
+            run sudo systemctl enable sddm.service
+            log "SDDM installed and enabled — will show a login screen starting your NEXT boot."
+        else
+            warn "Skipped — you'll start Hyprland manually (start-hyprland) from a TTY each boot, or via the prompt at the end of this script for right now."
+        fi
     fi
 fi
 
@@ -407,7 +439,20 @@ echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything 
 # ── 11. Launch Hyprland now? ─────────────────────────────────────────────────
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    warn "Skipping the 'launch Hyprland now' prompt in dry-run mode."
+    warn "Skipping the 'launch Hyprland now' step in dry-run mode."
+elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    # Already running inside an active Hyprland session (e.g. re-running
+    # install.sh to pick up new dotfiles/packages) — nothing to launch.
+    # Just reload the config and make sure Quickshell is running.
+    log "Detected an active Hyprland session — reloading config instead of launching a new one."
+    run hyprctl reload
+
+    if ! pgrep -x quickshell >/dev/null 2>&1; then
+        log "Quickshell isn't running — starting it in the background."
+        run bash -c "mkdir -p '$HOME/.cache/nisfere' && quickshell > '$HOME/.cache/nisfere/quickshell.log' 2>&1 &"
+    else
+        log "Quickshell is already running — leaving it as is."
+    fi
 elif [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
     warn "Detected an SSH session — can't launch a Wayland/Hyprland session from here (no real seat/display to render into). Log in on the actual console/TTY and run 'Hyprland', or reboot into it."
 else

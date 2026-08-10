@@ -99,9 +99,17 @@ Item {
                     }
                     fillMode: Image.PreserveAspectCrop
                     source: iconBadge._imageSource
+                    asynchronous: true
                     sourceSize.width: iconBadge._size
                     sourceSize.height: iconBadge._size
                     visible: iconBadge._imageSource !== ""
+
+                    opacity: status === Image.Ready ? 1 : 0
+                    Behavior on opacity {
+                        Anim {
+                            type: Anim.FastEffects
+                        }
+                    }
                 }
             }
 

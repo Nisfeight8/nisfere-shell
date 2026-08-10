@@ -87,7 +87,11 @@ GlassCard {
                 anchors.margins: 4
                 fillMode: Image.PreserveAspectFit
                 source: notif.nAppIcon || notif.nImage || ""
+                asynchronous: true
+                cache: true
                 visible: false
+                sourceSize.width: card.iconSize
+                sourceSize.height: card.iconSize
             }
             Rectangle {
                 id: notifImageMask

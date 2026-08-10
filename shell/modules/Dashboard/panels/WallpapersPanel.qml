@@ -278,9 +278,11 @@ Item {
                         anchors.margins: card.border.width
                         source: "file://" + modelData.path
                         fillMode: Image.PreserveAspectCrop
-                        cache: false
                         asynchronous: true
+                        cache: true
                         visible: false
+                        sourceSize.width: root.cardWidth * 2
+                        sourceSize.height: root.cardHeight * 2
                     }
 
                     Rectangle {

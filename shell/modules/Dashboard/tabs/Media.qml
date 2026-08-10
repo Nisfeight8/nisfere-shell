@@ -87,7 +87,12 @@ Item {
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     source: MediaService.albumArt
+                    asynchronous: true
+                    cache: false   // see note below
                     visible: false
+
+                    sourceSize.width: root.artSize * 2
+                    sourceSize.height: root.artSize * 2
                 }
                 Rectangle {
                     id: circleMask

@@ -133,17 +133,34 @@ Item {
                     font.pixelSize: 12
                 }
 
-                Flow {
+                GridView {
+                    id: wpGrid
                     Layout.fillWidth: true
-                    spacing: 10
+                    Layout.preferredHeight: 420   // fixed viewport — tune to taste
+                    visible: root.filteredWallpapers.length > 0
+                    clip: true
 
-                    Repeater {
-                        model: root.filteredWallpapers
+                    cellWidth: 120   // 110 card + spacing
+                    cellHeight: 100  // 70 image + text + spacing
 
-                        delegate: ColumnLayout {
-                            required property var modelData
-                            readonly property bool isSelected: ThemeState.sourceType === "dynamic" && ThemeState.wallpaper === modelData.path
+                    model: root.filteredWallpapers
 
+                    // keep a small buffer so scrolling feels smooth without
+                    // pre-decoding the whole library
+                    cacheBuffer: 200
+
+                    ScrollBar.vertical: ScrollBar {}
+
+                    delegate: Item {
+                        id: wpDelegate
+                        required property var modelData
+                        readonly property bool isSelected: ThemeState.sourceType === "dynamic" && ThemeState.wallpaper === modelData.path
+
+                        width: wpGrid.cellWidth
+                        height: wpGrid.cellHeight
+
+                        ColumnLayout {
+                            anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 4
                             width: 110
 
@@ -153,25 +170,20 @@ Item {
                                 Layout.preferredHeight: 70
                                 radius: Theme.radius
                                 color: Theme.backgroundAlt
-                                border.width: isSelected ? 2 : 1
-                                border.color: isSelected ? Theme.selected : Theme.borderColor
+                                border.width: wpDelegate.isSelected ? 2 : 1
+                                border.color: wpDelegate.isSelected ? Theme.selected : Theme.borderColor
 
-                                // Hidden — only used as texture source
-                                // for OpacityMask. clip:true alone only
-                                // clips to the rectangular bounds, not
-                                // the rounded shape — since the image
-                                // (PreserveAspectCrop) exactly fills
-                                // the whole rectangle, its square
-                                // corners would still show past the
-                                // radius curve without this mask.
                                 Image {
                                     id: wpImage
                                     anchors.fill: parent
                                     anchors.margins: card.border.width
-                                    source: "file://" + modelData.path
+                                    source: "file://" + wpDelegate.modelData.path
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
+                                    cache: true
                                     visible: false
+                                    sourceSize.width: 110 * 2
+                                    sourceSize.height: 70 * 2
                                 }
                                 Rectangle {
                                     id: wpImageMask
@@ -190,14 +202,14 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                 }
                                 TapHandler {
-                                    onTapped: ThemeActions.setWallpaper(modelData.path, root.extractDynamicColors, ThemeState.mode)
+                                    onTapped: ThemeActions.setWallpaper(wpDelegate.modelData.path, root.extractDynamicColors, ThemeState.mode)
                                 }
 
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: parent.radius
                                     color: Theme.selected
-                                    opacity: wpHover.hovered && !isSelected ? 0.12 : 0
+                                    opacity: wpHover.hovered && !wpDelegate.isSelected ? 0.12 : 0
                                     Behavior on opacity {
                                         Anim {
                                             type: Anim.FastEffects
@@ -207,8 +219,8 @@ Item {
                             }
                             Text {
                                 Layout.preferredWidth: 110
-                                text: modelData.name
-                                color: isSelected ? Theme.selected : Theme.foreground
+                                text: wpDelegate.modelData.name
+                                color: wpDelegate.isSelected ? Theme.selected : Theme.foreground
                                 font.family: Theme.fontName
                                 font.pixelSize: 10
                                 elide: Text.ElideRight
