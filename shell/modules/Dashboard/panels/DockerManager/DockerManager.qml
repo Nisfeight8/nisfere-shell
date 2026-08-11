@@ -8,25 +8,19 @@ import "volumes"
 
 Rectangle {
     id: root
+    property real uiScale: 1.0
 
-    // Was completely missing — this root had neither anchors.fill nor
-    // any implicit size, meaning it likely rendered at its bare
-    // default (0×0) regardless of whatever space DashboardContent's
-    // AnimLoader actually had available (a Loader does NOT auto-
-    // stretch a loaded item that doesn't anchor itself — same lesson
-    // as MiniClock/MiniWeather earlier in this shell's cleanup).
-    // Fixed size for the same reason as Settings.qml/SystemMonitorTool
-    // — standalone top-level Dashboard component, no floor/ceiling
-    // system protecting it, and tab content (Containers/Images/
-    // Volumes) shouldn't resize the whole panel when you switch tabs.
+    // Fixed size — standalone top-level Dashboard component, no
+    // floor/ceiling system protecting it. Scaled by uiScale so this
+    // panel gets proportionally more room on higher-res screens.
+    // Containers/Images/Volumes tab content is left unscaled
+    // deliberately — already verified to render correctly.
     anchors.fill: parent
-    implicitWidth: 820
-    implicitHeight: 600
+    implicitWidth: 820 * uiScale
+    implicitHeight: 600 * uiScale
 
     property int currentTab: 0
 
-    // ✅ Lazy load flags για tabs - μόνο true→true ποτέ false
-    // (reset γίνεται αυτόματα όταν καταστρέφεται ο DockerManager)
     property bool imagesLoaded: false
     property bool volumesLoaded: false
 
@@ -39,7 +33,6 @@ Rectangle {
 
     color: "transparent"
 
-    // ✅ FIX 1: Άμεσο πρώτο request - δεν περιμένουμε 3 δευτερόλεπτα
     Component.onCompleted: DockerService.requestDockerStats()
 
     Timer {
@@ -49,40 +42,25 @@ Rectangle {
         repeat: true
         onTriggered: DockerService.requestDockerStats()
     }
-    // Explicit stop on destruction — turned out to be the actual fix,
-    // not just defensive redundancy: Loader's item destruction on a
-    // sourceComponent swap isn't always synchronous (there's a brief
-    // deferred-deletion window), so without this the Timer could still
-    // fire once more in that gap. Stopping it here happens
-    // synchronously the moment destruction begins.
     Component.onDestruction: dockerRefreshTimer.stop()
 
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 10
+        spacing: 10 * root.uiScale
 
-        // Own small row, entirely separate from the tab bar below —
-        // just the X, right-aligned. Previously tried nesting it as a
-        // sibling of the tab-bar Rectangle in the same RowLayout, but
-        // that inflated the tab bar's size — keeping it fully
-        // separate avoids touching the tab bar's own layout at all.
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 28
+            Layout.preferredHeight: 28 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
             }
 
-            // Same "X" convention as SystemMonitorTool/Settings —
-            // ShellState.closeResumableComponent() both closes the
-            // dashboard AND forgets this as the backgrounded/resumable
-            // tool.
             IconButton {
                 icon: "x"
-                size: 28
-                iconSize: 13
+                size: 28 * root.uiScale
+                iconSize: 13 * root.uiScale
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.color1
@@ -93,7 +71,7 @@ Rectangle {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 60
+            Layout.preferredHeight: 60 * root.uiScale
             border.color: Theme.borderColor
             border.width: Theme.widgetBorderWidth
             radius: Theme.radius
@@ -102,8 +80,8 @@ Rectangle {
             NavTabs {
                 id: dockerTabs
                 anchors.fill: parent
-                anchors.margins: 5
-                spacing: 10
+                anchors.margins: 5 * root.uiScale
+                spacing: 10 * root.uiScale
                 currentIndex: root.currentTab
                 onTabClicked: function (tabIndex) {
                     root.currentTab = tabIndex;
@@ -149,7 +127,6 @@ Rectangle {
                 }
             }
 
-            // TAB 2: Volumes
             Loader {
                 Layout.fillHeight: true
                 Layout.fillWidth: true

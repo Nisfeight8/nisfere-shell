@@ -12,7 +12,7 @@ BarWidget {
         anchors.verticalCenter: parent.verticalCenter
         color: Theme.selected
         font.family: Theme.fontName
-        font.pixelSize: 18
+        font.pixelSize: launcherBtn.iconSize
         text: "󰣇"
     }
 

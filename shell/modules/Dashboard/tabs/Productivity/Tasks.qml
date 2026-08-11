@@ -5,29 +5,21 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
+
     anchors.fill: parent
-    // Was missing entirely — same fix as Productivity.qml/Media.qml:
-    // bottom-up from mainColumn's own (already-correct) implicit size.
     implicitWidth: mainColumn.implicitWidth
     implicitHeight: mainColumn.implicitHeight
 
     // Deliberate, fixed — NOT the ListView's natural contentHeight.
-    // Without this, the ListView below (and the empty-state Item that
-    // swaps in for it) has no Layout.preferredHeight, so it defaults
-    // to its own content size — meaning mainColumn's implicit height
-    // (and therefore this whole tab's, and the whole drawer panel's)
-    // would grow or shrink with every task you add/complete/remove.
-    // A fixed reserved height keeps the panel stable regardless of
-    // task count; the list still scrolls internally via clip: true.
-    property real listTargetHeight: 300
+    // Scaled by uiScale so the reserved space stays resolution-
+    // appropriate; still fixed regardless of task count (list scrolls
+    // internally via clip: true).
+    property real listTargetHeight: 300 * uiScale
 
-    // "active" | "completed" — which list is currently shown
     property string filter: "active"
     property var filteredTasks: []
 
-    // Explicit update pattern — property var bindings with .filter()
-    // aren't reliably re-evaluated by QML's dependency tracking, so we
-    // recompute imperatively whenever the source data or filter changes.
     function _updateFilteredTasks() {
         filteredTasks = root.filter === "active" ? TasksService.tasks.filter(t => !t.done) : TasksService.tasks.filter(t => t.done);
     }
@@ -45,12 +37,12 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 10
+        spacing: 10 * root.uiScale
 
         // ── Add task input ────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            height: 40
+            height: 40 * root.uiScale
             radius: Theme.radius
             color: Theme.backgroundAlt
             border.width: 1
@@ -64,14 +56,14 @@ Item {
             RowLayout {
                 anchors {
                     fill: parent
-                    leftMargin: 12
-                    rightMargin: 8
+                    leftMargin: 12 * root.uiScale
+                    rightMargin: 8 * root.uiScale
                 }
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 LucideIcon {
                     icon: "plus"
-                    size: 14
+                    size: 14 * root.uiScale
                     color: Theme.foreground
                     opacity: 0.5
                 }
@@ -81,7 +73,7 @@ Item {
                     Layout.fillWidth: true
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     clip: true
                     selectByMouse: true
 
@@ -95,7 +87,7 @@ Item {
                         text: "Add a task..."
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         opacity: 0.35
                         visible: !input.text && !input.activeFocus
                     }
@@ -103,8 +95,8 @@ Item {
 
                 IconButton {
                     icon: "arrow-right"
-                    size: 26
-                    iconSize: 13
+                    size: 26 * root.uiScale
+                    iconSize: 13 * root.uiScale
                     radius: Theme.radius
                     hoverColor: Theme.selected
                     activeColor: Theme.selected
@@ -120,7 +112,7 @@ Item {
         // ── Active / Completed toggle ──────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Repeater {
                 model: [
@@ -152,14 +144,10 @@ Item {
         ListView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            // Fixed reserve — see root.listTargetHeight above. Without
-            // this, preferredHeight defaults to contentHeight (sum of
-            // every task row), making mainColumn's — and therefore the
-            // whole drawer's — implicit height grow with task count.
             Layout.preferredHeight: root.listTargetHeight
             visible: root.filteredTasks.length > 0
             model: root.filteredTasks
-            spacing: 4
+            spacing: 4 * root.uiScale
             clip: true
 
             delegate: Rectangle {
@@ -167,22 +155,22 @@ Item {
                 readonly property bool isHovered: rowHover.hovered
 
                 width: ListView.view.width
-                height: 40
+                height: 40 * root.uiScale
                 radius: Theme.radius
                 color: isHovered ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.1) : Theme.backgroundAlt
 
                 RowLayout {
                     anchors {
                         fill: parent
-                        leftMargin: 10
-                        rightMargin: 6
+                        leftMargin: 10 * root.uiScale
+                        rightMargin: 6 * root.uiScale
                     }
-                    spacing: 10
+                    spacing: 10 * root.uiScale
 
                     Rectangle {
                         id: checkbox
-                        width: 20
-                        height: 20
+                        width: 20 * root.uiScale
+                        height: 20 * root.uiScale
                         radius: Theme.radius
                         color: modelData.done ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.9) : "transparent"
                         border.width: 1.5
@@ -201,7 +189,7 @@ Item {
                         LucideIcon {
                             anchors.centerIn: parent
                             icon: "check"
-                            size: 12
+                            size: 12 * root.uiScale
                             color: Theme.background
                             visible: modelData.done
                         }
@@ -219,7 +207,7 @@ Item {
                         text: modelData.text
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         font.strikeout: modelData.done
                         opacity: modelData.done ? 0.4 : 1.0
                         elide: Text.ElideRight
@@ -232,8 +220,8 @@ Item {
 
                     IconButton {
                         icon: "x"
-                        size: 24
-                        iconSize: 12
+                        size: 24 * root.uiScale
+                        iconSize: 12 * root.uiScale
                         radius: Theme.radius
                         hoverColor: Theme.color1
                         activeColor: Theme.color1
@@ -242,10 +230,6 @@ Item {
                     }
                 }
 
-                // Whole-row hover, arrow cursor (not pointing-hand) —
-                // this drives only the background tint, not a "click
-                // me" affordance; the checkbox/X button each have
-                // their own PointingHandCursor for their own actions.
                 HoverHandler {
                     id: rowHover
                 }
@@ -253,28 +237,20 @@ Item {
         }
 
         // ── Empty state ───────────────────────────────────────────
-        // Wrapped in a plain Item (safe for Layout.fillWidth/fillHeight)
-        // with anchors.centerIn inside it (safe here since the Item
-        // itself isn't fighting anchors vs Layout positioning) — more
-        // reliable than relying on Layout.alignment resolution when the
-        // container itself is a fillWidth child of another Layout.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            // Same reserved height as the ListView above — so
-            // swapping between the populated list and this empty
-            // state never changes mainColumn's implicit height either.
             Layout.preferredHeight: root.listTargetHeight
             visible: root.filteredTasks.length === 0
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 LucideIcon {
                     Layout.alignment: Qt.AlignHCenter
                     icon: root.filter === "active" ? "list-checks" : "check-check"
-                    size: 32
+                    size: 32 * root.uiScale
                     color: Theme.foreground
                     opacity: 0.35
                 }
@@ -283,7 +259,7 @@ Item {
                     text: root.filter === "active" ? "No active tasks" : "No completed tasks"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.5
                 }
             }
@@ -293,7 +269,7 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             visible: root.filter === "completed" && TasksService.completedCount > 0
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
@@ -301,8 +277,8 @@ Item {
 
             IconButton {
                 icon: "trash-2"
-                size: 26
-                iconSize: 12
+                size: 26 * root.uiScale
+                iconSize: 12 * root.uiScale
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.color1

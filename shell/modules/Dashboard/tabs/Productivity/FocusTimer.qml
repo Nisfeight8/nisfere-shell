@@ -5,22 +5,21 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
+
     anchors.fill: parent
-    // Was missing entirely (and this file was also the only tab
-    // without `id: root` at all) — same fix as the rest of the
-    // Dashboard tabs: bottom-up from mainColumn's own implicit size.
     implicitWidth: mainColumn.implicitWidth
     implicitHeight: mainColumn.implicitHeight
 
     ColumnLayout {
         id: mainColumn
         anchors.centerIn: parent
-        spacing: 26
+        spacing: 26 * root.uiScale
 
         // ── Mode toggle ───────────────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             Repeater {
                 model: [
@@ -49,12 +48,12 @@ Item {
         // ── Ring + duration adjust ────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 20
+            spacing: 20 * root.uiScale
 
             IconButton {
                 icon: "minus"
-                size: 46
-                iconSize: 18
+                size: 46 * root.uiScale
+                iconSize: 18 * root.uiScale
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 enabled: !FocusService.running
@@ -63,11 +62,11 @@ Item {
             }
 
             ColumnLayout {
-                spacing: 6
+                spacing: 6 * root.uiScale
                 CircularGauge {
                     Layout.alignment: Qt.AlignHCenter
-                    width: 220
-                    height: 220
+                    width: 220 * root.uiScale
+                    height: 220 * root.uiScale
                     value: FocusService.progress
                     mainText: FocusService.formatTime()
                     subText: FocusService.mode === "focus" ? "Focus" : "Break"
@@ -79,15 +78,15 @@ Item {
                     text: FocusService.formatDuration() + " session"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                     opacity: 0.5
                 }
             }
 
             IconButton {
                 icon: "plus"
-                size: 46
-                iconSize: 18
+                size: 46 * root.uiScale
+                iconSize: 18 * root.uiScale
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
                 enabled: !FocusService.running
@@ -99,12 +98,12 @@ Item {
         // ── Controls ──────────────────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 16
+            spacing: 16 * root.uiScale
 
             IconButton {
                 icon: "rotate-ccw"
-                size: 44
-                iconSize: 18
+                size: 44 * root.uiScale
+                iconSize: 18 * root.uiScale
                 activeSolid: true
                 radius: Theme.radius
                 normalColor: Theme.backgroundAlt
@@ -114,8 +113,8 @@ Item {
 
             IconButton {
                 icon: FocusService.running ? "pause" : "play"
-                size: 60
-                iconSize: 26
+                size: 60 * root.uiScale
+                iconSize: 26 * root.uiScale
                 activeSolid: true
                 radius: Theme.radius
                 normalColor: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15)

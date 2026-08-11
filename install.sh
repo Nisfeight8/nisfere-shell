@@ -116,7 +116,7 @@ PACKAGES=(
     breeze
     qtengine
     bibata-cursor-theme
-    ttf-arimo-nerd
+    ttf-noto-nerd
     noto-fonts
     pipewire
     pipewire-pulse
@@ -182,6 +182,7 @@ run mkdir -p "$HOME/.config"
 
 log "Installing dotfiles (hypr, qtengine, gtk-3.0, gtk-4.0, xfce4)..."
 install_dotdir "hypr"
+install_dotdir "fontconfig"
 install_dotdir "qtengine"
 install_dotdir "gtk-3.0"
 install_dotdir "gtk-4.0"

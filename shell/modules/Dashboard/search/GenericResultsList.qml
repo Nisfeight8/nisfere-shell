@@ -2,21 +2,14 @@ import QtQuick
 import qs.core
 import qs.services
 
-// A single scoped provider's search() results (e.g. "@ssh ...") OR,
-// when the provider is the default/unscoped "apps" one, the unified
-// flat search across apps+ssh+git (SearchProviders.searchAll()) —
-// both rendered via the shared ResultsListView.
 Item {
     id: root
+    property real uiScale: 1.0
 
     readonly property var parsed: SearchProviders.parseQuery(ShellState.dashboardSearchText)
     readonly property var activeProvider: SearchProviders.findById(parsed.providerId)
     readonly property string providerQuery: parsed.rest
 
-    // "apps" is the default/unscoped provider — that's exactly the
-    // case that should show the unified merged list instead of just
-    // apps' own results. Any other (explicitly "@"-scoped) provider
-    // stays single-provider.
     readonly property bool isUnified: root.activeProvider && root.activeProvider.id === "apps"
 
     readonly property var results: {
@@ -39,13 +32,8 @@ Item {
         id: listView
         anchors.fill: parent
         results: root.results
-        maxListHeight: 360
+        maxListHeight: 360 * root.uiScale
         onResultActivated: (r, index) => {
-            // In unified mode each row is tagged with its own
-            // providerId (see SearchProviders.searchAll) since rows
-            // can come from different providers; in scoped mode there
-            // is no tag, so it just falls back to the one provider
-            // this whole list is scoped to.
             const provider = SearchProviders.findById(r.providerId ?? root.activeProvider.id);
             if (!provider)
                 return;

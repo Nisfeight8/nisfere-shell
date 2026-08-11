@@ -2,11 +2,6 @@ import QtQuick
 import qs.core
 import qs.services
 
-
-// Simple icon(+optional info text) with a bar-appropriate tooltip.
-// Uses BarTooltip (PopupWindow-based) rather than StyledToolTip —
-// the bar's own PanelWindow is too short to contain a normal in-window
-// Popup rendering below it; see BarTooltip.qml for the full explanation.
 Item {
     id: root
 
@@ -14,6 +9,7 @@ Item {
     property string infoText: ""
     property string tooltipText: ""
     property int iconSize: 16
+    property real fontSize: 14
 
     implicitWidth: contentRow.implicitWidth
     implicitHeight: contentRow.implicitHeight
@@ -34,7 +30,7 @@ Item {
             visible: root.infoText !== ""
             text: root.infoText
             font.family: Theme.fontName
-            font.pixelSize: 14
+            font.pixelSize: root.fontSize
             color: Theme.foreground
             anchors.verticalCenter: parent.verticalCenter
         }

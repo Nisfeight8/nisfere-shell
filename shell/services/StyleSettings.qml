@@ -19,7 +19,7 @@ Singleton {
 
     // Defaults match what Theme.qml used to hardcode directly.
     property bool enableWidgetBorders: true
-    property string fontName: "Arimo Nerd Font"
+    property string fontName: "Noto Nerd Font"
     property int radius: 20
     property int barHeight: 50
     property int padding: 6

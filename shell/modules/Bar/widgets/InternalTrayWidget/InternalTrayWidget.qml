@@ -6,14 +6,7 @@ import qs.services
 BarWidget {
     id: root
     useGradient: true
-    // implicitWidth: bar.implicitWidth
-    // implicitHeight: bar.implicitHeight
 
-    // Was missing `parent: root` — without it these fall into
-    // contentRow.data (default property forwarding), covering only
-    // the tight icon row instead of the full padded pill background,
-    // so clicking near the pill's edges (inside the paddingX margin)
-    // did nothing. Matches AudioWidget/ActiveWindow/BatteryWidget.
     HoverHandler {
         parent: root
         cursorShape: Qt.PointingHandCursor
@@ -31,6 +24,8 @@ BarWidget {
         asynchronous: false
         sourceComponent: Component {
             TrayIcon {
+                iconSize: root.iconSize
+                fontSize: root.fontSize
                 iconName: {
                     if (NetworkService.isEthernetConnected)
                         return "network";
@@ -63,6 +58,8 @@ BarWidget {
         asynchronous: false
         sourceComponent: Component {
             TrayIcon {
+                iconSize: root.iconSize
+                fontSize: root.fontSize
                 iconName: Icons.getBluetoothIcon(BluetoothService.isEnabled, BluetoothService.connectedDevicesCount > 0)
                 infoText: BluetoothService.connectedDevicesCount > 0 ? BluetoothService.connectedDevicesCount.toString() : ""
                 tooltipText: {
@@ -84,6 +81,8 @@ BarWidget {
         asynchronous: false
         sourceComponent: Component {
             TrayIcon {
+                iconSize: root.iconSize
+                fontSize: root.fontSize
                 iconName: "sun"
                 tooltipText: `Brightness: ${Math.round(BrightnessService.percentage * 100)}%`
             }
@@ -92,6 +91,8 @@ BarWidget {
 
     // --- Volume Icon (Always active) ---
     TrayIcon {
+        iconSize: root.iconSize
+        fontSize: root.fontSize
         iconName: Icons.getVolumeIcon(AudioService.volume, AudioService.muted)
         tooltipText: {
             if (AudioService.muted) {

@@ -6,26 +6,25 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
 
-    // Fixed, deliberate size — same reasoning as Settings.qml: this is
-    // a standalone top-level Dashboard component now (see
-    // ShellState.dashboardActiveComponent), not part of TabsComponent's
-    // floor/ceiling system. Previously had no implicit size at all,
-    // meaning DashboardContent's AnimLoader saw 0×0 and the whole
-    // drawer panel collapsed to its bare minimum whenever this opened.
-    implicitWidth: 820
-    implicitHeight: 600
+    // Fixed, deliberate size — same reasoning as Settings.qml/
+    // DockerManager.qml: standalone top-level Dashboard component, no
+    // floor/ceiling system protecting it. Scaled by uiScale so this
+    // panel gets proportionally more room on higher-res screens.
+    // Everything inside ColumnLayout below is left unscaled
+    // deliberately — already verified to render correctly.
+    implicitWidth: 820 * uiScale
+    implicitHeight: 600 * uiScale
 
     anchors.fill: parent
 
-    property string filterCategory: "all"   // "all" | "user" | "system"
+    property string filterCategory: "all"
     property string searchQuery: ""
     property string sortKey: "memMb"
     property bool sortDescending: true
 
     property var displayList: []
-
-    // pid -> expanded state, survives across refreshes/re-sorts
     property var expandedGroups: ({})
 
     function toggleExpanded(name) {
@@ -34,9 +33,6 @@ Item {
         expandedGroups = copy;
     }
 
-    // Pure grouping/filtering — no sort applied. Shared by both the
-    // "explicit action" and "passive refresh" paths below so the
-    // filter/group logic exists in exactly one place.
     function _recomputeGroups() {
         let list = ProcessMonitorService.processes;
 
@@ -50,9 +46,6 @@ Item {
             list = list.filter(p => p.name.toLowerCase().includes(q));
         }
 
-        // Group by name — Electron/Chromium apps (code, spotify, chrome,
-        // ...) spawn many OS-level processes for one logical app. One
-        // row per app (summed CPU/memory), expandable to see each PID.
         const groupMap = {};
         for (const p of list) {
             let g = groupMap[p.name];
@@ -97,19 +90,10 @@ Item {
         return grouped;
     }
 
-    // Explicit user action (typed search, clicked a filter tile or a
-    // column header) — always re-sorts immediately, even while
-    // hovering the list; you asked for this order right now.
     function _updateDisplayListSorted() {
         displayList = _sortGroups(_recomputeGroups());
     }
 
-    // Passive refresh (the 3s poll tick from ProcessMonitorService) —
-    // while the pointer is over the list (listHoverHandler.hovered),
-    // keep row POSITIONS stable instead of re-sorting, so a live CPU/
-    // RAM number tick doesn't yank a row out from under your cursor
-    // mid-click. Values still refresh live either way — only the
-    // ordering freezes, and only for this passive path.
     function _updateDisplayListLive() {
         const grouped = root._recomputeGroups();
         if (!listHoverHandler.hovered) {
@@ -124,8 +108,6 @@ Item {
                 byName.delete(prev.name);
             }
         }
-        // Any brand-new process group that appeared while frozen goes
-        // on the end rather than being dropped.
         for (const g of byName.values())
             ordered.push(g);
         displayList = ordered;
@@ -228,8 +210,6 @@ Item {
                 showSideText: false
             }
 
-            // Reserves space so the header row's own content doesn't
-            // slide underneath the absolutely-positioned X below it.
             Item {
                 Layout.preferredWidth: 28
             }
@@ -347,7 +327,6 @@ Item {
                     onClicked: root.sortBy("pid")
                 }
             }
-            // Spacer matching the expand-chevron button's width on each row
             Item {
                 Layout.preferredWidth: 20
             }
@@ -369,11 +348,6 @@ Item {
             model: root.displayList
             spacing: 2
 
-            // Tracks "is the pointer anywhere over the process list" —
-            // drives the hover-freeze in _updateDisplayListLive above.
-            // Coexists fine with each row's own HoverHandler below;
-            // HoverHandlers (unlike TapHandlers) don't need exclusive
-            // grabbing, every interested handler just gets notified.
             HoverHandler {
                 id: listHoverHandler
             }
@@ -385,31 +359,16 @@ Item {
                 readonly property bool hasMultiple: modelData.count > 1
 
                 width: ListView.view.width
-                // Grows to fit expanded child rows (18px each) when toggled open.
                 height: 40 + (isExpanded && hasMultiple ? modelData.count * 26 : 0)
                 radius: 8
                 color: isHovered ? Theme.backgroundAlt : "transparent"
                 clip: true
-                // Behavior on color {
-                //     AnimColor {
-                //         type: Anim.FastEffects
-                //     }
-                // }
                 Behavior on height {
                     Anim {
                         type: Anim.FastSpatial
                     }
                 }
 
-                // Was DesktopEntries.heuristicLookup() directly, bypassing
-                // the memoized DesktopEntryService wrapper — whose own
-                // header comment literally names THIS component as one of
-                // the reasons that cache exists. Since `model:
-                // root.displayList` is a plain JS array reassigned wholesale
-                // on every 3s poll tick, ListView likely recreates every
-                // delegate each refresh — meaning every process's icon was
-                // being re-looked-up from scratch every 3 seconds, with zero
-                // cache benefit. Same fix for the icon path resolution below.
                 readonly property string iconName: DesktopEntryService.lookup(modelData.name)?.icon ?? ""
 
                 ColumnLayout {
@@ -489,7 +448,6 @@ Item {
                         }
                     }
 
-                    // ── Expanded children — individual PIDs ─────────
                     Repeater {
                         model: (row.isExpanded && row.hasMultiple) ? modelData.children : []
 
@@ -532,7 +490,6 @@ Item {
                 }
             }
 
-            // Empty state
             Text {
                 anchors.centerIn: parent
                 visible: root.displayList.length === 0
@@ -545,24 +502,12 @@ Item {
         }
     }
 
-    // Same "X" convention we're adding to Docker/Settings too —
-    // ShellState.closeResumableComponent() both closes the dashboard
-    // AND forgets this as the backgrounded/resumable tool (see
-    // ShellState.qml), unlike just closing the dashboard normally
-    // which would leave the bar's "you left something open" indicator
-    // still pointing here.
-    //
-    // Anchored directly to root's own corner (NOT a RowLayout child)
-    // — a RowLayout item only ever sits where the row's content
-    // naturally ends, which isn't necessarily root's actual top-right
-    // corner. Absolute positioning guarantees it regardless of how
-    // wide the header content ends up being.
     IconButton {
         anchors.top: parent.top
         anchors.right: parent.right
         icon: "x"
-        size: 28
-        iconSize: 13
+        size: 28 * root.uiScale
+        iconSize: 13 * root.uiScale
         radius: Theme.radius
         normalColor: Theme.backgroundAlt
         hoverColor: Theme.color1

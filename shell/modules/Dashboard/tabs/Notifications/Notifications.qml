@@ -5,23 +5,7 @@ import qs.services
 
 Item {
     id: root
-
-    // Fixed — NOT derived from this tab's own width/height. That was
-    // the actual bug: tabsLoader (which loads this tab) has no
-    // Layout.fillHeight, so it sizes itself from THIS item's own
-    // implicitHeight. Binding baseScale to root.height while also
-    // computing implicitHeight FROM baseScale is self-referential —
-    // and when implicitHeight briefly had no value at all, root's
-    // real height collapsed toward 0 (the header RowLayout's
-    // Layout.fillHeight ate all the space instead), which fed back
-    // into baseScale, which shrunk everything further. A fixed
-    // constant breaks that loop entirely. If you want this to vary by
-    // monitor, QtQuick's built-in `Screen.width`/`Screen.height`
-    // attached property is the safe way — it reads the physical
-    // monitor, not this component's own live layout size — happy to
-    // wire that in if you want it; left as a flat 1 for now rather
-    // than guess a reference resolution.
-    readonly property real baseScale: 1
+    property real uiScale: 1.0
 
     // The two fixed pieces that make up this tab's height — matches
     // "Row size + scroll box size" exactly: the header's own height
@@ -30,22 +14,27 @@ Item {
     // notification list. The list is a clipped, scrollable ListView —
     // it doesn't have (and doesn't need) a "natural" content height,
     // so this is a real design decision, not a measurement.
-    readonly property real headerHeight: 45
-    readonly property real listTargetHeight: 300
-    readonly property real contentMargin: Math.max(15, 25 * baseScale)
-    readonly property real contentSpacing: Math.max(10, 15 * baseScale)
+    readonly property real headerHeight: 45 * uiScale
+    readonly property real listTargetHeight: 300 * uiScale
+    readonly property real contentMargin: Math.max(15, 25 * uiScale)
+    readonly property real contentSpacing: Math.max(10, 15 * uiScale)
 
-    readonly property real cardHeight: Math.max(75, 85 * baseScale)
-    readonly property real fontSizeBody: Math.max(11, 14 * baseScale)
-    readonly property real fontSizeTitle: Math.max(12, 14 * baseScale)
-    readonly property real iconSize: Math.max(50, 40 * baseScale)
+    readonly property real cardHeight: Math.max(75, 85 * uiScale)
+    readonly property real fontSizeBody: Math.max(11, 14 * uiScale)
+    readonly property real fontSizeTitle: Math.max(12, 14 * uiScale)
+    readonly property real iconSize: Math.max(50, 40 * uiScale)
 
-    // anchors.fill: parent
     // No implicitWidth — this tab doesn't need an opinion on the
     // drawer's width (same reasoning as Overview.qml). implicitHeight
-    // IS needed (tabsLoader depends on it, see above) — composed
-    // bottom-up from the fixed constants above, never from root's own
-    // live size.
+    // IS needed (tabsLoader depends on it) — composed bottom-up from
+    // the fixed constants above, never from root's own live size (see
+    // the historical note this used to carry: binding a scale factor
+    // to root.height while implicitHeight is itself derived FROM that
+    // scale factor is self-referential and collapses toward 0 the
+    // moment implicitHeight is momentarily unresolved. uiScale here
+    // comes from Theme.scaleFor(QsWindow.window?.screen) — the
+    // physical monitor, not this component's own live layout size —
+    // so that loop can't happen.)
     implicitHeight: headerHeight + contentSpacing + listTargetHeight + contentMargin * 2
 
     ColumnLayout {
@@ -59,22 +48,22 @@ Item {
             Layout.preferredHeight: root.headerHeight
 
             RowLayout {
-                spacing: 10
+                spacing: 10 * root.uiScale
 
                 Text {
                     text: "Notifications"
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: Math.max(18, 22 * root.baseScale)
+                    font.pixelSize: Math.max(18, 22 * root.uiScale)
                 }
                 Rectangle {
                     color: Theme.selected
-                    height: 22
+                    height: 22 * root.uiScale
                     opacity: 0.9
                     radius: Theme.radius
                     visible: NotificationService.notifications.length > 0
-                    width: Math.max(22, notifCountText.implicitWidth + 12)
+                    width: Math.max(22 * root.uiScale, notifCountText.implicitWidth + (12 * root.uiScale))
 
                     Text {
                         id: notifCountText
@@ -83,7 +72,7 @@ Item {
                         color: Theme.background
                         font.bold: true
                         font.family: Theme.fontName
-                        font.pixelSize: 14
+                        font.pixelSize: 14 * root.uiScale
                     }
                 }
             }
@@ -95,7 +84,7 @@ Item {
             // ── DND toggle ────────────────────────────────────────
             IconButton {
                 icon: Icons.getDndIcon(NotificationService.dndEnabled)
-                size: 40
+                size: 40 * root.uiScale
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
                 isActive: NotificationService.dndEnabled
@@ -107,7 +96,7 @@ Item {
             // ── Clear all ─────────────────────────────────────────
             IconButton {
                 icon: "trash"
-                size: 40
+                size: 40 * root.uiScale
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.color1
                 fixedIconColor: Theme.color1
@@ -126,13 +115,13 @@ Item {
             ColumnLayout {
                 anchors.centerIn: parent
                 opacity: 0.4
-                spacing: 12
+                spacing: 12 * root.uiScale
                 visible: NotificationService.notifications.length === 0
 
                 LucideIcon {
                     Layout.alignment: Qt.AlignHCenter
                     icon: Icons.getDndIcon(NotificationService.dndEnabled)
-                    size: 54
+                    size: 54 * root.uiScale
                     color: Theme.foreground
                 }
                 Text {
@@ -141,7 +130,7 @@ Item {
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                 }
             }
 
@@ -150,7 +139,7 @@ Item {
                 id: notifListView
                 anchors.fill: parent
                 clip: true
-                spacing: 10
+                spacing: 10 * root.uiScale
                 model: NotificationService.notifications
                 visible: NotificationService.notifications.length > 0
 
@@ -162,12 +151,6 @@ Item {
                         type: Anim.DefaultEffects
                     }
                 }
-                // Deliberately NOT using Anim here — same reasoning as
-                // NavTabs/SideMenu: Easing.OutBack's overshoot has no
-                // equivalent among our M3 bezier curves, and the little
-                // "settle" bounce as other notifications reflow after
-                // one is dismissed is a nice, distinctive touch worth
-                // keeping raw.
                 displaced: Transition {
                     NumberAnimation {
                         properties: "y"
@@ -184,11 +167,9 @@ Item {
                 }
 
                 delegate: NotificationCard {
-                    // 1. Ζητάμε ρητά από το Qt 6 να μας "ταΐσει" αυτές τις μεταβλητές
                     required property var modelData
                     required property int index
 
-                    // 2. Πλέον το modelData και το index υπάρχουν και δουλεύουν κανονικά!
                     width: notifListView.width
                     notif: modelData
 

@@ -29,7 +29,7 @@ _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 # from day one — not just QML-side fallback constants nobody's ever
 # confirmed are actually in effect.
 _DEFAULT_SETTINGS: dict = {
-    "shared": {"radius": 20, "fontName": "Arimo Nerd Font", "workspacesPerMonitor": 10},
+    "shared": {"radius": 20, "fontName": "Noto Nerd Font", "workspacesPerMonitor": 10},
     "shell": {
         "enableWidgetBorders": True,
         "barHeight": 50,

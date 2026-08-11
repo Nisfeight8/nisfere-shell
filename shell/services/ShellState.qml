@@ -446,21 +446,4 @@ Singleton {
         _toggleFlag("powerMenuOpened", screenName);
     }
 
-    // QuickActions kept separate (extra `action` param + partial-match
-    // toggle semantics) rather than forced through _toggleFlag.
-    function openQuickActions(screenName, action) {
-        activeScreenName = screenName;
-        if (action !== undefined)
-            quickAction = action;
-        quickActionsOpened = true;
-    }
-    function closeQuickActions() {
-        quickActionsOpened = false;
-    }
-    function toggleQuickActions(screenName, action) {
-        if (quickActionsOpened && activeScreenName === screenName && (action === undefined || quickAction === action))
-            closeQuickActions();
-        else
-            openQuickActions(screenName, action);
-    }
 }

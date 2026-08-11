@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 import "panels"
@@ -41,6 +42,10 @@ import "panels/Settings" as SettingsNS   // ditto
 Item {
     id: wrapper
 
+    // Computed locally per-window via QsWindow — no prop-threading
+    // needed from BaseDrawer/FooterDrawer down to here.
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
+
     implicitWidth: pageLoader.item?.implicitWidth ?? 0
     implicitHeight: pageLoader.item?.implicitHeight ?? 0
 
@@ -56,25 +61,34 @@ Item {
 
     Component {
         id: tabsComp
-        TabsComponent {}
+        TabsComponent {
+            uiScale: wrapper.uiScale
+        }
     }
     Component {
         id: searchComp
-        SearchComponent {}
+        SearchComponent {
+            uiScale: wrapper.uiScale
+        }
     }
     Component {
         id: dockerComp
         DockerNS.DockerManager {
             color: Theme.background
+            uiScale: wrapper.uiScale
         }
     }
     Component {
         id: sysmonComp
-        SystemMonitorTool {}
+        SystemMonitorTool {
+            uiScale: wrapper.uiScale
+        }
     }
     Component {
         id: settingsComp
-        SettingsNS.Settings {}
+        SettingsNS.Settings {
+            uiScale: wrapper.uiScale
+        }
     }
     Component {
         id: screenshotComp

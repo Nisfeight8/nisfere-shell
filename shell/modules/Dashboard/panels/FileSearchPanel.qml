@@ -5,11 +5,10 @@ import "../search"
 
 Item {
     id: root
+    property real uiScale: 1.0
 
     property string searchText: ""
 
-    // Debounced — don't fire a `locate` process on every single
-    // keystroke, same reasoning as WallpapersPanel's previewTimer.
     Timer {
         id: debounceTimer
         interval: 150
@@ -41,7 +40,10 @@ Item {
         resultsList.activateSelected();
     }
 
-    implicitWidth: 640
+    // Width fixed, scaled by uiScale (same as AppLauncherPanel/
+    // ClipboardPanel/ColorsPanel). Height genuinely bottom-up from
+    // resultsList's own implicit height.
+    implicitWidth: 640 * uiScale
     implicitHeight: resultsList.implicitHeight
 
     ResultsListView {
@@ -57,7 +59,7 @@ Item {
                 return "Type to search files";
             return "No matching files";
         }
-        maxListHeight: 400
+        maxListHeight: 400 * root.uiScale
         onResultActivated: (r, index) => {
             if (r.action)
                 r.action();

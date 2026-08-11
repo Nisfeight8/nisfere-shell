@@ -9,14 +9,12 @@ BaseDrawer {
     edge: Qt.LeftEdge
     screenOffset: Theme.barHeight
     openedRequest: ShellState.systemDrawerOpened
-    minPanelWidth: 480
+    minPanelWidth: 450
     onCloseRequest: ShellState.systemDrawerOpened = false
     onOpenedChanged: if (opened)
         UpdateService.loadCached()
 
     contentComponent: Component {
-        SystemDrawerContent {
-            screen: root.screen
-        }
+        SystemDrawerContent {}
     }
 }

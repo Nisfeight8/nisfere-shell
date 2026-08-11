@@ -5,34 +5,28 @@ import qs.services
 
 GlassCard {
     id: miniWeatherCard
+    property real uiScale: 1.0
 
     readonly property var weatherVisuals: Icons.getWeatherInfo(WeatherService.weatherCode, WeatherService.isDay)
 
-    // Was missing here (MiniClock has it) — without this, the Loader
-    // in Overview.qml that gives this card Layout.fillWidth/fillHeight
-    // has nothing to actually stretch: this card would sit at its own
-    // implicit (content) size inside whatever cell it's given, instead
-    // of filling it like MiniClock does. Added for consistency with
-    // the rest of the grid — flag if that wasn't the intent.
+    // Preferred width this card wants — independent of its own actual
+    // rendered size, same reasoning as MiniClock.baseCardHeight (see
+    // that file's comment): rightColumn now reads this to decide its
+    // own width, so this must NOT be derived from miniWeatherCard's
+    // own width/height or it'd be circular.
+    readonly property real baseCardWidth: 280
+    implicitWidth: baseCardWidth * uiScale
+
     anchors.fill: parent
+    clip: true
 
-    // Was a fixed magic constant (120), same issue as MiniClock's old
-    // refSize: disconnected from the card's actual rendered size, so
-    // it only "looked" responsive by coincidence. Now derived from
-    // the real size, same pattern as MiniClock.
     readonly property real refSize: Math.min(miniWeatherCard.width, miniWeatherCard.height)
-
-    // Previous implicitWidth/implicitHeight (computed from mainLayout)
-    // removed — dead code now that anchors.fill above determines the
-    // actual size; nothing upstream ever read it since the containing
-    // Loader forces fillWidth/fillHeight regardless.
 
     ColumnLayout {
         id: mainLayout
-
         anchors.fill: parent
-        anchors.margins: 15
-        spacing: Math.max(5, miniWeatherCard.refSize * 0.1)
+        // anchors.margins: 10 * miniWeatherCard.uiScale
+        spacing: 2 * miniWeatherCard.uiScale
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
@@ -64,7 +58,8 @@ GlassCard {
 
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 2
+            Layout.fillWidth: true
+            spacing: 2 * miniWeatherCard.uiScale
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
@@ -76,10 +71,14 @@ GlassCard {
             }
             Text {
                 Layout.alignment: Qt.AlignHCenter
+                Layout.fillWidth: true
+                Layout.preferredWidth: 0
                 color: Theme.foreground
                 font.family: Theme.fontName
                 font.pixelSize: Math.max(10, miniWeatherCard.refSize * 0.10)
                 opacity: 0.6
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
                 text: WeatherService.ready ? WeatherService.description : ""
             }
         }

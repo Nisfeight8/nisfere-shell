@@ -10,7 +10,7 @@ BarWidget {
     LucideIcon {
         anchors.verticalCenter: parent.verticalCenter
         color: Theme.selected
-        size: 18
+        size: powererBtn.iconSize
         icon: "power"
     }
 

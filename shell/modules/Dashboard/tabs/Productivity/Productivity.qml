@@ -5,36 +5,37 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
+
     anchors.fill: parent
 
     // No implicitWidth — same reasoning as Overview/Notifications:
     // width is forced top-down via tabsLoader's Layout.fillWidth, so
-    // this tab has no real use for one. The previous `750` was a
-    // guess above minContentWidth (500), which would cause the exact
-    // same drawer-panel width-jump bug we fixed on those other tabs.
+    // this tab has no real use for one.
     //
     // implicitHeight DOES matter (tabsLoader has no Layout.fillHeight)
-    // — but rowLayout already computes the real bottom-up answer from
-    // its own children (SideMenu, the divider, and whichever of
-    // Tasks/FocusTimer is currently loaded), so we just forward that
-    // instead of guessing a number by hand. Keeps this correct
-    // automatically if SideMenu/Tasks/FocusTimer's own sizes ever
-    // change, with nothing to remember to update here.
+    // — rowLayout computes the real bottom-up answer from its own
+    // children (SideMenu, the divider, and whichever of Tasks/
+    // FocusTimer is currently loaded), so we just forward that.
     implicitHeight: rowLayout.implicitHeight
 
     Component {
         id: tasksComp
-        Tasks {}
+        Tasks {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: focusComp
-        FocusTimer {}
+        FocusTimer {
+            uiScale: root.uiScale
+        }
     }
 
     RowLayout {
         id: rowLayout
         anchors.fill: parent
-        spacing: 12
+        spacing: 12 * root.uiScale
 
         SideMenu {
             Layout.fillHeight: true

@@ -12,11 +12,6 @@ BarWidget {
     readonly property bool isCritical: !BatteryService.isCharging && BatteryService.percentage <= 15
     readonly property color statusColor: BatteryService.isCharging ? Theme.selected : (isCritical ? Theme.color1 : Theme.foreground)
 
-    // Same hover-gap debounce as ActiveWindow.qml — showPopup was
-    // bound directly to hover.hovered, so moving the mouse from the
-    // widget toward the popup (e.g. to read "time remaining") briefly
-    // leaves BOTH regions and instantly closes it. See ActiveWindow.qml
-    // for the full explanation.
     property bool popupOpen: false
     property bool popupContentHovered: false
     readonly property bool anyHovered: hover.hovered || root.popupContentHovered
@@ -40,7 +35,7 @@ BarWidget {
         id: battIcon
         anchors.verticalCenter: parent.verticalCenter
         icon: Icons.getBatteryIcon(BatteryService.percentage, BatteryService.isCharging)
-        size: 16
+        size: root.iconSize
         color: root.statusColor
         Behavior on color {
             AnimColor {
@@ -48,8 +43,6 @@ BarWidget {
             }
         }
 
-        // Gentle pulse when critically low and not charging — same
-        // "needs attention" visual language as the recording indicator.
         SequentialAnimation on opacity {
             running: root.isCritical
             loops: Animation.Infinite
@@ -69,7 +62,7 @@ BarWidget {
         text: BatteryService.percentage + "%"
         color: root.statusColor
         font.family: Theme.fontName
-        font.pixelSize: 13
+        font.pixelSize: root.fontSize
         font.bold: BatteryService.isCharging || root.isCritical
         Behavior on color {
             AnimColor {
@@ -92,9 +85,6 @@ BarWidget {
             ColumnLayout {
                 spacing: 12
 
-                // Tracks hover over the popup itself — see
-                // ActiveWindow.qml for why this writes to root's
-                // property instead of using its own id.
                 HoverHandler {
                     onHoveredChanged: root.popupContentHovered = hovered
                 }
@@ -138,7 +128,6 @@ BarWidget {
                     }
                 }
 
-                // Progress bar
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 6
@@ -163,7 +152,6 @@ BarWidget {
                     }
                 }
 
-                // Time remaining / until full
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 6

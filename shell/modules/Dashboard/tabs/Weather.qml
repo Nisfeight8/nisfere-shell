@@ -6,13 +6,9 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
 
     anchors.fill: parent
-    // Was `implicitWidth: parent.width` / `implicitHeight: parent.height`
-    // — same backwards implicit-size pattern as Media.qml/Overview.qml.
-    // Now bottom-up from mainColumn, which (per your own "Bubble-up
-    // implicit size" comments below) already correctly computes its own
-    // implicit size from its children.
     implicitWidth: mainColumn.implicitWidth
     implicitHeight: mainColumn.implicitHeight
 
@@ -29,17 +25,16 @@ Item {
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 15
+        spacing: 15 * root.uiScale
 
         RowLayout {
             id: topRow
 
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             ColumnLayout {
-
-                spacing: 10
+                spacing: 10 * root.uiScale
 
                 GlassCard {
                     id: mainWeatherCard
@@ -48,8 +43,8 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    implicitWidth: weatherRow.implicitWidth + 40
-                    implicitHeight: weatherRow.implicitHeight + 40
+                    implicitWidth: weatherRow.implicitWidth + (40 * root.uiScale)
+                    implicitHeight: weatherRow.implicitHeight + (40 * root.uiScale)
 
                     RowLayout {
                         id: weatherRow
@@ -57,34 +52,34 @@ Item {
                         readonly property var visuals: Icons.getWeatherInfo(WeatherService.weatherCode, WeatherService.isDay)
 
                         anchors.centerIn: parent
-                        spacing: 10
+                        spacing: 10 * root.uiScale
 
                         LucideIcon {
                             color: weatherRow.visuals.color
-                            size: 60
+                            size: 60 * root.uiScale
                             icon: weatherRow.visuals.icon
                         }
                         ColumnLayout {
-                            spacing: 5
+                            spacing: 5 * root.uiScale
 
                             Text {
                                 color: Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
-                                font.pixelSize: 32
+                                font.pixelSize: 32 * root.uiScale
                                 text: WeatherService.ready ? Math.round(WeatherService.temperature) + "°C" : "--°C"
                             }
                             Text {
                                 color: Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
-                                font.pixelSize: 18
+                                font.pixelSize: 18 * root.uiScale
                                 text: WeatherService.ready ? WeatherService.city : "Loading..."
                             }
                             Text {
                                 color: Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 16
+                                font.pixelSize: 16 * root.uiScale
                                 opacity: 0.7
                                 text: WeatherService.ready ? WeatherService.description : ""
                             }
@@ -96,7 +91,7 @@ Item {
             ColumnLayout {
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                spacing: 10
+                spacing: 10 * root.uiScale
 
                 GlassCard {
                     id: feelsLikeCard
@@ -104,27 +99,26 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    // ✅ Bubble-up implicit size
-                    implicitWidth: feelsLikeRow.implicitWidth + 30
-                    implicitHeight: feelsLikeRow.implicitHeight + 30
+                    implicitWidth: feelsLikeRow.implicitWidth + (30 * root.uiScale)
+                    implicitHeight: feelsLikeRow.implicitHeight + (30 * root.uiScale)
 
                     RowLayout {
                         id: feelsLikeRow
 
                         anchors.left: parent.left
-                        anchors.margins: 15
+                        anchors.margins: 15 * root.uiScale
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5
+                        spacing: 5 * root.uiScale
 
                         LucideIcon {
-                            size: 20
+                            size: 20 * root.uiScale
                             color: Theme.color1
                             icon: "flame"
                         }
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             opacity: 0.8
                             text: "Feels Like\n" + (WeatherService.ready ? Math.round(WeatherService.feelsLike) + "°C" : "--")
                         }
@@ -136,26 +130,26 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    implicitWidth: humidityRow.implicitWidth + 30
-                    implicitHeight: humidityRow.implicitHeight + 30
+                    implicitWidth: humidityRow.implicitWidth + (30 * root.uiScale)
+                    implicitHeight: humidityRow.implicitHeight + (30 * root.uiScale)
 
                     RowLayout {
                         id: humidityRow
 
                         anchors.left: parent.left
-                        anchors.leftMargin: 15
+                        anchors.leftMargin: 15 * root.uiScale
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5
+                        spacing: 5 * root.uiScale
 
                         LucideIcon {
                             color: Theme.color6
-                            size: 20
+                            size: 20 * root.uiScale
                             icon: "droplets"
                         }
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             opacity: 0.8
                             text: "Humidity\n" + (WeatherService.ready ? WeatherService.humidity + "%" : "--")
                         }
@@ -167,26 +161,26 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    implicitWidth: windRow.implicitWidth + 30
-                    implicitHeight: windRow.implicitHeight + 30
+                    implicitWidth: windRow.implicitWidth + (30 * root.uiScale)
+                    implicitHeight: windRow.implicitHeight + (30 * root.uiScale)
 
                     RowLayout {
                         id: windRow
 
                         anchors.left: parent.left
-                        anchors.leftMargin: 15
+                        anchors.leftMargin: 15 * root.uiScale
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5
+                        spacing: 5 * root.uiScale
 
                         LucideIcon {
                             color: Theme.color2
-                            size: 20
+                            size: 20 * root.uiScale
                             icon: "wind"
                         }
                         Text {
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             opacity: 0.8
                             text: "Wind\n" + (WeatherService.ready ? Math.round(WeatherService.windSpeed) + " km/h" : "--")
                         }
@@ -197,18 +191,18 @@ Item {
 
         GlassCard {
             Layout.fillWidth: true
-            implicitHeight: forecastTitleText.implicitHeight + 24
+            implicitHeight: forecastTitleText.implicitHeight + (24 * root.uiScale)
 
             Text {
                 id: forecastTitleText
 
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.leftMargin: 16 * root.uiScale
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.foreground
                 font.bold: true
                 font.family: Theme.fontName
-                font.pixelSize: 18
+                font.pixelSize: 18 * root.uiScale
                 text: "7-Day Forecast"
             }
         }
@@ -217,7 +211,7 @@ Item {
             id: forecastRow
 
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             Repeater {
                 model: WeatherService.dailyForecast
@@ -230,21 +224,21 @@ Item {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
 
-                    implicitWidth: dayColumn.implicitWidth + 24
-                    implicitHeight: dayColumn.implicitHeight + 40
+                    implicitWidth: dayColumn.implicitWidth + (24 * root.uiScale)
+                    implicitHeight: dayColumn.implicitHeight + (40 * root.uiScale)
 
                     ColumnLayout {
                         id: dayColumn
 
                         anchors.centerIn: parent
-                        spacing: 7
+                        spacing: 7 * root.uiScale
 
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             color: index === 0 ? Theme.selected : Theme.foreground
                             font.bold: true
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             opacity: index === 0 ? 1.0 : 0.8
                             text: root.getDayName(modelData.date, index)
                         }
@@ -253,17 +247,17 @@ Item {
                             Layout.alignment: Qt.AlignHCenter
                             icon: dayCard.dayVisuals.icon
                             color: dayCard.dayVisuals.color
-                            size: 40
+                            size: 40 * root.uiScale
                         }
 
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: 5
+                            spacing: 5 * root.uiScale
 
                             Text {
                                 color: Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 14
+                                font.pixelSize: 14 * root.uiScale
                                 opacity: 0.5
                                 text: modelData.minTempC + "°"
                             }
@@ -271,7 +265,7 @@ Item {
                                 color: Theme.foreground
                                 font.bold: true
                                 font.family: Theme.fontName
-                                font.pixelSize: 15
+                                font.pixelSize: 15 * root.uiScale
                                 text: modelData.maxTempC + "°"
                             }
                         }

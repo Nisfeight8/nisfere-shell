@@ -23,6 +23,8 @@ Item {
     id: root
     focus: true
 
+    property real uiScale: 1.0
+
     implicitWidth: mainColumn.implicitWidth
     implicitHeight: mainColumn.implicitHeight
 
@@ -58,7 +60,18 @@ Item {
             p.action();
             return;
         }
-        ShellState.dashboardSearchProviderId = parsed.providerId;
+        // Deferred — see comment: writing this synchronously during
+        // SearchComponent's initial construction can race with
+        // searchLoader.sourceComp's own first evaluation (which also
+        // depends on dashboardSearchProviderId), triggering a QML binding
+        // loop that silently keeps the STALE pre-write value instead of
+        // picking up the correction. Qt.callLater pushes the write to the
+        // next event-loop tick, after construction has fully settled, so
+        // sourceComp's dependency update lands cleanly instead of
+        // re-entering its own in-progress evaluation.
+        Qt.callLater(() => {
+            ShellState.dashboardSearchProviderId = parsed.providerId;
+        });
     }
 
     // Local map from providerId -> this file's own Component ids.
@@ -72,26 +85,20 @@ Item {
     // from object-tree construction, before any binding ever runs —
     // no "not ready yet" state can exist.
     readonly property var _componentMap: ({
-        "apps": appsComponent,
-        "wallpapers": wallpapersComponent,
-        "colors": colorsComponent,
-        "clipboard": clipboardComponent,
-        "files": filesComponent,
-        "providerSuggest": providerSuggestComponent
-    })
+            "apps": appsComponent,
+            "wallpapers": wallpapersComponent,
+            "colors": colorsComponent,
+            "clipboard": clipboardComponent,
+            "files": filesComponent,
+            "providerSuggest": providerSuggestComponent
+        })
 
     function _resultsComponentFor(providerId) {
-        // "apps" with actual text typed goes to the unified merged
-        // list (GenericResultsList, via its own isUnified check) — not
-        // the rich browse-mode AppLauncherPanel, which is reserved for
-        // the empty-query "just opened search" landing state. Every
-        // other providerId (including "apps" with an empty query)
-        // keeps using the plain map lookup.
         if (providerId === "apps" && root.providerQuery !== "")
             return searchResultsComp;
-        return root._componentMap[providerId] ?? searchResultsComp;
+        const result = root._componentMap[providerId] ?? searchResultsComp;
+        return result;
     }
-
     // A single optional drilldown within search results — today only
     // "providerPicker" (the button next to the search field), rendered
     // directly since there's no PanelStackHost switch to route through
@@ -108,6 +115,7 @@ Item {
         id: appsComponent
         AppLauncherPanel {
             id: appsPanelInline
+            uiScale: root.uiScale
             function activateSelected() {
                 if (appsPanelInline.launchSelected())
                     ShellState.closeDashboard();
@@ -118,54 +126,60 @@ Item {
         id: wallpapersComponent
         WallpapersPanel {
             searchText: root.providerQuery
+            uiScale: root.uiScale
         }
     }
     Component {
         id: colorsComponent
         ColorsPanel {
             searchText: root.providerQuery
+            uiScale: root.uiScale
         }
     }
     Component {
         id: clipboardComponent
         ClipboardPanel {
             searchText: root.providerQuery
+            uiScale: root.uiScale
         }
     }
     Component {
         id: filesComponent
         FileSearchPanel {
             searchText: root.providerQuery
+            uiScale: root.uiScale
         }
     }
     Component {
         id: searchResultsComp
-        GenericResultsList {}
+        GenericResultsList {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: providerSuggestComponent
         ProviderPicker {
             filterQuery: root.providerQuery
+            uiScale: root.uiScale
         }
     }
     Component {
         id: drilldownProviderPickerComponent
-        ProviderPicker {}
+        ProviderPicker {
+            uiScale: root.uiScale
+        }
     }
 
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 15
+        spacing: 15 * root.uiScale
 
         DashboardSearchBar {
             id: dashboardSearchBar
             Layout.fillWidth: true
-
-            // Escape now always closes the WHOLE Dashboard — no more
-            // graduated pop-panel/clear-text/exit-search-only steps.
+            uiScale: root.uiScale
             onEscapePressed: ShellState.closeDashboard()
-
             onKeyPressed: e => {
                 if (e.key !== Qt.Key_Up && e.key !== Qt.Key_Down && e.key !== Qt.Key_Left && e.key !== Qt.Key_Right)
                     return;
@@ -183,7 +197,10 @@ Item {
         AnimLoader {
             id: searchLoader
             Layout.fillWidth: true
-            sourceComp: root.hasDrilldown ? root._drilldownComponentFor(ShellState.dashboardSearchDrilldownPanelId) : root._resultsComponentFor(ShellState.dashboardSearchProviderId)
+            sourceComp: {
+                const comp = root.hasDrilldown ? root._drilldownComponentFor(ShellState.dashboardSearchDrilldownPanelId) : root._resultsComponentFor(ShellState.dashboardSearchProviderId);
+                return comp;
+            }
         }
     }
 

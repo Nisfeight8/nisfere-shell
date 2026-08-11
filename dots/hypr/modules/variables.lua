@@ -46,7 +46,7 @@ return {
     ------------------
     ---- FONT --------
     ------------------
-    fontName              = "Arimo Nerd Font",
+    fontName              = "Noto Sans",
     ------------------
     ---- GENERAL SETTINGS --------
     ------------------

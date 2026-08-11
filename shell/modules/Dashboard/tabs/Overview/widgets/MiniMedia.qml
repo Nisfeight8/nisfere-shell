@@ -6,22 +6,17 @@ import qs.services
 
 GlassCard {
     id: miniMedia
+    property real uiScale: 1.0
 
-    // Same missing piece as MiniWeather had — without this, the
-    // Loader's Layout.fillWidth/fillHeight in Overview.qml has
-    // nothing to stretch, and this card would sit at its own content
-    // size instead of filling its grid cell like MiniClock does.
+    // Same reasoning as MiniWeather.baseCardWidth — rightColumn reads
+    // this to help decide its own width, so it can't be derived from
+    // miniMedia's own actual size.
+    readonly property real baseCardWidth: 400
+    implicitWidth: baseCardWidth * uiScale
+
     anchors.fill: parent
 
-    // Was a fixed magic constant (120) — same fix as MiniClock/
-    // MiniWeather: derive from the card's actual rendered size so
-    // scaling stays correct regardless of how much space the grid
-    // ends up giving this cell.
     readonly property real refSize: Math.min(miniMedia.width, miniMedia.height)
-
-    // Previous implicitWidth/implicitHeight (computed from mainLayout)
-    // removed — dead now that anchors.fill above determines the
-    // actual size, same reasoning as the other two cards.
 
     RowLayout {
         id: mainLayout
@@ -29,8 +24,8 @@ GlassCard {
         anchors.margins: Math.max(10, miniMedia.refSize * 0.1)
         spacing: Math.max(10, miniMedia.refSize * 0.1)
 
-        // ── Album art ─────────────────────────────────────────────
         Rectangle {
+            id: album
             readonly property real artSize: Math.max(60, miniMedia.refSize * 0.8)
             Layout.preferredWidth: artSize
             Layout.preferredHeight: artSize
@@ -44,8 +39,8 @@ GlassCard {
                 visible: MediaService.albumArt !== ""
                 asynchronous: true
                 cache: false
-                sourceSize.width: artSize * 2
-                sourceSize.height: artSize * 2
+                sourceSize.width: album.artSize * 2
+                sourceSize.height: album.artSize * 2
             }
             LucideIcon {
                 anchors.centerIn: parent
@@ -57,11 +52,10 @@ GlassCard {
             }
         }
 
-        // ── Info + controls ───────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 2
+            spacing: 2 * miniMedia.uiScale
 
             Text {
                 Layout.fillWidth: true
@@ -94,10 +88,13 @@ GlassCard {
                 trackColor: Theme.background
             }
 
-            // ── Transport controls ────────────────────────────────
+            Item {
+                Layout.fillHeight: true
+            }
+            
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 20
+                spacing: 20 * miniMedia.uiScale
 
                 IconButton {
                     icon: "skip-back"
@@ -116,7 +113,7 @@ GlassCard {
                     size: Math.max(20, miniMedia.refSize * 0.20)
                     iconSize: Math.max(20, miniMedia.refSize * 0.20)
                     fixedIconColor: Theme.selected
-                    dimWhenIdle: false   // always full opacity — this is the primary action
+                    dimWhenIdle: false
                     scale: pressed ? 0.9 : 1.0
 
                     Behavior on scale {

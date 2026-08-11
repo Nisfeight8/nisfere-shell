@@ -15,6 +15,7 @@ import "tabs/Notifications"
 // SearchComponent's job now.
 Item {
     id: root
+    property real uiScale: 1.0
 
     // Floors the panel's implicit size so switching between tabs with
     // very different natural sizes (Overview vs. Productivity vs.
@@ -27,37 +28,50 @@ Item {
     // case" — going bigger than that just adds empty space under/
     // beside smaller tabs (worth an explicit Layout.alignment on
     // mainColumn's content if that empty space looks awkward).
-    property real minContentWidth: 650
-    property real minContentHeight: 380
+    // Scaled by uiScale so the floor itself stays resolution-
+    // appropriate — without this, a 1080p-tuned floor would be too
+    // small on a 4K screen and risk overlapping content.
+    property real minContentWidth: 650 * root.uiScale
+    property real minContentHeight: 380 * root.uiScale
 
     implicitWidth: Math.max(mainColumn.implicitWidth, minContentWidth)
     implicitHeight: Math.max(mainColumn.implicitHeight, minContentHeight)
 
     Component {
         id: overviewComp
-        Overview {}
+        Overview {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: mediaComp
-        Media {}
+        Media {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: weatherComp
-        Weather {}
+        Weather {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: notificationsComp
-        Notifications {}
+        Notifications {
+            uiScale: root.uiScale
+        }
     }
     Component {
         id: productivityComp
-        Productivity {}
+        Productivity {
+            // uiScale: root.uiScale
+        }
     }
 
     ColumnLayout {
         id: mainColumn
         anchors.fill: parent
-        spacing: 15
+        spacing: 15 * root.uiScale
 
         RowLayout {
             Layout.fillWidth: true
@@ -66,7 +80,7 @@ Item {
             NavTabs {
                 id: navTabs
                 Layout.fillWidth: true
-                height: 30
+                height: 30 * root.uiScale
                 currentIndex: ShellState.dashboardTabsCurrentTab
                 onTabClicked: index => ShellState.dashboardTabsCurrentTab = index
                 tabModel: [
@@ -97,6 +111,7 @@ Item {
         AnimLoader {
             id: tabsLoader
             Layout.fillWidth: true
+            
             sourceComp: {
                 switch (ShellState.dashboardTabsCurrentTab) {
                 case 0:

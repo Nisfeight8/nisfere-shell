@@ -7,31 +7,19 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
 
     anchors.fill: parent
-    // Was `implicitWidth: parent.width` / `implicitHeight: parent.height`
-    // — same backwards implicit-size pattern as Overview.qml (implicit
-    // bound to the PARENT's actual size instead of flowing from this
-    // item's own content). Now bottom-up from `content`'s own natural
-    // size, which is what actually makes a per-tab custom drawer size
-    // possible once DashboardContent.qml's own wrapper forwards this
-    // upward too (that file still needs the matching fix).
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
 
+    property real ringOuter: 290 * uiScale
     property real artSize: ringOuter * 0.6
-    property real ringOuter: 290
-    property real rowSpacing: 40
+    property real rowSpacing: 40 * uiScale
     property real strokeSize: Math.max(6, ringOuter * 0.05)
     property real trackRadius: (ringOuter - strokeSize) / 2
-    property bool dropdownOpen: false   // fully self-managed player-switcher dropdown state
+    property bool dropdownOpen: false
 
-    // Closes the dropdown on a tap anywhere else in this tab. Only
-    // active while open, so it never interferes otherwise. Nested
-    // handlers (the switcher button, dropdown items) get first chance
-    // at a tap before it reaches this outer one — see the codebase's
-    // established PointerHandler dispatch-order pattern — so those
-    // keep working normally; only genuinely-outside taps land here.
     TapHandler {
         enabled: root.dropdownOpen
         onTapped: root.dropdownOpen = false
@@ -59,7 +47,7 @@ Item {
                 id: glow
                 anchors.centerIn: parent
                 color: Theme.selected
-                height: root.artSize + 20
+                height: root.artSize + (20 * root.uiScale)
                 opacity: 0.15 + (AudioVisualizer.bass / 2000)
                 radius: width / 2
                 scale: Math.max(1.0, 1.0 + (AudioVisualizer.bass / 3000))
@@ -88,7 +76,7 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     source: MediaService.albumArt
                     asynchronous: true
-                    cache: false   // see note below
+                    cache: false
                     visible: false
 
                     sourceSize.width: root.artSize * 2
@@ -142,7 +130,7 @@ Item {
             // ── Player switcher ────────────────────────────────────
             Item {
                 Layout.alignment: Qt.AlignCenter
-                height: 30
+                height: 30 * root.uiScale
                 width: contentRow.implicitWidth
 
                 readonly property bool switcherEnabled: MediaService.list.length > 1
@@ -152,7 +140,7 @@ Item {
                     id: contentRow
                     anchors.centerIn: parent
                     opacity: parent.isHovered || root.dropdownOpen ? 1.0 : 0.7
-                    spacing: 8
+                    spacing: 8 * root.uiScale
                     Behavior on opacity {
                         Anim {
                             type: Anim.FastEffects
@@ -162,7 +150,7 @@ Item {
                     Text {
                         color: Theme.selected
                         font.family: Theme.fontName
-                        font.pixelSize: 14
+                        font.pixelSize: 14 * root.uiScale
                         text: Icons.getPlayerIcon(MediaService.active)
                     }
                     Text {
@@ -171,12 +159,12 @@ Item {
                         font.bold: true
                         font.family: Theme.fontName
                         font.letterSpacing: 2.
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * root.uiScale
                         text: MediaService.hasPlayer ? MediaService.active.identity.toUpperCase() : "NO ACTIVE PLAYER"
                     }
                     LucideIcon {
                         color: Theme.selected
-                        size: 22
+                        size: 22 * root.uiScale
                         opacity: 0.7
                         icon: root.dropdownOpen ? "chevron-up" : "chevron-down"
                         visible: MediaService.list.length > 1
@@ -191,26 +179,17 @@ Item {
                 TapHandler {
                     enabled: parent.switcherEnabled
                     onTapped: {
-                        // Drive open/closed entirely via our OWN boolean —
-                        // not by reading playerDropdown.opened — and don't
-                        // rely on the Popup's built-in closePolicy at all
-                        // (Popup inside a Quickshell PanelWindow may not
-                        // have a proper Overlay backing it, so its
-                        // automatic outside-press-close behavior isn't
-                        // reliable here). This sidesteps that entirely.
                         root.dropdownOpen = !root.dropdownOpen;
                     }
                 }
 
                 Popup {
                     id: playerDropdown
-                    padding: 5
-                    width: 160
+                    padding: 5 * root.uiScale
+                    width: 160 * root.uiScale
                     x: (parent.width - width)
-                    y: parent.height + 5
+                    y: parent.height + (5 * root.uiScale)
 
-                    // Fully controlled by our own property — no
-                    // closePolicy-driven auto-close at all.
                     closePolicy: Popup.NoAutoClose
                     visible: root.dropdownOpen
 
@@ -218,10 +197,10 @@ Item {
                         border.color: Theme.borderColor
                         border.width: 1
                         color: Theme.backgroundAlt
-                        radius: 8
+                        radius: 8 * root.uiScale
                     }
                     contentItem: ColumnLayout {
-                        spacing: 4
+                        spacing: 4 * root.uiScale
 
                         Repeater {
                             model: MediaService.list
@@ -232,8 +211,8 @@ Item {
 
                                 Layout.fillWidth: true
                                 color: isHovered ? Theme.selected : "transparent"
-                                height: 32
-                                radius: 6
+                                height: 32 * root.uiScale
+                                radius: 6 * root.uiScale
                                 Behavior on color {
                                     AnimColor {
                                         type: Anim.FastEffects
@@ -246,7 +225,7 @@ Item {
                                     font.bold: true
                                     font.family: Theme.fontName
                                     font.letterSpacing: 1.5
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * root.uiScale
                                     text: MediaService.getIdentity(modelData).toUpperCase()
                                     Behavior on color {
                                         AnimColor {
@@ -275,7 +254,7 @@ Item {
             ColumnLayout {
                 Layout.alignment: Qt.AlignCenter
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: 2 * root.uiScale
 
                 Text {
                     Layout.fillWidth: true
@@ -284,7 +263,7 @@ Item {
                     elide: Text.ElideRight
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 34
+                    font.pixelSize: 34 * root.uiScale
                     horizontalAlignment: Text.AlignHCenter
                     maximumLineCount: 2
                     text: MediaService.title
@@ -296,7 +275,7 @@ Item {
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.family: Theme.fontName
-                    font.pixelSize: 24
+                    font.pixelSize: 24 * root.uiScale
                     horizontalAlignment: Text.AlignHCenter
                     opacity: 0.7
                     text: MediaService.artist !== "" ? MediaService.artist : "Unknown Artist"
@@ -306,26 +285,26 @@ Item {
             // ── Time ─────────────────────────────────────────────────
             RowLayout {
                 Layout.alignment: Qt.AlignCenter
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 Text {
                     color: Theme.selected
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     text: formatTime(MediaService.position)
                 }
                 Text {
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: 0.3
                     text: "/"
                 }
                 Text {
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: 0.7
                     text: root.formatTime(MediaService.length)
                 }
@@ -352,12 +331,9 @@ Item {
                     onTapped: MediaService.previous()
                 }
 
-                // Big play/pause — solid circle, uses IconButton's exposed
-                // `pressed` state for the same press-scale effect as
-                // MiniMedia's play button.
                 IconButton {
                     id: bigPlayBtn
-                    readonly property real btnSize: Math.min(65, Math.max(45, root.ringOuter * 0.35))
+                    readonly property real btnSize: Math.min(65 * root.uiScale, Math.max(45 * root.uiScale, root.ringOuter * 0.35))
 
                     icon: Icons.getPlayPauseIcon(MediaService.isPlaying)
                     size: btnSize

@@ -8,6 +8,14 @@ import qs.services
 // working exactly as before, only the SOURCE moved.
 QtObject {
 
+    readonly property real referenceHeight: 1080
+
+    function scaleFor(screen) {
+        if (!screen || !screen.height)
+            return 1.0;
+        return screen.height / referenceHeight;
+    }
+
     // ── Layout values → from StyleSettings.qml ──────────────────────────
     readonly property bool enableWidgetBorders: StyleSettings.enableWidgetBorders
     readonly property string fontName: StyleSettings.fontName

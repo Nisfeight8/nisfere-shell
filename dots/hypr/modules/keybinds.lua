@@ -31,15 +31,15 @@ hl.bind(mainMod .. " + SUPER_L", hl.dsp.exec_cmd("qs ipc call launcher toggle"),
 hl.bind(mainMod .. " + R",           hl.dsp.exec_cmd("qs ipc call launcher toggle"))               -- app launcher
 hl.bind(mainMod .. " + SPACE",       hl.dsp.exec_cmd("qs ipc call launcher toggle"))                -- app launcher (secondary key)
 hl.bind(mainMod .. " + X",           hl.dsp.exec_cmd("qs ipc call powermenu toggle"))               -- power menu
-hl.bind(mainMod .. " + T",           hl.dsp.exec_cmd("qs ipc call quickactions toggle colors"))     -- theme/color switcher
+hl.bind(mainMod .. " + T",           hl.dsp.exec_cmd("qs ipc call search toggle colors"))           -- theme/color switcher
 hl.bind(mainMod .. " + D",           hl.dsp.exec_cmd("qs ipc call dashboard toggle"))               -- dashboard
 hl.bind(mainMod .. " + N",           hl.dsp.exec_cmd("qs ipc call controlcenter toggle"))           -- control center
-hl.bind(mainMod .. " + W",           hl.dsp.exec_cmd("qs ipc call quickactions toggle wallpaper"))  -- wallpaper picker
+hl.bind(mainMod .. " + W",           hl.dsp.exec_cmd("qs ipc call search toggle wallpapers"))       -- wallpaper picker
 hl.bind(mainMod .. " + L",           hl.dsp.exec_cmd("qs ipc call nisfere-lock trigger"))           -- lock screen
 hl.bind(mainMod .. " + SHIFT + L",   hl.dsp.exec_cmd("systemctl suspend"), { locked = true })       -- suspend directly
-hl.bind(mainMod .. " + SHIFT + V",   hl.dsp.exec_cmd("qs ipc call quickactions toggle clipboard"))  -- clipboard manager
-hl.bind(mainMod .. " + P",           hl.dsp.exec_cmd("qs ipc call quickactions toggle screenshot")) -- screenshot tool
-hl.bind(mainMod .. " + SHIFT + P",   hl.dsp.exec_cmd("qs ipc call quickactions toggle recorder"))   -- screen recorder
+hl.bind(mainMod .. " + SHIFT + V",   hl.dsp.exec_cmd("qs ipc call search toggle clipboard"))        -- clipboard manager
+hl.bind(mainMod .. " + P",           hl.dsp.exec_cmd("qs ipc call tool toggle screenshot"))         -- screenshot tool
+hl.bind(mainMod .. " + SHIFT + P",   hl.dsp.exec_cmd("qs ipc call tool toggle record"))              -- screen recorder
 
 -- Color picker: grabs a hex color under the cursor, copies it, and
 -- shows a notification with the picked value.

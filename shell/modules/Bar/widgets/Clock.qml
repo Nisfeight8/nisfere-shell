@@ -13,11 +13,6 @@ BarWidget {
     spacing: 8
 
     // ── Main click zone: calendar + date/time → toggle Tabs ────────
-    // Own Item + own Hover/TapHandler, spatially separate from the
-    // status-icon cluster below — a single widget-wide TapHandler
-    // (what this used to be) would overlap with each icon's own
-    // click target, same class of bug as SearchResultRow's actions
-    // vs. row-activation area earlier in this shell's cleanup.
     Item {
         id: mainArea
         anchors.verticalCenter: parent.verticalCenter
@@ -32,7 +27,7 @@ BarWidget {
             LucideIcon {
                 Layout.alignment: Qt.AlignVCenter
                 color: Theme.selected
-                size: 16
+                size: clockWidget.iconSize
                 icon: "calendar"
             }
 
@@ -41,11 +36,7 @@ BarWidget {
                 color: Theme.foreground
                 font.bold: true
                 font.family: Theme.fontName
-                font.pixelSize: 14
-                // Was sysClock.date from a locally-owned SystemClock —
-                // now reads from the shared TimeService singleton (see
-                // services/TimeService.qml) instead of owning its own
-                // clock.
+                font.pixelSize: clockWidget.fontSize
                 text: Qt.formatDateTime(TimeService.date, "ddd dd MMM • HH:mm")
             }
         }
@@ -66,10 +57,7 @@ BarWidget {
         width: 4
     }
 
-    // ── Status icon cluster — each icon is its own clickable zone,
-    // conditionally visible, jumping straight to whatever it
-    // represents. Order: media, resumable tool, notifications
-    // (rightmost/most attention-grabbing, matches its badge). ───────
+    // ── Status icon cluster ─────────────────────────────────────────
     RowLayout {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8
@@ -78,13 +66,13 @@ BarWidget {
         Item {
             Layout.alignment: Qt.AlignVCenter
             visible: MediaService.isPlaying
-            height: 20
-            width: 20
+            height: clockWidget.iconSize + 4
+            width: clockWidget.iconSize + 4
 
             LucideIcon {
                 anchors.centerIn: parent
                 color: Theme.selected
-                size: 16
+                size: clockWidget.iconSize
                 icon: "music"
             }
 
@@ -99,16 +87,13 @@ BarWidget {
             }
         }
 
-        // "You left something open" indicator — docker/sysmon/settings
-        // (see ShellState.dashboardResumableComponent). Left-click
-        // jumps back into it; right-click just dismisses the reminder
-        // without touching whatever the dashboard currently shows.
+        // "You left something open" indicator
         Item {
             id: resumableIndicator
             Layout.alignment: Qt.AlignVCenter
             visible: ShellState.dashboardHasResumableComponentActive
-            height: 20
-            width: 20
+            height: clockWidget.iconSize + 4
+            width: clockWidget.iconSize + 4
 
             readonly property var _icons: ({
                     "docker": "container",
@@ -119,7 +104,7 @@ BarWidget {
             LucideIcon {
                 anchors.centerIn: parent
                 color: Theme.selected
-                size: 16
+                size: clockWidget.iconSize
                 icon: resumableIndicator._icons[ShellState.dashboardResumableComponent] ?? "circle"
             }
 
@@ -143,13 +128,13 @@ BarWidget {
         Item {
             Layout.alignment: Qt.AlignVCenter
             visible: NotificationService.notifications.length > 0
-            height: 20
-            width: 20
+            height: clockWidget.iconSize + 4
+            width: clockWidget.iconSize + 4
 
             LucideIcon {
                 anchors.centerIn: parent
                 color: Theme.selected
-                size: 16
+                size: clockWidget.iconSize
                 icon: "bell"
             }
 
@@ -159,15 +144,15 @@ BarWidget {
                 anchors.top: parent.top
                 anchors.topMargin: -4
                 color: Theme.color1
-                height: 14
-                radius: 7
-                width: 14
+                height: clockWidget.smallFontSize + 5
+                radius: height / 2
+                width: height
 
                 Text {
                     anchors.centerIn: parent
                     color: Theme.background
                     font.bold: true
-                    font.pixelSize: 9
+                    font.pixelSize: clockWidget.smallFontSize
                     text: NotificationService.notifications.length
                 }
             }

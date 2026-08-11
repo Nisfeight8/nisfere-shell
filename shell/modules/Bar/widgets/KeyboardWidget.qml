@@ -14,14 +14,14 @@ BarWidget {
         spacing: 6
         Layout.alignment: Qt.AlignVCenter
         LucideIcon {
-            size: 16
+            size: kbWidget.iconSize
             color: Theme.selected
             icon: "keyboard"
         }
         Text {
             color: Theme.foreground
             font.family: Theme.fontName
-            font.pixelSize: 14
+            font.pixelSize: kbWidget.fontSize
             text: KeyboardService.getShort(KeyboardService.currentLayout)
         }
     }
@@ -78,9 +78,6 @@ BarWidget {
                     delegate: Rectangle {
                         id: layoutDelegate
 
-                        // Computed once here instead of twice (Text
-                        // color/bold + LucideIcon visible each called
-                        // KeyboardService.getShort() separately before).
                         readonly property bool isCurrent: KeyboardService.getShort(KeyboardService.currentLayout) === KeyboardService.getShort(modelData.toLowerCase())
                         readonly property bool isHovered: itemHover.hovered
 

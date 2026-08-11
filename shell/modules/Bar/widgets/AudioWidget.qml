@@ -16,7 +16,7 @@ BarWidget {
         LucideIcon {
             id: volumeIcon
             color: AudioService.muted ? Theme.color1 : Theme.selected
-            size: 16
+            size: audioWidget.iconSize
             icon: Icons.getVolumeIcon(AudioService.volume, AudioService.muted)
 
             Behavior on color {
@@ -28,12 +28,11 @@ BarWidget {
             HoverHandler {
                 cursorShape: Qt.PointingHandCursor
             }
-            
         }
         Text {
             color: Theme.foreground
             font.family: Theme.fontName
-            font.pixelSize: 14
+            font.pixelSize: audioWidget.fontSize
             text: Math.round(AudioService.volume * 100) + "%"
         }
     }
@@ -43,7 +42,7 @@ BarWidget {
 
         LucideIcon {
             color: AudioService.sourceMuted ? Theme.color1 : Theme.selected
-            size: 16
+            size: audioWidget.iconSize
             icon: Icons.getMicIcon(AudioService.sourceMuted)
 
             Behavior on color {
@@ -56,20 +55,11 @@ BarWidget {
         Text {
             color: Theme.foreground
             font.family: Theme.fontName
-            font.pixelSize: 14
+            font.pixelSize: audioWidget.fontSize
             text: Math.round(AudioService.sourceVolume * 100) + "%"
         }
     }
 
-    // Was a single MouseArea handling click (open popup) + wheel
-    // (volume step) + cursor, reparented on top of the whole widget —
-    // very likely swallowing clicks meant for the small mute-toggle
-    // icon above (MouseArea hit-testing follows raw paint/z-order, and
-    // this one painted on top of everything after reparenting). Split
-    // into separate PointerHandlers: a TapHandler on a nested item
-    // (the icon) gets first chance at a point before it propagates to
-    // a shallower one, so the icon's own TapHandler can now actually
-    // win instead of always losing to this one.
     HoverHandler {
         parent: audioWidget
         cursorShape: Qt.PointingHandCursor
@@ -78,10 +68,6 @@ BarWidget {
         parent: audioWidget
         onTapped: audioWidget.popupOpened = !audioWidget.popupOpened
     }
-    // WheelHandler proved unreliable here in practice — falling back
-    // to a plain MouseArea just for wheel scroll (acceptedButtons:
-    // Qt.NoButton so it never competes with the TapHandler above for
-    // clicks; MouseArea.onWheel is the mature, known-working API).
     MouseArea {
         parent: audioWidget
         anchors.fill: parent
@@ -165,11 +151,6 @@ BarWidget {
                         id: outputSlider
                         Layout.fillWidth: true
 
-                        // Same fix as SliderRow.qml — a plain `value:`
-                        // binding gets destroyed the first time the
-                        // user drags, so this slider would stop
-                        // following AudioService.volume if it ever
-                        // changed externally (e.g. a hardware key).
                         Binding {
                             target: outputSlider
                             property: "value"
@@ -212,10 +193,8 @@ BarWidget {
 
                         LucideIcon {
                             Layout.alignment: Qt.AlignVCenter
-
                             color: AudioService.sourceMuted ? Theme.color1 : Theme.foreground
                             size: 16
-
                             icon: Icons.getMicIcon(AudioService.sourceMuted)
 
                             Behavior on color {

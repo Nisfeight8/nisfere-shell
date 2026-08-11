@@ -3,7 +3,7 @@ size = 10
 
 builtin_box_drawing = true
 
-normal= { family= "FiraMonoNerdFont", style= "Regular" }
-bold = { family = "FiraMonoNerdFont", style = "Bold" }
-italic = { family = "FiraMonoNerdFont", style = "Italic" }
-bold_italic = { family = "FiraMonoNerdFont", style = "Bold Italic" }
+normal = { family = "NotoMono Nerd Font", style = "Regular" }
+bold = { family = "NotoMono Nerd Font", style = "Bold" }
+italic = { family = "NotoMono Nerd Font", style = "Italic" }
+bold_italic = { family = "NotoMono Nerd Font", style = "Bold Italic" }

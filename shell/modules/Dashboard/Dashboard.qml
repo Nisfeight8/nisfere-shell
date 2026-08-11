@@ -10,7 +10,6 @@ FooterDrawer {
     edgeMargin: 0
     screenOffset: Theme.barHeight
     minPanelWidth: 250
-    // minPanelHeight: 200
     toggleOnHover: false
     openedRequest: ShellState.dashboardOpened
 

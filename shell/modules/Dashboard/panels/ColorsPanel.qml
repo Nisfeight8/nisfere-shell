@@ -6,7 +6,8 @@ import "../search"
 
 Item {
     id: root
-    property int spacing: 10
+    property real uiScale: 1.0
+    property int spacing: 10 * uiScale
     property string searchText: ""
     property bool loading: true
     property string activeMode: Colors.mode
@@ -41,12 +42,12 @@ Item {
         }
     }
 
-    // Bottom-up from headerRow + resultsList's own implicit heights —
-    // resultsList (ResultsListView) already handles its own stable
-    // sizing internally (real contentHeight, bootstrap fallback,
-    // empty/loading state), nothing to reimplement here.
-    implicitWidth: 640
-    implicitHeight: headerRow.implicitHeight + resultsList.implicitHeight + 10
+    // Width fixed, scaled by uiScale (same as AppLauncherPanel/
+    // ClipboardPanel). Height genuinely bottom-up from headerRow +
+    // resultsList's own implicit heights — formula stays as-is, only
+    // the "+ 10" padding constant needs scaling.
+    implicitWidth: 640 * uiScale
+    implicitHeight: headerRow.implicitHeight + resultsList.implicitHeight + (10 * uiScale)
 
     ColumnLayout {
         id: column
@@ -56,22 +57,22 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             Column {
-                spacing: 2
+                spacing: 2 * root.uiScale
                 Text {
                     text: "Color Themes"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                     font.bold: true
                 }
                 Text {
                     text: root.loading ? "Loading..." : root.results.length + " themes available"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: 0.45
                 }
             }
@@ -84,7 +85,7 @@ Item {
                 text: "Light"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 12 * root.uiScale
                 opacity: root.activeMode === "light" ? 1.0 : 0.4
             }
             ToggleSwitch {
@@ -95,7 +96,7 @@ Item {
                 text: "Dark"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 12 * root.uiScale
                 opacity: root.activeMode === "dark" ? 1.0 : 0.4
             }
         }
@@ -107,12 +108,6 @@ Item {
             opacity: 0.4
         }
 
-        // Layout.preferredHeight (not fillHeight) + AlignTop — prevents
-        // the "empty gap below a couple of results" bug, same reasoning
-        // as AppLauncherPanel's list area. resultsList.implicitHeight
-        // is ResultsListView's own bottom-up value (real contentHeight
-        // internally, capped/floored) — read directly instead of
-        // recomputing it here.
         ResultsListView {
             id: resultsList
             Layout.fillWidth: true
@@ -122,7 +117,7 @@ Item {
             loading: root.loading
             loadingText: "Loading themes..."
             emptyText: "No matching themes"
-            maxListHeight: 800
+            maxListHeight: 800 * root.uiScale
             onResultActivated: (r, index) => {
                 const t = root.filteredThemes[index];
                 if (t)

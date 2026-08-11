@@ -7,15 +7,19 @@ Item {
 
     required property var modelData   // HyprlandWorkspace
 
-    // Native `focused` property — correctly accounts for multi-monitor
-    // (active on its monitor AND that monitor is focused), instead of
-    // manually comparing IDs against Hyprland.focusedWorkspace.
     readonly property bool isFocused: modelData.focused
-
-    // HyprlandWorkspace already exposes its own toplevels directly —
-    // no need to manually filter Hyprland.toplevels.values by workspace id.
     readonly property var myWindows: modelData.toplevels.values
     readonly property int windowsCount: myWindows.length
+
+    // Local ratios, same style as BarWidget's iconSize/fontSize —
+    // this delegate has no BarWidget ancestor to inherit those from
+    // (it's instantiated directly by Workspaces.qml's Repeater), so
+    // it derives its own from Theme.barHeight for consistency.
+    readonly property real _refHeight: Theme.barHeight - 15
+    readonly property real glyphSizeFocused: Math.max(16, _refHeight * 0.75)
+    readonly property real glyphSizeUnfocused: Math.max(12, _refHeight * 0.5)
+    readonly property real appIconSizeFocused: Math.max(12, _refHeight * 0.5)
+    readonly property real appIconSizeUnfocused: Math.max(10, _refHeight * 0.44)
 
     implicitWidth: content.implicitWidth + 16
     implicitHeight: widgetHeight
@@ -37,7 +41,7 @@ Item {
         Text {
             color: wsItem.isFocused ? Theme.selected : Theme.foreground
             font.family: Theme.fontName
-            font.pixelSize: wsItem.isFocused ? 24 : 16
+            font.pixelSize: wsItem.isFocused ? wsItem.glyphSizeFocused : wsItem.glyphSizeUnfocused
             text: {
                 if (wsItem.isFocused)
                     return "󰮯";
@@ -59,16 +63,12 @@ Item {
             spacing: 5
 
             Repeater {
-                model: wsItem.myWindows   // HyprlandToplevel[]
+                model: wsItem.myWindows
 
                 delegate: Text {
                     id: iconWrap
-                    required property var modelData   // HyprlandToplevel
+                    required property var modelData
 
-                    // Prefer the Wayland toplevel's appId (standard
-                    // protocol field, populated as soon as the window's
-                    // address is reported — fast). Fall back to
-                    // Hyprland's own IPC-derived class field.
                     readonly property string appClass: {
                         if (modelData.wayland && modelData.wayland.appId)
                             return modelData.wayland.appId;
@@ -79,7 +79,7 @@ Item {
 
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: wsItem.isFocused ? 16 : 14
+                    font.pixelSize: wsItem.isFocused ? wsItem.appIconSizeFocused : wsItem.appIconSizeUnfocused
                     text: Icons.getAppIcon(appClass)
                 }
             }
@@ -91,9 +91,6 @@ Item {
         cursorShape: Qt.PointingHandCursor
     }
     TapHandler {
-        // HyprlandWorkspace.activate() handles dispatch internally —
-        // no manual "workspace " + name string building, so there's
-        // nothing that can break on an undefined name.
         onTapped: wsItem.modelData.activate()
     }
 }

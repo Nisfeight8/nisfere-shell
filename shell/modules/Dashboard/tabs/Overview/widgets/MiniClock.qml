@@ -8,7 +8,9 @@ import qs.services
 GlassCard {
     id: miniClockCard
 
-    readonly property int cardMargin: 15
+    property real uiScale: 1.0
+
+    readonly property int cardMargin: 15 * uiScale
 
     // Actual size here is 100% top-down — whatever the containing
     // grid cell gives us via anchors.fill: parent below (the Loader
@@ -19,6 +21,11 @@ GlassCard {
     // was fully dead code (nothing upstream could ever see it), so
     // it's removed rather than kept as misleading decoration.
     anchors.fill: parent
+
+    readonly property real baseCardWidth: 400
+    readonly property real baseCardHeight: 480
+    implicitWidth: baseCardWidth * uiScale
+    implicitHeight: baseCardHeight * uiScale
 
     ColumnLayout {
         id: mainLayout
@@ -34,7 +41,7 @@ GlassCard {
 
         anchors.fill: parent
         anchors.margins: miniClockCard.cardMargin
-        spacing: 10
+        spacing: 10 * uiScale
 
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter

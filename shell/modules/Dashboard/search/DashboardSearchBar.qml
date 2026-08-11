@@ -3,19 +3,11 @@ import QtQuick.Layouts
 import qs.core
 import qs.services
 
-// Search bar row for SearchComponent — search field (left, fills) +
-// active-provider icon (right, opens ProviderPicker). No left-side
-// user/back icon anymore: there's no "back" concept since editing the
-// text itself is how you exit a drilldown (see onTextChanged below —
-// today that's just "providerPicker", since docker/sysmon/settings/
-// appLauncherFull are top-level Dashboard components now, not nested
-// panels reached from here), and no "user" icon — Escape now always
-// closes the whole Dashboard, so no separate "exit search, stay on
-// tabs" affordance is needed either.
 Item {
     id: root
+    property real uiScale: 1.0
 
-    implicitHeight: 40
+    implicitHeight: 40 * uiScale
 
     signal keyPressed(var event)
     signal accepted
@@ -26,42 +18,23 @@ Item {
 
     readonly property var activeProvider: SearchProviders.findById(ShellState.dashboardSearchProviderId)
 
-    // Whether the ProviderPicker panel is the current search drilldown
-    // — drives providerBtn's active-look below and lets tapping the
-    // button toggle it the same way it used to toggle the old Popup's
-    // open/close.
     readonly property bool _pickerPanelOpen: ShellState.dashboardSearchDrilldownPanelId === "providerPicker"
 
     RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 8 * root.uiScale
 
         SearchBar {
             id: searchBar
             Layout.fillWidth: true
             placeholderText: placeholderCycle.currentText
 
-            // Guards the sync loop: true only while THIS code is
-            // writing to `text` because ShellState changed externally
-            // (drilldown-open reset, provider-picker selection via
-            // ShellState, etc.) — NOT while the user is actually
-            // typing. Without this, every external/programmatic text
-            // reset would also incorrectly clear any open drilldown
-            // (see onTextChanged below) and would re-forward into
-            // ShellState redundantly.
             property bool _isSyncingFromState: false
 
             Component.onCompleted: {
                 _isSyncingFromState = true;
                 text = ShellState.dashboardSearchText;
                 _isSyncingFromState = false;
-                // Unconditional now — this component only ever exists
-                // while ShellState.dashboardActiveComponent === "search"
-                // in the first place (DashboardContent's AnimLoader
-                // tears the whole SearchComponent down otherwise), so
-                // "is search active" was always true by the time this
-                // runs. The old check also OR'd in "text !== ''", which
-                // is now redundant for the same reason.
                 input.forceActiveFocus();
             }
 
@@ -69,20 +42,13 @@ Item {
                 if (_isSyncingFromState)
                     return;
 
-                // Auto-insert a space right after a fully-typed keyword
-                // (e.g. "@tools" -> "@tools ") so typing can continue
-                // immediately. Exact match only, no trailing space yet.
                 const exactKeywordMatch = SearchProviders.keywordProviders.find(p => p.keyword === text);
                 if (exactKeywordMatch) {
                     text = text + " ";
                     input.cursorPosition = text.length;
-                    return; // re-enters onTextChanged, still not syncing, falls through below
+                    return;
                 }
 
-                // No back button anymore — editing the query IS how you
-                // exit a drilldown (providerPicker today; a future git/
-                // ssh repo-browser view later) back to the results list
-                // underneath it.
                 if (ShellState.dashboardSearchHasDrilldown)
                     ShellState.closeSearchDrilldown();
 
@@ -98,12 +64,6 @@ Item {
                         searchBar._isSyncingFromState = false;
                     }
                 }
-                // Previous onDashboardSearchCompActiveChanged handler
-                // (re-grabbing focus when search became active) removed
-                // — dead code, same reasoning as Component.onCompleted
-                // above: this exact instance can never observe that
-                // transition, since entering "search" always creates a
-                // brand new instance of this whole file.
             }
 
             onKeyPressed: e => {
@@ -131,8 +91,8 @@ Item {
 
         Rectangle {
             id: providerBtn
-            width: 40
-            height: 40
+            width: 40 * root.uiScale
+            height: 40 * root.uiScale
             radius: Theme.radius
             color: pickerHover.hovered || root._pickerPanelOpen ? Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.15) : Theme.backgroundAlt
             border.width: 1
@@ -146,7 +106,7 @@ Item {
             LucideIcon {
                 anchors.centerIn: parent
                 icon: root.activeProvider ? root.activeProvider.icon : "layout-grid"
-                size: 17
+                size: 17 * root.uiScale
                 color: root._pickerPanelOpen ? Theme.selected : Theme.foreground
             }
             HoverHandler {

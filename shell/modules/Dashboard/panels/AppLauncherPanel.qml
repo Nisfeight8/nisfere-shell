@@ -25,6 +25,9 @@ import "../search"
 // this category" feature layered on top to be useful.
 Item {
     id: root
+    property real uiScale: 1.0
+    implicitWidth: 640 * uiScale
+    implicitHeight: 400 * uiScale
 
     function _findApp(name) {
         const apps = DesktopEntries.applications.values;
@@ -142,9 +145,6 @@ Item {
     function activateSelected() {
         resultsList.activateSelected();
     }
-
-    implicitWidth: 640
-    implicitHeight: 400
 
     RowLayout {
         anchors.fill: parent

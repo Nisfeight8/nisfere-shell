@@ -17,9 +17,9 @@ BarWidget {
 
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-        width: 8
-        height: 8
-        radius: 4
+        width: Math.max(6, root.iconSize * 0.4)
+        height: width
+        radius: width / 2
         color: Theme.color1
 
         SequentialAnimation on opacity {
@@ -41,14 +41,10 @@ BarWidget {
         text: ScreenRecordService.formatDuration()
         color: Theme.color1
         font.family: Theme.fontName
-        font.pixelSize: 13
+        font.pixelSize: root.fontSize
         font.bold: true
     }
 
-    // Was missing `parent: root` — same fix as InternalTrayWidget:
-    // without it, these fall into contentRow.data and only cover the
-    // tight dot+text area, not the full padded pill (paddingX: 12
-    // default), missing clicks near the pill's edges.
     HoverHandler {
         id: hover
         parent: root

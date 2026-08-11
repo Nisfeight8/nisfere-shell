@@ -6,20 +6,16 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
 
     property string searchText: ""
 
     // ── Content-driven sizing ──────────────────────────────────
-    // Fixed pixel sizes now (not Screen.width/height-relative like the
-    // original bottom-drawer version) — this lives inside a bounded
-    // Dashboard drawer (maxPanelHeight: 500), not a full-width bottom
-    // sheet, so sizing needs to be predictable regardless of monitor
-    // resolution rather than scaling with the screen.
-    readonly property real cardHeight: 140
+    readonly property real cardHeight: 140 * uiScale
     readonly property real cardWidth: cardHeight * 16 / 9
     readonly property int visibleCards: 4
-    readonly property real listSpacing: 10
-    readonly property real outerMargins: 12
+    readonly property real listSpacing: 10 * uiScale
+    readonly property real outerMargins: 12 * uiScale
 
     implicitWidth: (root.cardWidth * root.visibleCards) + (root.listSpacing * (root.visibleCards - 1)) + (root.outerMargins * 2)
     implicitHeight: headerRow.implicitHeight + dividerRect.height + root.cardHeight + (mainColumn.spacing * 2) + (mainColumn.anchors.margins * 2)
@@ -32,14 +28,6 @@ Item {
 
     readonly property var filteredWallpapers: root.searchText === "" ? ThemeActions.wallpapers : ThemeActions.wallpapers.filter(w => w.name.toLowerCase().includes(root.searchText.toLowerCase()))
 
-    // ── navigate()/activateSelected() contract — same shape as every
-    // other inline search provider (AppLauncherPanel, GenericResultsList).
-    // Mapped to Up/Down (NOT Left/Right) deliberately: Left/Right stay
-    // free for normal text-cursor movement inside the search bar, since
-    // this panel renders WHILE the user may still be typing. Own
-    // forceActiveFocus() + Keys.onLeftPressed/onRightPressed from the
-    // original standalone version are removed for the same reason —
-    // this component no longer owns keyboard focus itself.
     function navigate(delta) {
         wallpaperList.keyboardNavigating = true;
         keyboardLockTimer.restart();
@@ -100,22 +88,22 @@ Item {
         RowLayout {
             id: headerRow
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             Column {
-                spacing: 2
+                spacing: 2 * root.uiScale
                 Text {
                     text: "Wallpapers"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                     font.bold: true
                 }
                 Text {
                     text: root.loading ? "Loading..." : root.filteredWallpapers.length + " found"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 10
+                    font.pixelSize: 10 * root.uiScale
                     opacity: 0.45
                 }
             }
@@ -125,7 +113,7 @@ Item {
             }
 
             RowLayout {
-                spacing: 6
+                spacing: 6 * root.uiScale
                 visible: root.applyColors
                 opacity: root.applyColors ? 1.0 : 0.0
                 Behavior on opacity {
@@ -138,7 +126,7 @@ Item {
                     text: "Light"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: root.selectedMode === "light" ? 0.9 : 0.35
                     verticalAlignment: Text.AlignVCenter
                     Behavior on opacity {
@@ -157,7 +145,7 @@ Item {
                     text: "Dark"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: root.selectedMode === "dark" ? 0.9 : 0.35
                     verticalAlignment: Text.AlignVCenter
                     Behavior on opacity {
@@ -169,7 +157,7 @@ Item {
 
                 Rectangle {
                     width: 1
-                    height: 18
+                    height: 18 * root.uiScale
                     color: Theme.borderColor
                     opacity: 0.5
                 }
@@ -179,7 +167,7 @@ Item {
                 text: "Dynamic colors"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 12 * root.uiScale
                 opacity: 0.7
                 verticalAlignment: Text.AlignVCenter
             }
@@ -259,7 +247,7 @@ Item {
                 Rectangle {
                     id: card
                     anchors.fill: parent
-                    anchors.margins: 6
+                    anchors.margins: 6 * root.uiScale
                     radius: Theme.radius
                     color: "transparent"
                     clip: false
@@ -321,18 +309,18 @@ Item {
                         visible: isConfirmed
                         anchors.top: parent.top
                         anchors.right: parent.right
-                        anchors.topMargin: 8
-                        anchors.rightMargin: 8
-                        width: 22
-                        height: 22
-                        radius: 11
+                        anchors.topMargin: 8 * root.uiScale
+                        anchors.rightMargin: 8 * root.uiScale
+                        width: 22 * root.uiScale
+                        height: 22 * root.uiScale
+                        radius: width / 2
                         color: Theme.selected
 
                         Text {
                             anchors.centerIn: parent
                             text: "✓"
                             color: "white"
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -341,19 +329,19 @@ Item {
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        height: 28
+                        height: 28 * root.uiScale
                         color: Qt.rgba(0, 0, 0, 0.6)
                         radius: Theme.radius
                         visible: isHovered || isCurrent
 
                         Text {
                             anchors.fill: parent
-                            anchors.leftMargin: 8
-                            anchors.rightMargin: 8
+                            anchors.leftMargin: 8 * root.uiScale
+                            anchors.rightMargin: 8 * root.uiScale
                             text: modelData.name
                             color: "white"
                             font.family: Theme.fontName
-                            font.pixelSize: 10
+                            font.pixelSize: 10 * root.uiScale
                             elide: Text.ElideRight
                             verticalAlignment: Text.AlignVCenter
                         }
@@ -392,7 +380,7 @@ Item {
         text: root.loading ? "Loading wallpapers..." : (root.searchText !== "" ? "No matching wallpapers" : "No wallpapers found in\n~/Pictures/Wallpapers")
         color: Theme.foreground
         font.family: Theme.fontName
-        font.pixelSize: 13
+        font.pixelSize: 13 * root.uiScale
         opacity: 0.45
         horizontalAlignment: Text.AlignHCenter
     }

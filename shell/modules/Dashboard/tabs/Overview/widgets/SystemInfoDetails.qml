@@ -5,25 +5,21 @@ import qs.services
 
 GlassCard {
     id: systemInfoDetailsMini
+    property real uiScale: 1.0
 
-    // Same missing piece as the other two cards — without this the
-    // Loader's Layout.fillWidth/fillHeight in Overview.qml has
-    // nothing to stretch.
+    // Same reasoning as the other two — independent of actual size.
+    readonly property real baseCardWidth: 260
+    implicitWidth: baseCardWidth * uiScale
+
     anchors.fill: parent
 
-    // Was a fixed magic constant (120) — same fix as the other three
-    // cards: derive from the card's actual rendered size.
     readonly property real refSize: Math.min(systemInfoDetailsMini.width, systemInfoDetailsMini.height)
-
-    // Previous implicitWidth/implicitHeight (computed from gridLayout)
-    // removed — dead now that anchors.fill above determines the
-    // actual size, same reasoning as the other three cards.
 
     GridLayout {
         id: gridLayout
 
         anchors.fill: parent
-        anchors.margins: 15
+        anchors.margins: 15 * systemInfoDetailsMini.uiScale
         columnSpacing: Math.max(10, systemInfoDetailsMini.refSize * 0.10)
         columns: 2
         rowSpacing: Math.max(15, systemInfoDetailsMini.refSize * 0.15)
@@ -68,7 +64,7 @@ GlassCard {
         ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             Layout.fillWidth: true
-            spacing: 2
+            spacing: 2 * systemInfoDetailsMini.uiScale
 
             Text {
                 color: Theme.foreground

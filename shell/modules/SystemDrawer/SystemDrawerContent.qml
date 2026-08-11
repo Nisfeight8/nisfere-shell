@@ -1,14 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
+import Quickshell
 import qs.core
 import qs.services
 import "widgets"
 
 Item {
     id: root
-    property var screen
-    readonly property real uiScale: screen ? screen.height / 1080 : 1.0
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
 
     anchors.fill: parent
 

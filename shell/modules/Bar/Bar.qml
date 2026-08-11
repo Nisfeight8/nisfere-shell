@@ -16,23 +16,29 @@ Item {
     implicitHeight: Theme.barHeight
     height: Theme.barHeight
 
-    // Item has no color property of its own — explicit background
-    // rect where the window used to just set `color:` directly.
     Rectangle {
         anchors.fill: parent
         color: Theme.background
     }
 
     Item {
+        id: contentArea
         anchors.fill: parent
 
-        // Was individual anchor-chaining (left: previousWidget.right,
-        // separate leftMargin per widget) — fragile to reordering, and
-        // any widget that becomes invisible (e.g. TrayWidget when
-        // trayRepeater.count === 0) leaves a gap instead of closing up,
-        // since anchors don't know about visibility. RowLayout handles
-        // both for free, and matches the right cluster's pattern —
-        // one consistent way to arrange bar widgets, not two.
+        // Gap kept clear between each cluster and the clock — clusters
+        // are never allowed to render closer to the clock than this.
+        readonly property real clusterClockGap: 10
+
+        // True visual center, always — independent of either cluster's
+        // width, so this can never drift off-center the way two
+        // unequal fillWidth spacers would (their split only balances
+        // LEFTOVER space, not the clock's actual screen position).
+        Clock {
+            id: clockWidget
+            anchors.centerIn: parent
+        }
+
+        // ── Left cluster ──────────────────────────────────────────
         RowLayout {
             id: leftCluster
             anchors {
@@ -41,6 +47,17 @@ Item {
                 verticalCenter: parent.verticalCenter
             }
             spacing: 15
+            clip: true
+
+            // Capped so it can never render past the clock's left
+            // edge. RowLayout, even with an explicit width smaller
+            // than its children's summed preferred width, will shrink
+            // any Layout.fillWidth child down toward its
+            // Layout.minimumWidth to fit — that's what lets
+            // ActiveWindow (below) absorb the squeeze via elide instead
+            // of this cluster just overflowing past the clock.
+            readonly property real availableWidth: Math.max(0, clockWidget.x - contentArea.clusterClockGap - x)
+            width: Math.min(implicitWidth, availableWidth)
 
             LauncherButton {
                 id: launcherButton
@@ -50,15 +67,12 @@ Item {
             }
             ActiveWindow {
                 id: activeWindowWidget
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
             }
         }
 
-
-        Clock {
-            id: clockWidget
-            anchors.centerIn: parent
-        }
-
+        // ── Right cluster ─────────────────────────────────────────
         RowLayout {
             id: rightCluster
             anchors {
@@ -67,14 +81,16 @@ Item {
                 verticalCenter: parent.verticalCenter
             }
             spacing: 15
+            clip: true
+
+            // Mirror of leftCluster's cap — never renders past the
+            // clock's right edge.
+            readonly property real availableWidth: Math.max(0, contentArea.width - (clockWidget.x + clockWidget.width) - contentArea.clusterClockGap - (contentArea.width - x - width))
+            width: Math.min(implicitWidth, availableWidth)
 
             RecordingIndicator {
                 id: recordingIndicator
             }
-
-            // SystemStatsWidget {
-            //     id: systemStats
-            // }
             TrayWidget {
                 id: sysTrayWidget
             }
