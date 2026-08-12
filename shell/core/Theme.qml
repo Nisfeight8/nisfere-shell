@@ -8,15 +8,20 @@ import qs.services
 // working exactly as before, only the SOURCE moved.
 QtObject {
 
+    // ── Scale values ──────────────────────────
     readonly property real referenceHeight: 1080
+    readonly property real minUiScale: 0.82
+    readonly property real maxUiScale: 2.5
 
-    function scaledBarHeight(screen) {
-        return barHeight * scaleFor(screen);
-    }
     function scaleFor(screen) {
         if (!screen || !screen.height)
             return 1.0;
-        return screen.height / referenceHeight;
+        const raw = screen.height / referenceHeight;
+        return Math.max(minUiScale, Math.min(maxUiScale, raw));
+    }
+
+    function scaledBarHeight(screen) {
+        return barHeight * scaleFor(screen);
     }
 
     // ── Layout values → from StyleSettings.qml ──────────────────────────
