@@ -42,14 +42,14 @@ BarWidget {
         targetItem: kbWidget
 
         ColumnLayout {
-            spacing: 10
+            spacing: 10 * kbPopup.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 8 * kbPopup.uiScale
 
                 LucideIcon {
-                    size: 20
+                    size: 20 * kbPopup.uiScale
                     color: Theme.selected
                     icon: "keyboard"
                 }
@@ -58,7 +58,7 @@ BarWidget {
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * kbPopup.uiScale
                     text: "Keyboard Layout"
                 }
             }
@@ -70,7 +70,7 @@ BarWidget {
             }
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: 4 * kbPopup.uiScale
 
                 Repeater {
                     model: KeyboardService.availableLayouts
@@ -82,9 +82,9 @@ BarWidget {
                         readonly property bool isHovered: itemHover.hovered
 
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 32
+                        Layout.preferredHeight: 32 * kbPopup.uiScale
                         color: isHovered ? Theme.backgroundAlt : "transparent"
-                        radius: 6
+                        radius: 6 * kbPopup.uiScale
 
                         Behavior on color {
                             AnimColor {
@@ -94,15 +94,15 @@ BarWidget {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 10
+                            anchors.margins: 8 * kbPopup.uiScale
+                            spacing: 10 * kbPopup.uiScale
 
                             Text {
                                 Layout.fillWidth: true
                                 color: layoutDelegate.isCurrent ? Theme.selected : Theme.foreground
                                 font.bold: layoutDelegate.isCurrent
                                 font.family: Theme.fontName
-                                font.pixelSize: 13
+                                font.pixelSize: 13 * kbPopup.uiScale
                                 text: KeyboardService.getFull(modelData)
 
                                 Behavior on color {
@@ -113,7 +113,7 @@ BarWidget {
                             }
                             LucideIcon {
                                 color: Theme.selected
-                                size: 14
+                                size: 14 * kbPopup.uiScale
                                 icon: "check"
                                 visible: layoutDelegate.isCurrent
                             }

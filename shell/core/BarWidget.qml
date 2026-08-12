@@ -1,20 +1,22 @@
 import QtQuick
+import Quickshell
 import qs.core
 
 Item {
     id: root
 
+    readonly property real _uiScale: Theme.scaleFor(QsWindow.window?.screen)
     property color bgColor: Theme.backgroundAlt
     default property alias content: contentRow.data
     property int paddingX: 12
     property alias spacing: contentRow.spacing
     property bool useGradient: false
 
-    property int widgetHeight: Theme.barHeight - 15
+    property int widgetHeight: Theme.scaledBarHeight(QsWindow.window?.screen) - (15 * _uiScale)
 
-    readonly property real iconSize: Math.max(15, widgetHeight * 0.55)
-    readonly property real fontSize: Math.max(13, widgetHeight * 0.37)
-    readonly property real smallFontSize: Math.max(11, widgetHeight * 0.31)
+    readonly property real iconSize: Math.max(13, widgetHeight * 0.55)
+    readonly property real fontSize: Math.max(11, widgetHeight * 0.37)
+    readonly property real smallFontSize: Math.max(9, widgetHeight * 0.31)
 
     readonly property alias contentRow: contentRow
 

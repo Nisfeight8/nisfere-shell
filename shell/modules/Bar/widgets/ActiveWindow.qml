@@ -95,7 +95,7 @@ BarWidget {
         targetItem: root
 
         ColumnLayout {
-            spacing: 10
+            spacing: 10 * winPopup.uiScale
 
             HoverHandler {
                 onHoveredChanged: root.popupContentHovered = hovered
@@ -106,15 +106,15 @@ BarWidget {
                 color: Theme.foreground
                 font.bold: true
                 font.family: Theme.fontName
-                font.pixelSize: 17
+                font.pixelSize: 17 * winPopup.uiScale
                 text: root.hasWindow ? root.windowClass : "System"
             }
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.maximumWidth: 320
+                Layout.maximumWidth: 320 * winPopup.uiScale
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 12 * winPopup.uiScale
                 horizontalAlignment: Text.AlignHCenter
                 opacity: 0.8
                 text: root.hasWindow ? root.windowTitle : "You are viewing the Desktop."
@@ -123,9 +123,9 @@ BarWidget {
             ScreencopyView {
                 id: captureView
                 Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 8
+                Layout.topMargin: 8 * winPopup.uiScale
                 captureSource: root.captureActive ? root.activeWin.wayland : null
-                constraintSize: Qt.size(320, 200)
+                constraintSize: Qt.size(320 * winPopup.uiScale, 200 * winPopup.uiScale)
                 live: true
                 visible: false
             }
@@ -146,7 +146,7 @@ BarWidget {
                 Layout.alignment: Qt.AlignHCenter
                 color: Theme.selected
                 font.family: Theme.fontName
-                font.pixelSize: 32
+                font.pixelSize: 32 * winPopup.uiScale
                 text: root.iconName
                 visible: !root.hasWindow
             }

@@ -5,21 +5,9 @@ import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
-// Wallpaper picker — searchable grid, plus a toggle for whether
-// picking a new wallpaper also re-extracts/applies colors dynamically
-// from it (apply_colors) or just changes the background image while
-// leaving whatever color source (static theme or a previous
-// wallpaper's palette) already active untouched.
-//
-// NOTE: the toggle's state is session-local (resets to true — the
-// previous always-on default — each time Settings is reopened), not
-// persisted to state.json. Nothing in the daemon currently has a slot
-// for "remember this preference" the way chroma_settings/style do —
-// easy to add later if you want it to stick across sessions, just
-// didn't want to invent a new state.json field for this without
-// discussing it first.
 Item {
     id: root
+    property real uiScale: 1.0
 
     property string _wallpaperSearch: ""
     property bool extractDynamicColors: true
@@ -33,60 +21,61 @@ Item {
 
     Component.onCompleted: ThemeActions.fetchWallpapers()
 
-    ScrollView {
+    CustomScrollView {
         anchors.fill: parent
-        contentWidth: availableWidth
         clip: true
+        uiScale: root.uiScale
 
         ColumnLayout {
             width: parent.width
-            spacing: 24
+            spacing: 24 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
+                Layout.preferredHeight: 4 * root.uiScale
             }
 
             // ── Mode ─────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
 
                 Text {
                     Layout.fillWidth: true
                     text: "Light Mode"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
                 ToggleSwitch {
                     checked: ThemeState.mode === "light"
+                    uiScale: root.uiScale
                     onToggled: ThemeActions.toggleMode()
                 }
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Extract Dynamic Colors toggle ────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 2 * root.uiScale
 
                     Text {
                         text: "Extract Dynamic Colors"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         font.bold: true
                     }
                     Text {
@@ -95,31 +84,33 @@ Item {
                         color: Theme.foreground
                         opacity: 0.5
                         font.family: Theme.fontName
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * root.uiScale
                         wrapMode: Text.Wrap
                     }
                 }
                 ToggleSwitch {
                     checked: root.extractDynamicColors
+                    uiScale: root.uiScale
                     onToggled: root.extractDynamicColors = !checked
                 }
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Wallpaper grid ────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 10
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 10 * root.uiScale
 
                 SearchBar {
                     Layout.fillWidth: true
                     placeholderText: "Search wallpapers..."
+                    uiScale: root.uiScale
                     onTextChanged: root._wallpaperSearch = text
                 }
 
@@ -130,26 +121,26 @@ Item {
                     color: Theme.foreground
                     opacity: 0.4
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                 }
 
                 GridView {
                     id: wpGrid
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 420   // fixed viewport — tune to taste
+                    Layout.preferredHeight: 420 * root.uiScale
                     visible: root.filteredWallpapers.length > 0
                     clip: true
 
-                    cellWidth: 120   // 110 card + spacing
-                    cellHeight: 100  // 70 image + text + spacing
+                    cellWidth: 120 * root.uiScale
+                    cellHeight: 100 * root.uiScale
 
                     model: root.filteredWallpapers
 
-                    // keep a small buffer so scrolling feels smooth without
-                    // pre-decoding the whole library
                     cacheBuffer: 200
 
-                    ScrollBar.vertical: ScrollBar {}
+                    ScrollBar.vertical: CustomScrollBar {
+                        uiScale: root.uiScale
+                    }
 
                     delegate: Item {
                         id: wpDelegate
@@ -161,13 +152,13 @@ Item {
 
                         ColumnLayout {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: 4
-                            width: 110
+                            spacing: 4 * root.uiScale
+                            width: 110 * root.uiScale
 
                             Rectangle {
                                 id: card
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 70
+                                Layout.preferredWidth: 110 * root.uiScale
+                                Layout.preferredHeight: 70 * root.uiScale
                                 radius: Theme.radius
                                 color: Theme.backgroundAlt
                                 border.width: wpDelegate.isSelected ? 2 : 1
@@ -182,8 +173,8 @@ Item {
                                     asynchronous: true
                                     cache: true
                                     visible: false
-                                    sourceSize.width: 110 * 2
-                                    sourceSize.height: 70 * 2
+                                    sourceSize.width: 110 * root.uiScale * 2
+                                    sourceSize.height: 70 * root.uiScale * 2
                                 }
                                 Rectangle {
                                     id: wpImageMask
@@ -218,11 +209,11 @@ Item {
                                 }
                             }
                             Text {
-                                Layout.preferredWidth: 110
+                                Layout.preferredWidth: 110 * root.uiScale
                                 text: wpDelegate.modelData.name
                                 color: wpDelegate.isSelected ? Theme.selected : Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 10
+                                font.pixelSize: 10 * root.uiScale
                                 elide: Text.ElideRight
                                 horizontalAlignment: Text.AlignHCenter
                             }
@@ -233,7 +224,7 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 12
+                Layout.preferredHeight: 12 * root.uiScale
             }
         }
     }

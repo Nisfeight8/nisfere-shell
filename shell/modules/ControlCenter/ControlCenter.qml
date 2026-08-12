@@ -7,11 +7,14 @@ BaseDrawer {
     z: 10
     cornerMode: true
     edge: Qt.RightEdge
-    
-    screenOffset: Theme.barHeight
+    screenOffset: Theme.scaledBarHeight(root.screen)
     openedRequest: ShellState.controlCenterOpened
-    minPanelWidth: 480
-    minPanelHeight: 300
+
+    // Scaled so the drawer's minimum footprint stays resolution-
+    // appropriate rather than pinned to a 1080p-tuned size — same
+    // reasoning as TabsComponent's minContentWidth/Height.
+    minPanelWidth: 480 * Theme.scaleFor(root.screen)
+    minPanelHeight: 300 * Theme.scaleFor(root.screen)
     toggleOnHover: false
 
     onCloseRequest: ShellState.controlCenterOpened = false

@@ -61,7 +61,7 @@ Item {
         visible: root.results.length > 0
         spacing: root.rowSpacing
         model: root.results
-
+        
         delegate: SearchResultRow {
             required property var modelData
             required property int index

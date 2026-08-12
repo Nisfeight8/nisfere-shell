@@ -10,18 +10,16 @@ GlassCard {
     property bool isActive: false
     property string subtitle: "Subtitle"
     property string title: "Title"
+    property real uiScale: 1.0
 
     signal clicked
     signal moreClicked
 
     Layout.fillWidth: true
-    Layout.preferredHeight: 70
+    Layout.preferredHeight: 70 * uiScale
 
     readonly property bool isHovered: cardHover.hovered
 
-    // Whole-card hover tint — safe to span the full area since hover is
-    // a continuous visual state (both zones lighting up together is
-    // fine), unlike TAP which we zone-split below to avoid double-firing.
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius
@@ -39,27 +37,22 @@ GlassCard {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: 12
+        anchors.margins: 14 * root.uiScale
+        spacing: 12 * root.uiScale
 
-        // ── Main clickable zone — icon badge + text ONLY. Does not
-        // extend under the chevron, so there's zero pixel overlap with
-        // its TapHandler — no double-fire possible, regardless of any
-        // PointerHandler grab semantics (which don't block ancestors
-        // the way old MouseArea bubbling did).
         RowLayout {
             id: mainZone
             Layout.fillWidth: true
-            spacing: 12
+            spacing: 12 * root.uiScale
 
             TapHandler {
                 onTapped: root.clicked()
             }
 
             Rectangle {
-                width: 42
-                height: 42
-                radius: 21
+                width: 42 * root.uiScale
+                height: 42 * root.uiScale
+                radius: width / 2
                 color: root.isActive ? Theme.selected : Theme.backgroundAlt
                 border.width: root.isActive ? 0 : 1
                 border.color: Theme.borderColor
@@ -77,7 +70,7 @@ GlassCard {
                 LucideIcon {
                     anchors.centerIn: parent
                     icon: root.iconText
-                    size: 19
+                    size: 19 * root.uiScale
                     color: root.isActive ? Theme.background : Theme.foreground
                     Behavior on color {
                         AnimColor {
@@ -89,14 +82,14 @@ GlassCard {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 3
+                spacing: 3 * root.uiScale
 
                 Text {
                     Layout.fillWidth: true
                     text: root.title
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                     font.bold: true
                     elide: Text.ElideRight
                 }
@@ -105,7 +98,7 @@ GlassCard {
                     text: root.subtitle
                     color: root.isActive ? Theme.selected : Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: root.isActive ? 0.85 : 0.55
                     elide: Text.ElideRight
                     Behavior on color {
@@ -117,12 +110,11 @@ GlassCard {
             }
         }
 
-        // ── More chevron — separate, non-overlapping zone ─────────
         IconButton {
             visible: root.hasMore
             icon: "chevron-right"
-            size: 30
-            iconSize: 17
+            size: 30 * root.uiScale
+            iconSize: 17 * root.uiScale
             normalColor: "transparent"
             onTapped: root.moreClicked()
         }

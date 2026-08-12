@@ -1,3 +1,4 @@
+
 import QtQuick
 import QtQuick.Layouts
 
@@ -7,52 +8,61 @@ import "widgets"
 
 GridLayout {
     id: grid
+    property real uiScale: 1.0
     Layout.fillWidth: true
-    columnSpacing: 10
+    columnSpacing: 10 * uiScale
     columns: 2
-    rowSpacing: 10
+    rowSpacing: 10 * uiScale
 
     property var activeWidgets: []
 
-    // Was `source: "widgets/Ethernet.qml"` (a raw string path) — the
-    // only place in the whole project loading QML this way instead of
-    // sourceComponent + a real import. Raw string-path Loader.source
-    // means these 8 files were never validated at parse/compile time,
-    // only whenever that specific Loader happened to activate — same
-    // class of issue the Quickshell docs warn about for "root
-    // imports" breaking LSP tooling. Proper Component references
-    // instead, via a normal "widgets" import.
     Component {
         id: ethernetComp
-        Ethernet {}
+        Ethernet {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: wifiComp
-        Wifi {}
+        Wifi {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: bluetoothComp
-        Bluetooth {}
+        Bluetooth {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: themeToggleComp
-        ThemeToggle {}
+        ThemeToggle {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: keyboardToggleComp
-        KeyboardToggle {}
+        KeyboardToggle {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: dndComp
-        Dnd {}
+        Dnd {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: nightLightComp
-        NightLight {}
+        NightLight {
+            uiScale: grid.uiScale
+        }
     }
     Component {
         id: powerProfileComp
-        PowerProfile {}
+        PowerProfile {
+            uiScale: grid.uiScale
+        }
     }
 
     function updateWidgets() {
@@ -131,7 +141,7 @@ GridLayout {
             asynchronous: false
             sourceComponent: modelData.comp
             Layout.fillWidth: true
-            Layout.preferredHeight: 80
+            Layout.preferredHeight: 80 * grid.uiScale
         }
     }
 }

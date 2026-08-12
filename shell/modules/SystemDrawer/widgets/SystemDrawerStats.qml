@@ -9,7 +9,7 @@ Item {
     property real uiScale: 1.0
 
     implicitWidth: mainLayout.implicitWidth
-    implicitHeight: mainLayout.implicitHeight
+    
 
     function _statColor(usage) {
         if (usage > 0.8)
@@ -88,142 +88,153 @@ Item {
         }
 
         // ── 2. DETAILED CARDS  ────────────
-
-        // -- CPU CARD --
-        StatChartCard {
+        CustomScrollView {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignTop
-            icon: "cpu"
-            title: "CPU History"
-            accentColor: SystemStatsService.cpuUsage > 0.8 ? Theme.color1 : Theme.selected
-            chartValues: SystemStatsService.cpuHistory
+            Layout.fillHeight: true
+            uiScale: root.uiScale
 
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    Layout.fillWidth: true
-                    text: "Usage"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
-                }
-                Text {
-                    text: Math.round(SystemStatsService.cpuUsage * 100) + "%"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    Layout.fillWidth: true
-                    text: "Temperature"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
-                }
-                Text {
-                    text: SystemStatsService.cpuTempText
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
-                }
-            }
-        }
+            ColumnLayout {
+                width: parent.width
+                spacing: 16 * root.uiScale
+                Layout.fillHeight: true
 
-        // -- RAM CARD --
-        StatChartCard {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignTop
-            icon: "memory-stick"
-            title: "Memory"
-            accentColor: Theme.color2
-            chartValues: SystemStatsService.ramHistory
+                // -- CPU CARD --
+                StatChartCard {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignTop
+                    icon: "cpu"
+                    title: "CPU History"
+                    accentColor: SystemStatsService.cpuUsage > 0.8 ? Theme.color1 : Theme.selected
+                    chartValues: SystemStatsService.cpuHistory
 
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    Layout.fillWidth: true
-                    text: "Used"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Usage"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: Math.round(SystemStatsService.cpuUsage * 100) + "%"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Temperature"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: SystemStatsService.cpuTempText
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
                 }
-                Text {
-                    text: SystemStatsService.ramUsedText
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Text {
-                    Layout.fillWidth: true
-                    text: "Total"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
-                }
-                Text {
-                    text: SystemStatsService.ramTotalText
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
-                }
-            }
-        }
 
-        // -- NETWORK CARD --
-        StatChartCard {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignTop
-            icon: "arrow-up-down"
-            title: "Network"
-            accentColor: Theme.color5
-            chartValues: SystemStatsService.netHistory
+                // -- RAM CARD --
+                StatChartCard {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignTop
+                    icon: "memory-stick"
+                    title: "Memory"
+                    accentColor: Theme.color2
+                    chartValues: SystemStatsService.ramHistory
 
-            RowLayout {
-                Layout.fillWidth: true
-                LucideIcon {
-                    icon: "arrow-down"
-                    size: 12 * root.uiScale
-                    color: Theme.color2
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Used"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: SystemStatsService.ramUsedText
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Total"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: SystemStatsService.ramTotalText
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
                 }
-                Text {
+
+                // -- NETWORK CARD --
+                StatChartCard {
                     Layout.fillWidth: true
-                    text: "Download"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
-                }
-                Text {
-                    text: SystemStatsService.netDownText
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                LucideIcon {
-                    icon: "arrow-up"
-                    size: 12 * root.uiScale
-                    color: Theme.color4
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: "Upload"
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    opacity: 0.75
-                }
-                Text {
-                    text: SystemStatsService.netUpText
-                    color: Theme.foreground
-                    font.pixelSize: 12 * root.uiScale
-                    font.bold: true
+                    Layout.alignment: Qt.AlignTop
+                    icon: "arrow-up-down"
+                    title: "Network"
+                    accentColor: Theme.color5
+                    chartValues: SystemStatsService.netHistory
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        LucideIcon {
+                            icon: "arrow-down"
+                            size: 12 * root.uiScale
+                            color: Theme.color2
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Download"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: SystemStatsService.netDownText
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        LucideIcon {
+                            icon: "arrow-up"
+                            size: 12 * root.uiScale
+                            color: Theme.color4
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: "Upload"
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            opacity: 0.75
+                        }
+                        Text {
+                            text: SystemStatsService.netUpText
+                            color: Theme.foreground
+                            font.pixelSize: 12 * root.uiScale
+                            font.bold: true
+                        }
+                    }
                 }
             }
         }
@@ -231,6 +242,7 @@ Item {
         // ── 3. BOTTOM BUTTON (Full System Monitor) ──────────────────
         NavTile {
             Layout.fillWidth: true
+            uiScale: root.uiScale
             Layout.topMargin: 8 * root.uiScale
             icon: "activity"
             label: "Full System Monitor"

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell
+import QtQuick.Controls
 import qs.core
 import qs.services
 
@@ -8,12 +8,6 @@ Item {
     id: root
     property real uiScale: 1.0
 
-    // Fixed, deliberate size — same reasoning as Settings.qml/
-    // DockerManager.qml: standalone top-level Dashboard component, no
-    // floor/ceiling system protecting it. Scaled by uiScale so this
-    // panel gets proportionally more room on higher-res screens.
-    // Everything inside ColumnLayout below is left unscaled
-    // deliberately — already verified to render correctly.
     implicitWidth: 820 * uiScale
     implicitHeight: 600 * uiScale
 
@@ -142,47 +136,47 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 14
+        spacing: 14 * root.uiScale
 
         // ── Header ──────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 16
+            spacing: 16 * root.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                spacing: 12
+                spacing: 12 * root.uiScale
 
                 Rectangle {
-                    width: 44
-                    height: 44
-                    radius: 12
+                    width: 44 * root.uiScale
+                    height: 44 * root.uiScale
+                    radius: 12 * root.uiScale
                     color: Theme.backgroundAlt
                     border.width: 1
                     border.color: Theme.borderColor
                     LucideIcon {
                         anchors.centerIn: parent
                         icon: "monitor"
-                        size: 22
+                        size: 22 * root.uiScale
                         color: Theme.selected
                     }
                 }
 
                 ColumnLayout {
-                    spacing: 2
+                    spacing: 2 * root.uiScale
                     Text {
                         text: SystemInfo.osName
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 16
+                        font.pixelSize: 16 * root.uiScale
                         font.bold: true
                     }
                     Text {
                         text: "Up " + SystemInfo.uptime + " · " + root.displayList.length + " processes"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * root.uiScale
                         opacity: 0.55
                     }
                 }
@@ -190,8 +184,8 @@ Item {
 
             CircularGauge {
                 Layout.alignment: Qt.AlignVCenter
-                width: 62
-                height: 62
+                Layout.preferredWidth: 80 * root.uiScale
+                Layout.preferredHeight: 80 * root.uiScale
                 value: SystemStatsService.cpuUsage
                 mainText: Math.round(SystemStatsService.cpuUsage * 100) + "%"
                 subText: "CPU"
@@ -201,8 +195,8 @@ Item {
 
             CircularGauge {
                 Layout.alignment: Qt.AlignVCenter
-                width: 62
-                height: 62
+                Layout.preferredWidth: 80 * root.uiScale
+                Layout.preferredHeight: 80 * root.uiScale
                 value: SystemStatsService.ramUsage
                 mainText: SystemStatsService.ramUsedText
                 subText: "Memory"
@@ -211,24 +205,25 @@ Item {
             }
 
             Item {
-                Layout.preferredWidth: 28
+                Layout.preferredWidth: 28 * root.uiScale
             }
         }
 
         // ── Search + filter ─────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 10 * root.uiScale
 
             SearchBar {
                 Layout.fillWidth: true
                 placeholderText: "Search processes..."
+                uiScale: root.uiScale
                 text: root.searchQuery
                 onTextChanged: root.searchQuery = text
             }
 
             RowLayout {
-                spacing: 6
+                spacing: 6 * root.uiScale
                 Repeater {
                     model: [
                         {
@@ -245,10 +240,11 @@ Item {
                         },
                     ]
                     NavTile {
-                        implicitWidth: 74
+                        implicitWidth: 74 * root.uiScale
                         icon: ""
                         label: modelData.label
                         isActive: root.filterCategory === modelData.key
+                        uiScale: root.uiScale
                         onTapped: root.filterCategory = modelData.key
                     }
                 }
@@ -258,14 +254,14 @@ Item {
         // ── Table header ─────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Text {
                 Layout.fillWidth: true
                 text: "Name"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 11
+                font.pixelSize: 11 * root.uiScale
                 opacity: 0.5
                 MouseArea {
                     anchors.fill: parent
@@ -273,19 +269,19 @@ Item {
                 }
             }
             RowLayout {
-                Layout.preferredWidth: 70
-                spacing: 2
+                Layout.preferredWidth: 70 * root.uiScale
+                spacing: 2 * root.uiScale
                 Text {
                     text: "CPU"
                     color: root.sortKey === "cpuPercent" ? Theme.selected : Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     opacity: root.sortKey === "cpuPercent" ? 1.0 : 0.5
                 }
                 LucideIcon {
                     visible: root.sortKey === "cpuPercent"
                     icon: root.sortDescending ? "chevron-down" : "chevron-up"
-                    size: 11
+                    size: 11 * root.uiScale
                     color: Theme.selected
                 }
                 MouseArea {
@@ -294,20 +290,20 @@ Item {
                 }
             }
             RowLayout {
-                Layout.preferredWidth: 90
-                spacing: 2
+                Layout.preferredWidth: 90 * root.uiScale
+                spacing: 2 * root.uiScale
                 Text {
                     text: "Memory"
                     color: root.sortKey === "memMb" ? Theme.selected : Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     font.bold: root.sortKey === "memMb"
                     opacity: root.sortKey === "memMb" ? 1.0 : 0.5
                 }
                 LucideIcon {
                     visible: root.sortKey === "memMb"
                     icon: root.sortDescending ? "chevron-down" : "chevron-up"
-                    size: 11
+                    size: 11 * root.uiScale
                     color: Theme.selected
                 }
                 MouseArea {
@@ -316,11 +312,11 @@ Item {
                 }
             }
             Text {
-                Layout.preferredWidth: 44
+                Layout.preferredWidth: 44 * root.uiScale
                 text: "PID"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 11
+                font.pixelSize: 11 * root.uiScale
                 opacity: 0.5
                 MouseArea {
                     anchors.fill: parent
@@ -328,7 +324,7 @@ Item {
                 }
             }
             Item {
-                Layout.preferredWidth: 20
+                Layout.preferredWidth: 20 * root.uiScale
             }
         }
 
@@ -346,8 +342,10 @@ Item {
             Layout.fillHeight: true
             clip: true
             model: root.displayList
-            spacing: 2
-
+            spacing: 2 * root.uiScale
+            ScrollBar.vertical: CustomScrollBar {
+                uiScale: root.uiScale
+            }
             HoverHandler {
                 id: listHoverHandler
             }
@@ -359,8 +357,8 @@ Item {
                 readonly property bool hasMultiple: modelData.count > 1
 
                 width: ListView.view.width
-                height: 40 + (isExpanded && hasMultiple ? modelData.count * 26 : 0)
-                radius: 8
+                height: (40 * root.uiScale) + (isExpanded && hasMultiple ? modelData.count * (26 * root.uiScale) : 0)
+                radius: 8 * root.uiScale
                 color: isHovered ? Theme.backgroundAlt : "transparent"
                 clip: true
                 Behavior on height {
@@ -374,20 +372,20 @@ Item {
                 ColumnLayout {
                     anchors {
                         fill: parent
-                        leftMargin: 8
-                        rightMargin: 8
-                        topMargin: 2
+                        leftMargin: 8 * root.uiScale
+                        rightMargin: 8 * root.uiScale
+                        topMargin: 2 * root.uiScale
                     }
-                    spacing: 2
+                    spacing: 2 * root.uiScale
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 38
-                        spacing: 8
+                        Layout.preferredHeight: 38 * root.uiScale
+                        spacing: 8 * root.uiScale
 
                         Item {
-                            width: 20
-                            height: 20
+                            width: 20 * root.uiScale
+                            height: 20 * root.uiScale
                             Image {
                                 id: procIcon
                                 anchors.fill: parent
@@ -399,7 +397,7 @@ Item {
                             LucideIcon {
                                 anchors.centerIn: parent
                                 icon: "cpu"
-                                size: 14
+                                size: 14 * root.uiScale
                                 color: Theme.foreground
                                 opacity: 0.4
                                 visible: procIcon.status !== Image.Ready
@@ -412,35 +410,35 @@ Item {
                             text: modelData.name
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * root.uiScale
                             elide: Text.ElideRight
                         }
                         Text {
-                            Layout.preferredWidth: 70
+                            Layout.preferredWidth: 70 * root.uiScale
                             text: modelData.cpuPercent.toFixed(1) + "%"
                             color: modelData.cpuPercent > 50 ? Theme.color1 : Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * root.uiScale
                         }
                         Text {
-                            Layout.preferredWidth: 90
+                            Layout.preferredWidth: 90 * root.uiScale
                             text: modelData.memMb >= 1024 ? (modelData.memMb / 1024).toFixed(1) + " GB" : modelData.memMb.toFixed(1) + " MB"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * root.uiScale
                             font.bold: true
                         }
                         Text {
-                            Layout.preferredWidth: 44
+                            Layout.preferredWidth: 44 * root.uiScale
                             text: row.hasMultiple ? ("×" + modelData.count) : modelData.pid.toString()
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * root.uiScale
                             opacity: 0.6
                         }
                         IconButton {
-                            size: 20
-                            iconSize: 13
+                            size: 20 * root.uiScale
+                            iconSize: 13 * root.uiScale
                             icon: row.isExpanded ? "chevron-up" : "chevron-down"
                             visible: row.hasMultiple
                             normalColor: "transparent"
@@ -453,32 +451,32 @@ Item {
 
                         RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 24
-                            Layout.leftMargin: 28
-                            spacing: 8
+                            Layout.preferredHeight: 24 * root.uiScale
+                            Layout.leftMargin: 28 * root.uiScale
+                            spacing: 8 * root.uiScale
 
                             Text {
                                 Layout.fillWidth: true
                                 text: "PID " + modelData.pid
                                 color: Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 11
+                                font.pixelSize: 11 * root.uiScale
                                 opacity: 0.6
                             }
                             Text {
-                                Layout.preferredWidth: 70
+                                Layout.preferredWidth: 70 * root.uiScale
                                 text: modelData.cpuPercent.toFixed(1) + "%"
                                 color: Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 11
+                                font.pixelSize: 11 * root.uiScale
                                 opacity: 0.6
                             }
                             Text {
-                                Layout.preferredWidth: 90
+                                Layout.preferredWidth: 90 * root.uiScale
                                 text: modelData.memMb.toFixed(1) + " MB"
                                 color: Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 11
+                                font.pixelSize: 11 * root.uiScale
                                 opacity: 0.6
                             }
                         }
@@ -496,7 +494,7 @@ Item {
                 text: "No matching processes"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 13
+                font.pixelSize: 13 * root.uiScale
                 opacity: 0.4
             }
         }

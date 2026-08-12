@@ -3,16 +3,9 @@ import QtQuick.Layouts
 import qs.core
 import qs.services
 
-// Read-only palette view — no write actions here at all, just a
-// live-reactive display of whatever's currently in ThemeState.shared.
-// Deliberately not editable: these are all computed/derived from the
-// current wallpaper or static theme, overwritten wholesale on the
-// next theme change (see the daemon-side StateManager._PALETTE_KEYS
-// reasoning) — a settings UI treating them as durable editable
-// fields would just confuse people when a wallpaper switch quietly
-// wipes their edits.
 Item {
     id: root
+    property real uiScale: 1.0
 
     readonly property var shared: ThemeState.shared
 
@@ -52,27 +45,30 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 20
+        anchors.margins: 20 * root.uiScale
+        spacing: 20 * root.uiScale
 
         // ── Current source info ──────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 6 * root.uiScale
 
             InfoRow {
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 label: "Source"
                 value: root._sourceLabel
                 valueColor: Theme.selected
             }
             InfoRow {
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 label: ThemeState.sourceType === "static" ? "Theme" : "Wallpaper"
                 value: root._sourceValue
             }
             InfoRow {
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 label: "Mode"
                 value: ThemeState.mode === "dark" ? "Dark" : "Light"
             }
@@ -83,21 +79,21 @@ Item {
         // ── 16-color palette ──────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Text {
                 text: "Palette"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 13
+                font.pixelSize: 13 * root.uiScale
                 font.bold: true
             }
 
             GridLayout {
                 Layout.fillWidth: true
                 columns: 8
-                rowSpacing: 12
-                columnSpacing: 8
+                rowSpacing: 12 * root.uiScale
+                columnSpacing: 8 * root.uiScale
 
                 Repeater {
                     model: 16
@@ -106,11 +102,11 @@ Item {
                         required property int index
                         readonly property string hex: root.shared["color" + index] ?? "#000000"
 
-                        spacing: 4
+                        spacing: 4 * root.uiScale
 
                         Rectangle {
-                            Layout.preferredWidth: 40
-                            Layout.preferredHeight: 40
+                            Layout.preferredWidth: 40 * root.uiScale
+                            Layout.preferredHeight: 40 * root.uiScale
                             Layout.alignment: Qt.AlignHCenter
                             radius: Theme.radius / 2
                             color: parent.hex
@@ -123,7 +119,7 @@ Item {
                             color: Theme.foreground
                             opacity: 0.6
                             font.family: Theme.fontName
-                            font.pixelSize: 10
+                            font.pixelSize: 10 * root.uiScale
                         }
                     }
                 }
@@ -135,21 +131,21 @@ Item {
         // ── Special colors ────────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Text {
                 text: "Special"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 13
+                font.pixelSize: 13 * root.uiScale
                 font.bold: true
             }
 
             GridLayout {
                 Layout.fillWidth: true
                 columns: 4
-                rowSpacing: 14
-                columnSpacing: 12
+                rowSpacing: 14 * root.uiScale
+                columnSpacing: 12 * root.uiScale
 
                 Repeater {
                     model: root.specialColors
@@ -158,11 +154,11 @@ Item {
                         required property var modelData
                         readonly property string hex: root.shared[modelData.key] ?? "#000000"
 
-                        spacing: 4
+                        spacing: 4 * root.uiScale
 
                         Rectangle {
-                            Layout.preferredWidth: 48
-                            Layout.preferredHeight: 48
+                            Layout.preferredWidth: 48 * root.uiScale
+                            Layout.preferredHeight: 48 * root.uiScale
                             Layout.alignment: Qt.AlignHCenter
                             radius: Theme.radius / 2
                             color: parent.hex
@@ -175,7 +171,7 @@ Item {
                             color: Theme.foreground
                             opacity: 0.75
                             font.family: Theme.fontName
-                            font.pixelSize: 10
+                            font.pixelSize: 10 * root.uiScale
                             horizontalAlignment: Text.AlignHCenter
                         }
                         Text {
@@ -184,7 +180,7 @@ Item {
                             color: Theme.foreground
                             opacity: 0.4
                             font.family: Theme.fontName
-                            font.pixelSize: 9
+                            font.pixelSize: 9 * root.uiScale
                         }
                     }
                 }

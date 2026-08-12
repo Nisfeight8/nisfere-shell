@@ -10,11 +10,11 @@ import qs.core
 // size-hugging), which correctly flows implicit size UP instead.
 Item {
     id: container
-
+    property real uiScale: 1.0
     default property alias content: contentWrapper.child
-    property int padding: 30
-    property int minWidth: 150
-    property int minHeight: 80
+    property int padding: 30 * uiScale
+    property int minWidth: 150 * uiScale
+    property int minHeight: 80 * uiScale
 
     // Off for consumers (BarPopup) that already drive opacity/y from
     // their own pre-animated offset — leaving this on for those would

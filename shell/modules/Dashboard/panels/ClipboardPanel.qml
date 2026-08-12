@@ -107,6 +107,7 @@ Item {
             id: resultsList
             Layout.fillWidth: true
             Layout.fillHeight: true
+            uiScale: root.uiScale
             results: root.results
             loading: ClipboardService.loading
             loadingText: "Loading..."

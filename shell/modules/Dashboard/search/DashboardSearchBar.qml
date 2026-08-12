@@ -28,7 +28,7 @@ Item {
             id: searchBar
             Layout.fillWidth: true
             placeholderText: placeholderCycle.currentText
-
+            uiScale: root.uiScale
             property bool _isSyncingFromState: false
 
             Component.onCompleted: {

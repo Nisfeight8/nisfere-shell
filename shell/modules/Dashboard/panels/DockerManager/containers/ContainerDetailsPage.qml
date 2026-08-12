@@ -180,8 +180,9 @@ Rectangle {
             color: Theme.backgroundAlt
             radius: Theme.radius
 
-            ScrollView {
+            CustomScrollView {
                 id: logScroll
+                uiScale: root.uiScale
 
                 anchors.fill: parent
                 anchors.margins: 10

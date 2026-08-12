@@ -4,21 +4,13 @@ import QtQuick.Controls
 import qs.core
 import qs.services
 
-// Appearance settings — mixed scopes: radius/fontName/
-// workspacesPerMonitor live in "shared" (Hyprland needs them too, via
-// variables.lua.template), everything else lives in "shell"
-// (Quickshell-only). Reads from ThemeState.shared/.shell, writes via
-// ThemeActions.setSetting(key, value, scope) with the right scope per
-// key — unlike ChromaTab/HyprlandTab, this tab can't hardcode one
-// fixed scope for every control.
 Item {
     id: root
+    property real uiScale: 1.0
 
     readonly property var shared: ThemeState.shared
     readonly property var shell: ThemeState.shell
 
-    // ── Debounced setSetting — scope passed per-call this time,
-    // since this tab's keys span both "shared" and "shell". ────────
     property string _pendingKey: ""
     property var _pendingValue: null
     property string _pendingScope: "shared"
@@ -34,38 +26,38 @@ Item {
         root._debounceTimer.restart();
     }
 
-    ScrollView {
+    CustomScrollView {
         anchors.fill: parent
-        contentWidth: availableWidth
         clip: true
+        uiScale: root.uiScale
 
         ColumnLayout {
             width: parent.width
-            spacing: 24
+            spacing: 24 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
+                Layout.preferredHeight: 4 * root.uiScale
             }
 
             // ── General (shared scope) ──────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 Text {
                     text: "General"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -73,13 +65,13 @@ Item {
                             text: "Corner Radius"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(radiusSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -89,6 +81,7 @@ Item {
                         from: 0
                         to: 40
                         stepSize: 1
+                        uiScale: root.uiScale
                         value: root.shared.radius ?? 20
                         onMoved: root._debouncedSet("radius", Math.round(value), "shared")
                     }
@@ -96,7 +89,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -104,13 +97,13 @@ Item {
                             text: "Workspaces Per Monitor"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(workspacesSlider.value)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -120,6 +113,8 @@ Item {
                         from: 1
                         to: 20
                         stepSize: 1
+                        uiScale: root.uiScale
+
                         value: root.shared.workspacesPerMonitor ?? 10
                         onMoved: root._debouncedSet("workspacesPerMonitor", Math.round(value), "shared")
                     }
@@ -127,12 +122,12 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: 6 * root.uiScale
                     Text {
                         text: "Font"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                     }
                     TextField {
                         id: fontField
@@ -140,7 +135,7 @@ Item {
                         text: root.shared.fontName ?? ""
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         selectByMouse: true
 
                         background: Rectangle {
@@ -156,39 +151,34 @@ Item {
                             }
                         }
 
-                        // Debounced-on-commit only (Enter or focus
-                        // loss), not per-keystroke — a font name isn't
-                        // meaningful mid-word, and re-rendering every
-                        // template on every typed character would be
-                        // wasteful and visually noisy.
                         onEditingFinished: ThemeActions.setSetting("fontName", text, "shared")
                     }
                 }
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Shell layout (shell scope) ───────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 Text {
                     text: "Shell Layout"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -196,13 +186,13 @@ Item {
                             text: "Bar Height"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(barHeightSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -212,6 +202,8 @@ Item {
                         from: 30
                         to: 80
                         stepSize: 1
+                        uiScale: root.uiScale
+
                         value: root.shell.barHeight ?? 50
                         onMoved: root._debouncedSet("barHeight", Math.round(value), "shell")
                     }
@@ -224,17 +216,18 @@ Item {
                         text: "Enable Widget Borders"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                     }
                     ToggleSwitch {
                         checked: root.shell.enableWidgetBorders ?? true
+                        uiScale: root.uiScale
                         onToggled: ThemeActions.setSetting("enableWidgetBorders", !checked, "shell")
                     }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     opacity: enabled ? 1.0 : 0.4
 
                     RowLayout {
@@ -244,13 +237,13 @@ Item {
                             text: "Screen Border Size"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(screenBorderSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -260,6 +253,8 @@ Item {
                         from: 1
                         to: 20
                         stepSize: 1
+                        uiScale: root.uiScale
+
                         value: root.shell.screenBorderSize ?? 10
                         onMoved: root._debouncedSet("screenBorderSize", Math.round(value), "shell")
                     }
@@ -267,7 +262,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -275,13 +270,13 @@ Item {
                             text: "Widget Opacity"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: widgetOpacitySlider.value.toFixed(2)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
@@ -290,6 +285,7 @@ Item {
                         Layout.fillWidth: true
                         from: 0.0
                         to: 1.0
+                        uiScale: root.uiScale
                         value: root.shell.widgetOpacity ?? 1.0
                         onMoved: root._debouncedSet("widgetOpacity", value, "shell")
                     }
@@ -298,7 +294,7 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 12
+                Layout.preferredHeight: 12 * root.uiScale
             }
         }
     }

@@ -4,13 +4,9 @@ import QtQuick.Layouts
 import qs.core
 import qs.services
 
-// TEMPORARY shape — wallpaper picker moved out to WallpapersTab.qml.
-// What's left here (Mode toggle + Static Themes grid) is a stopgap
-// until this becomes a proper dedicated "Colors" tab in the next
-// step — not renamed/polished yet on purpose, per the plan to do
-// Wallpapers first and Colors as its own separate pass.
 Item {
     id: root
+    property real uiScale: 1.0
 
     property string _themeSearch: ""
 
@@ -23,63 +19,65 @@ Item {
 
     Component.onCompleted: ThemeActions.fetchThemes()
 
-    ScrollView {
+    CustomScrollView {
         anchors.fill: parent
-        contentWidth: availableWidth
         clip: true
-
+        uiScale: root.uiScale
+        
         ColumnLayout {
             width: parent.width
-            spacing: 24
+            spacing: 24 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
+                Layout.preferredHeight: 4 * root.uiScale
             }
 
             // ── Mode ─────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
 
                 Text {
                     Layout.fillWidth: true
                     text: "Light Mode"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
                 ToggleSwitch {
                     checked: ThemeState.mode === "light"
+                    uiScale: root.uiScale
                     onToggled: ThemeActions.toggleMode()
                 }
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Static Themes ────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 10
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 10 * root.uiScale
 
                 Text {
                     text: "Static Themes"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
                 SearchBar {
                     Layout.fillWidth: true
                     placeholderText: "Search themes..."
+                    uiScale: root.uiScale
                     onTextChanged: root._themeSearch = text
                 }
 
@@ -90,12 +88,12 @@ Item {
                     color: Theme.foreground
                     opacity: 0.4
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                 }
 
                 Flow {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: 10 * root.uiScale
 
                     Repeater {
                         model: root.filteredThemes
@@ -104,13 +102,13 @@ Item {
                             required property var modelData
                             readonly property bool isSelected: ThemeState.sourceType === "static" && ThemeState.sourceName === modelData.name
 
-                            spacing: 4
-                            width: 110
+                            spacing: 4 * root.uiScale
+                            width: 110 * root.uiScale
 
                             Rectangle {
                                 id: swatchBox
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 70
+                                Layout.preferredWidth: 110 * root.uiScale
+                                Layout.preferredHeight: 70 * root.uiScale
                                 radius: Theme.radius
                                 color: modelData.colors.background ?? Theme.backgroundAlt
                                 border.width: isSelected ? 2 : 1
@@ -119,15 +117,15 @@ Item {
 
                                 Row {
                                     anchors.centerIn: parent
-                                    spacing: 3
+                                    spacing: 3 * root.uiScale
 
                                     Repeater {
                                         model: [1, 2, 3, 4, 5, 6]
                                         delegate: Rectangle {
                                             required property int modelData
-                                            width: 12
-                                            height: 12
-                                            radius: 2
+                                            width: 12 * root.uiScale
+                                            height: 12 * root.uiScale
+                                            radius: 2 * root.uiScale
                                             color: swatchBox.parent.modelData.colors["color" + modelData] ?? "#888888"
                                         }
                                     }
@@ -154,11 +152,11 @@ Item {
                                 }
                             }
                             Text {
-                                Layout.preferredWidth: 110
+                                Layout.preferredWidth: 110 * root.uiScale
                                 text: modelData.name
                                 color: isSelected ? Theme.selected : Theme.foreground
                                 font.family: Theme.fontName
-                                font.pixelSize: 10
+                                font.pixelSize: 10 * root.uiScale
                                 elide: Text.ElideRight
                                 horizontalAlignment: Text.AlignHCenter
                             }
@@ -169,7 +167,7 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 12
+                Layout.preferredHeight: 12 * root.uiScale
             }
         }
     }

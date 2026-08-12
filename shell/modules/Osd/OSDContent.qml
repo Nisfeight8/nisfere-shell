@@ -1,10 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 
-// The OSD's visual card content — extracted from OSD.qml so it can be
-// loaded via BaseDrawer's contentComponent (BaseDrawer now IS the OSD
-// window; see OSD.qml). Pure presentation, no service/state logic here.
 Item {
     id: content
 
@@ -16,15 +14,17 @@ Item {
     required property bool showBarFlag
     required property bool showCountdownFlag
 
-    implicitWidth: 260
-    implicitHeight: contentColumn.implicitHeight + 32
+    // Computed locally — this component is loaded from two different
+    // hosting contexts (OSD.qml's drawer mode via contentComponent,
+    // and its popup mode via direct instantiation), so rather than
+    // relying on either wrapper to remember to pass uiScale down
+    // (same class of bug we've hit before), it resolves its own
+    // screen directly, same self-sufficient pattern as StyledToolTip.
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
 
-    // Subtle top highlight — signature detail, not a full shadow system.
-    // Left/right margins match Theme.radius (not just 1px) so this
-    // flat-cornered line clears the PARENT's rounded corner curve —
-    // with only 1px margins, its square corners poked out past the
-    // rounding, since clip:true only clips to the rectangular bounds,
-    // not the rounded shape itself.
+    implicitWidth: 260 * uiScale
+    implicitHeight: contentColumn.implicitHeight + (32 * uiScale)
+
     Rectangle {
         anchors {
             top: parent.top
@@ -44,28 +44,24 @@ Item {
         id: contentColumn
         anchors {
             fill: parent
-            margins: 16
+            margins: 16 * content.uiScale
         }
-        spacing: 14
+        spacing: 14 * content.uiScale
 
         // ── Icon badge (or countdown number) ──────────────────────────
         Rectangle {
             Layout.alignment: Qt.AlignVCenter
-            width: 42
-            height: 42
+            width: 42 * content.uiScale
+            height: 42 * content.uiScale
             radius: width / 2
             color: Theme.backgroundAlt
             border.color: Theme.borderColor
             border.width: Theme.widgetBorderWidth
-            // No Behavior on width/height here — fixed 42x42, never
-            // actually changes, so there was nothing for one to do
-            // (removed a pair of dead commented-out ones that used to
-            // sit here).
 
             LucideIcon {
                 anchors.centerIn: parent
                 icon: content.osdIconName
-                size: 20
+                size: 20 * content.uiScale
                 color: content.osdMutedFlag ? Theme.foreground : Theme.selected
                 opacity: content.osdMutedFlag ? 0.5 : 1.0
                 visible: !content.showCountdownFlag
@@ -77,7 +73,7 @@ Item {
                 text: Math.round(content.osdValueNum)
                 color: Theme.selected
                 font.family: Theme.fontName
-                font.pixelSize: 26
+                font.pixelSize: 26 * content.uiScale
                 font.bold: true
             }
         }
@@ -86,18 +82,18 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: 6
+            spacing: 6 * content.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 8 * content.uiScale
 
                 Text {
                     Layout.fillWidth: true
                     text: content.osdTitleText
                     elide: Text.ElideRight
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * content.uiScale
                     font.bold: true
                     color: Theme.foreground
                 }
@@ -106,7 +102,7 @@ Item {
                     visible: content.showBarFlag
                     text: Math.round(content.osdValueNum * 100) + "%"
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * content.uiScale
                     opacity: 0.6
                     color: Theme.foreground
                 }
@@ -114,7 +110,7 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 6
+                Layout.preferredHeight: 6 * content.uiScale
                 visible: content.showBarFlag
 
                 Rectangle {
@@ -136,10 +132,6 @@ Item {
                     opacity: content.osdMutedFlag ? 0.35 : 1.0
                     width: Math.max(height, parent.width * (content.osdMutedFlag ? 0.0 : content.osdValueNum))
 
-                    // Was commented-out raw NumberAnimation/ColorAnimation
-                    // — enabled with the established Anim/AnimColor
-                    // convention used everywhere else (e.g. BatteryCard's
-                    // battery-bar fill is the same shape of animation).
                     Behavior on width {
                         Anim {
                             type: Anim.FastToggle
@@ -176,7 +168,7 @@ Item {
                 text: content.osdSubtitleText
                 elide: Text.ElideRight
                 font.family: Theme.fontName
-                font.pixelSize: 12
+                font.pixelSize: 12 * content.uiScale
                 opacity: 0.65
                 color: Theme.foreground
             }

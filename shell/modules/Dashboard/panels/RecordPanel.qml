@@ -9,6 +9,7 @@ FocusScope {
     // ScreenshotPanel.qml: small, compact popup-style standalone
     // Dashboard component, sized to its own content, not stretched to
     // fill the whole panel.
+    property real uiScale: 1.0
     implicitWidth: content.implicitWidth
     implicitHeight: content.implicitHeight
 
@@ -92,7 +93,7 @@ FocusScope {
                 CircularActionButton {
                     icon: modelData.icon
                     label: modelData.label
-
+                    uiScale: root.uiScale
                     hoverColor: Theme.selected
                     activeColor: Theme.color1
                     // Keyboard-selected option reuses the same hover
@@ -153,6 +154,7 @@ FocusScope {
             }
 
             CircularActionButton {
+                uiScale: root.uiScale
                 icon: "square"
                 label: "Stop"
                 diameter: 52

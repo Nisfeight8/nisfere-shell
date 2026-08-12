@@ -18,7 +18,8 @@ Item {
 
         SystemDrawerHeader {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            // fillHeight removed — this widget's implicitHeight already
+            // reflects its real content size; it doesn't need to grow.
             uiScale: root.uiScale
         }
 
@@ -31,7 +32,6 @@ Item {
 
         SystemDrawerUpdates {
             Layout.fillWidth: true
-            Layout.fillHeight: true
             uiScale: root.uiScale
         }
 
@@ -45,7 +45,6 @@ Item {
 
         BatteryCard {
             Layout.fillWidth: true
-            Layout.fillHeight: true
             uiScale: root.uiScale
             visible: BatteryService.hasBattery
         }
@@ -57,6 +56,9 @@ Item {
             opacity: 0.35
         }
 
+        // The ONLY fillHeight child now — absorbs all remaining
+        // vertical space after the compact-content siblings above take
+        // exactly what they need.
         SystemDrawerStats {
             Layout.fillWidth: true
             Layout.fillHeight: true

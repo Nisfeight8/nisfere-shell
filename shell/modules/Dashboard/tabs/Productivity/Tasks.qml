@@ -133,6 +133,7 @@ Item {
                 NavTile {
                     Layout.fillWidth: true
                     icon: modelData.icon
+                    uiScale: root.uiScale
                     label: modelData.label + " (" + modelData.count + ")"
                     isActive: root.filter === modelData.key
                     onTapped: root.filter = modelData.key

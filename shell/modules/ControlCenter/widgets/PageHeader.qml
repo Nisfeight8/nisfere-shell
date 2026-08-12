@@ -2,35 +2,21 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 
-// Standard header for Control Center sub-pages: back button + title,
-// with an optional trailing slot for extra controls (e.g. an enable/
-// disable ToggleSwitch) declared directly as children.
-// Usage:
-//   PageHeader {
-//       Layout.fillWidth: true
-//       title: "Wi-Fi"
-//       onBackRequested: pageStack.currentIndex = 0
-//
-//       ToggleSwitch {
-//           checked: NetworkService.wifiEnabled
-//           onToggled: NetworkService.wifi.toggle()
-//       }
-//   }
 RowLayout {
     id: root
 
     property string title: ""
+    property real uiScale: 1.0
     signal backRequested
 
-    // Extra children declared inside PageHeader{} land here, after the title.
     default property alias trailingData: trailingRow.data
 
-    spacing: 10
+    spacing: 10 * root.uiScale
 
     IconButton {
         icon: "chevron-left"
-        size: 32
-        iconSize: 18
+        size: 32 * root.uiScale
+        iconSize: 18 * root.uiScale
         normalColor: Theme.backgroundAlt
         onTapped: root.backRequested()
     }
@@ -39,10 +25,11 @@ RowLayout {
         Layout.fillWidth: true
         text: root.title
         elide: Text.ElideRight
+        uiScale: root.uiScale
     }
 
     RowLayout {
         id: trailingRow
-        spacing: 8
+        spacing: 8 * root.uiScale
     }
 }

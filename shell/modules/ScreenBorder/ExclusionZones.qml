@@ -9,7 +9,7 @@ Scope {
     id: root
 
     property var screen: null
-    property real barHeight: Theme.barHeight
+    property real barHeight: Theme.scaledBarHeight(screen)
     property real bezelSize: Theme.screenBorderSize
 
     ExclusionZone {

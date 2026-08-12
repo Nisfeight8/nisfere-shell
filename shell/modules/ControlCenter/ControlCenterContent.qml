@@ -1,5 +1,7 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 import qs.services
 import "widgets"
@@ -10,6 +12,7 @@ Item {
     id: pageStack
 
     readonly property int currentIndex: ShellState.controlCenterPageIndex
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
 
     implicitHeight: animLoader.implicitHeight
 
@@ -18,19 +21,22 @@ Item {
         id: mainPageComp
 
         ColumnLayout {
-            spacing: 10
+            spacing: 10 * pageStack.uiScale
 
             PageTitle {
                 Layout.fillWidth: true
                 text: "Control Center"
+                uiScale: pageStack.uiScale
             }
 
             Toggles {
                 Layout.fillWidth: true
+                uiScale: pageStack.uiScale
             }
 
             SlidersCard {
                 Layout.fillWidth: true
+                uiScale: pageStack.uiScale
             }
         }
     }
@@ -38,6 +44,7 @@ Item {
     Component {
         id: wifiPageComp
         WifiPage {
+            uiScale: pageStack.uiScale
             onBackRequested: ShellState.controlCenterPageIndex = 0
         }
     }
@@ -45,6 +52,7 @@ Item {
     Component {
         id: btPageComp
         BluetoothPage {
+            uiScale: pageStack.uiScale
             onBackRequested: ShellState.controlCenterPageIndex = 0
         }
     }
@@ -52,6 +60,7 @@ Item {
     Component {
         id: ethPageComp
         EthernetPage {
+            uiScale: pageStack.uiScale
             onBackRequested: ShellState.controlCenterPageIndex = 0
         }
     }

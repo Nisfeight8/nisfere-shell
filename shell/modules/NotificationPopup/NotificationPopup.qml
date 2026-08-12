@@ -1,18 +1,18 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 
-// Same two-mode approach as OSD.qml — see that file's comments for
-// the full reasoning.
 Item {
     id: root
     anchors.fill: parent
+
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
 
     property bool hasFullscreen: false
 
     readonly property Item panelItem: modeLoader.item ? modeLoader.item.panelItem : null
 
-    // ── State (shared by both modes) ──────────────────────────────────────
     property var currentNotif: null
     property real notifProgress: 1.0
 
@@ -99,15 +99,10 @@ Item {
                 anchors {
                     bottom: parent.bottom
                     right: parent.right
-                    bottomMargin: Theme.screenBorderSize + 20
-                    rightMargin: Theme.screenBorderSize + 20
+                    bottomMargin: Theme.screenBorderSize + (20 * root.uiScale)
+                    rightMargin: Theme.screenBorderSize + (20 * root.uiScale)
                 }
-                width: 450
-                // FIX — same bug as OSD.qml had: no explicit height
-                // means this Rectangle defaults to 0, so with
-                // anchors.bottom it renders squashed against the very
-                // bottom edge with virtually nothing visible. Bind to
-                // the content's own implicitHeight instead.
+                width: 450 * root.uiScale
                 height: contentInner.implicitHeight
                 radius: Theme.radius
                 clip: true
@@ -117,7 +112,7 @@ Item {
 
                 opacity: root.shown ? 1.0 : 0.0
                 transform: Translate {
-                    y: root.shown ? 0 : 30
+                    y: root.shown ? 0 : 30 * root.uiScale
                 }
                 Behavior on opacity {
                     Anim {

@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 
@@ -30,7 +31,7 @@ Item {
         anchors {
             top: parent.top
             horizontalCenter: parent.horizontalCenter
-            topMargin: Theme.barHeight + 100
+            topMargin: Theme.scaledBarHeight(QsWindow.window?.screen) + 100
         }
     }
 

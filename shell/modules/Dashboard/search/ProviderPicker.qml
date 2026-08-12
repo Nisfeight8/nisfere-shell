@@ -40,6 +40,7 @@ Item {
 
     ResultsListView {
         id: resultsList
+        uiScale: root.uiScale
         anchors.fill: parent
         results: root.results
         emptyText: "No matching providers"

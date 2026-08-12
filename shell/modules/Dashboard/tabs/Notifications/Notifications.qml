@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import qs.core
 import qs.services
 
@@ -143,6 +144,10 @@ Item {
                 model: NotificationService.notifications
                 visible: NotificationService.notifications.length > 0
 
+                ScrollBar.vertical: CustomScrollBar {
+                    uiScale: root.uiScale
+                }
+
                 add: Transition {
                     Anim {
                         properties: "opacity,scale"
@@ -172,7 +177,7 @@ Item {
 
                     width: notifListView.width
                     notif: modelData
-
+                    uiScale: root.uiScale
                     cardHeight: root.cardHeight
                     iconSize: root.iconSize
                     fontSizeTitle: root.fontSizeTitle

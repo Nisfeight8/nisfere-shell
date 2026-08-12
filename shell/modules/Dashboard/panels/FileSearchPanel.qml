@@ -48,6 +48,7 @@ Item {
 
     ResultsListView {
         id: resultsList
+        uiScale: root.uiScale
         anchors.fill: parent
         results: root.results
         loading: FileSearchService.loading

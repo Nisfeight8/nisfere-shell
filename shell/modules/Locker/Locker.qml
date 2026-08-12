@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import Quickshell
 import Quickshell.Wayland
 import qs.core
 import qs.services
@@ -10,6 +11,7 @@ WlSessionLock {
     locked: ShellState.isLocked
 
     WlSessionLockSurface {
+        id: surface
         color: "black"
 
         Connections {
@@ -24,17 +26,6 @@ WlSessionLock {
                 passwordInput.text = "";
                 errorText.text = errorMessage;
                 errorText.opacity = 1;
-                // Was a direct `passwordInput.background.border.color =
-                // Theme.color1` assignment — that PERMANENTLY destroys
-                // the declarative binding on border.color (imperative
-                // assignment to an already-bound property replaces the
-                // binding with a static value forever). Every "restore"
-                // afterward was then just another one-off static value,
-                // never a real binding again — so after the FIRST failed
-                // attempt, the border would never again reactively
-                // follow focus changes. Now driven by a plain state flag
-                // instead, with the actual color logic staying inside
-                // the background Rectangle's own binding, permanently.
                 passwordInput.hasError = true;
                 passwordInput.forceActiveFocus();
                 errorTimer.restart();
@@ -72,6 +63,7 @@ WlSessionLock {
             anchors.fill: parent
             focus: true
 
+            readonly property real uiScale: Theme.scaleFor(surface.screen)
             property bool isAuthenticating: false
 
             Keys.onEscapePressed: {
@@ -83,7 +75,7 @@ WlSessionLock {
 
             ColumnLayout {
                 anchors.centerIn: parent
-                spacing: 40
+                spacing: 40 * lockContainer.uiScale
 
                 // --- Clock & Date ---
                 ColumnLayout {
@@ -94,7 +86,7 @@ WlSessionLock {
                         id: clockText
                         Layout.alignment: Qt.AlignHCenter
                         font.family: Theme.fontName
-                        font.pixelSize: 100
+                        font.pixelSize: 100 * lockContainer.uiScale
                         font.bold: true
                         color: "white"
 
@@ -111,7 +103,7 @@ WlSessionLock {
                         id: dateText
                         Layout.alignment: Qt.AlignHCenter
                         font.family: Theme.fontName
-                        font.pixelSize: 20
+                        font.pixelSize: 20 * lockContainer.uiScale
                         color: "white"
                         opacity: 0.7
 
@@ -128,22 +120,19 @@ WlSessionLock {
                 // --- User Info & Auth ---
                 ColumnLayout {
                     Layout.alignment: Qt.AlignHCenter
-                    spacing: 20
+                    spacing: 20 * lockContainer.uiScale
 
                     Rectangle {
                         id: avatarBadge
-                        width: 100
-                        height: 100
-                        radius: 50
+                        width: 100 * lockContainer.uiScale
+                        height: 100 * lockContainer.uiScale
+                        radius: width / 2
                         color: Theme.backgroundAlt
                         border.color: Theme.borderColor
                         border.width: 2
                         clip: true
                         Layout.alignment: Qt.AlignHCenter
 
-                        // Same pattern as SystemDrawerHeader.qml — reads
-                        // from the shared scope's avatarPath setting,
-                        // falls back to the generic user icon if unset.
                         readonly property string _avatarSource: ThemeState.shared.avatarPath ? "file://" + ThemeState.shared.avatarPath : ""
 
                         Image {
@@ -156,7 +145,7 @@ WlSessionLock {
                         LucideIcon {
                             anchors.centerIn: parent
                             icon: "user"
-                            size: 50
+                            size: 50 * lockContainer.uiScale
                             color: Theme.foreground
                             visible: avatarBadge._avatarSource === ""
                         }
@@ -165,52 +154,34 @@ WlSessionLock {
                     Text {
                         text: SystemInfo.username
                         font.family: Theme.fontName
-                        font.pixelSize: 24
+                        font.pixelSize: 24 * lockContainer.uiScale
                         font.bold: true
                         color: "white"
                         Layout.alignment: Qt.AlignHCenter
                     }
 
-                    // Input + Loader σε κοινό Item
                     Item {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 260
-                        Layout.preferredHeight: 46
+                        Layout.preferredWidth: 260 * lockContainer.uiScale
+                        Layout.preferredHeight: 46 * lockContainer.uiScale
 
                         TextField {
                             id: passwordInput
-                            // Was commented out — meant the field stayed
-                            // fully enabled (and visible) WHILE a
-                            // previous authentication attempt was still
-                            // in flight, so you could mash Enter and
-                            // fire off overlapping auth calls.
                             property bool hasError: false
 
                             anchors.fill: parent
                             echoMode: TextInput.Password
                             passwordCharacter: "•"
-                            // Native placeholderText wasn't rendering
-                            // reliably in this surface (possibly a race
-                            // with forceActiveFocus() firing immediately
-                            // on completion, unlike WifiPage's password
-                            // field which only gets focus after a user
-                            // interaction) — using our own overlay Text
-                            // instead, same idiom as Tasks.qml's add-task
-                            // input placeholder.
                             placeholderText: ""
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 16
+                            font.pixelSize: 16 * lockContainer.uiScale
                             horizontalAlignment: TextInput.AlignHCenter
                             enabled: !lockContainer.isAuthenticating
 
                             background: Rectangle {
                                 color: Theme.backgroundAlt
                                 radius: Theme.radius
-                                // Now a single, permanent declarative
-                                // binding covering both error and focus
-                                // state — nothing ever assigns to this
-                                // imperatively, so it can never break.
                                 border.color: passwordInput.hasError ? Theme.color1 : (passwordInput.activeFocus ? Theme.selected : Theme.borderColor)
                                 border.width: 2
 
@@ -223,12 +194,12 @@ WlSessionLock {
 
                             Rectangle {
                                 anchors.right: parent.right
-                                anchors.rightMargin: 10
+                                anchors.rightMargin: 10 * lockContainer.uiScale
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 20
-                                height: 20
+                                width: 20 * lockContainer.uiScale
+                                height: 20 * lockContainer.uiScale
                                 color: "transparent"
-                                radius: 10
+                                radius: width / 2
 
                                 border.color: Theme.selected
                                 border.width: 3
@@ -236,10 +207,10 @@ WlSessionLock {
                                 Rectangle {
                                     anchors.top: parent.top
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    width: 3
-                                    height: 3
+                                    width: 3 * lockContainer.uiScale
+                                    height: 3 * lockContainer.uiScale
                                     color: Theme.foreground
-                                    radius: 2
+                                    radius: width / 2
                                 }
 
                                 RotationAnimation on rotation {
@@ -267,7 +238,7 @@ WlSessionLock {
                                 text: "Enter password..."
                                 color: Qt.rgba(1, 1, 1, 0.4)
                                 font.family: Theme.fontName
-                                font.pixelSize: 16
+                                font.pixelSize: 16 * lockContainer.uiScale
                                 visible: passwordInput.text.length === 0
                             }
                         }
@@ -278,7 +249,7 @@ WlSessionLock {
                         Layout.alignment: Qt.AlignHCenter
                         color: Theme.color1
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * lockContainer.uiScale
                         opacity: 0
                         Behavior on opacity {
                             Anim {
@@ -290,8 +261,8 @@ WlSessionLock {
                     // --- Power actions (reboot / suspend / poweroff) ──
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: 10
-                        spacing: 16
+                        Layout.topMargin: 10 * lockContainer.uiScale
+                        spacing: 16 * lockContainer.uiScale
 
                         CircularActionButton {
                             icon: "rotate-ccw"
@@ -315,30 +286,30 @@ WlSessionLock {
             // --- Footer Widgets ---
             RowLayout {
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 60
+                anchors.bottomMargin: 60 * lockContainer.uiScale
                 anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 24
+                spacing: 24 * lockContainer.uiScale
 
                 // Weather Widget
                 Rectangle {
-                    width: 130
-                    height: 54
+                    width: 80 * lockContainer.uiScale
+                    height: 44 * lockContainer.uiScale
                     radius: Theme.radius
                     color: Theme.backgroundAlt
                     opacity: 0.9
 
                     RowLayout {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 8 * lockContainer.uiScale
                         LucideIcon {
                             icon: "cloud"
-                            size: 20
+                            size: 20 * lockContainer.uiScale
                             color: Theme.foreground
                         }
                         Text {
                             text: Math.round(WeatherService.temperature) + "°C"
                             font.family: Theme.fontName
-                            font.pixelSize: 16
+                            font.pixelSize: 16 * lockContainer.uiScale
                             color: Theme.foreground
                         }
                     }
@@ -347,20 +318,20 @@ WlSessionLock {
                 // Media Widget
                 Rectangle {
                     visible: MediaService.hasPlayer
-                    width: 280
-                    height: 54
+                    width: 280 * lockContainer.uiScale
+                    height: 44 * lockContainer.uiScale
                     radius: Theme.radius
                     color: Theme.backgroundAlt
                     opacity: 0.9
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 12
+                        anchors.margins: 12 * lockContainer.uiScale
+                        spacing: 12 * lockContainer.uiScale
 
                         LucideIcon {
                             icon: "music"
-                            size: 18
+                            size: 18 * lockContainer.uiScale
                             color: Theme.selected
                         }
 
@@ -368,16 +339,16 @@ WlSessionLock {
                             Layout.fillWidth: true
                             text: MediaService.title
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * lockContainer.uiScale
                             color: Theme.foreground
                             elide: Text.ElideRight
                         }
 
                         RowLayout {
-                            spacing: 12
+                            spacing: 12 * lockContainer.uiScale
                             LucideIcon {
                                 icon: "skip-back"
-                                size: 18
+                                size: 18 * lockContainer.uiScale
                                 color: Theme.foreground
 
                                 HoverHandler {
@@ -389,7 +360,7 @@ WlSessionLock {
                             }
                             LucideIcon {
                                 icon: MediaService.isPlaying ? "pause" : "play"
-                                size: 18
+                                size: 18 * lockContainer.uiScale
                                 color: Theme.foreground
 
                                 HoverHandler {
@@ -401,7 +372,7 @@ WlSessionLock {
                             }
                             LucideIcon {
                                 icon: "skip-forward"
-                                size: 18
+                                size: 18 * lockContainer.uiScale
                                 color: Theme.foreground
 
                                 HoverHandler {
@@ -417,24 +388,24 @@ WlSessionLock {
 
                 // Keyboard Layout Widget
                 Rectangle {
-                    width: 100
-                    height: 54
+                    width: 80 * lockContainer.uiScale
+                    height: 44 * lockContainer.uiScale
                     radius: Theme.radius
                     color: Theme.backgroundAlt
                     opacity: 0.9
 
                     RowLayout {
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 8 * lockContainer.uiScale
                         LucideIcon {
                             icon: "keyboard"
-                            size: 18
+                            size: 18 * lockContainer.uiScale
                             color: Theme.foreground
                         }
                         Text {
                             text: KeyboardService.currentLayout.toUpperCase()
                             font.family: Theme.fontName
-                            font.pixelSize: 16
+                            font.pixelSize: 16 * lockContainer.uiScale
                             font.bold: true
                             color: Theme.foreground
                         }

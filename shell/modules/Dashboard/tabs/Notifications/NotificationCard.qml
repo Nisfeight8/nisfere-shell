@@ -2,14 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import qs.core
-import qs.services
 
-// A single notification entry — icon, app name + timestamp, summary +
-// body, close button. Subtle hover tint plus a colored accent bar
-// (critical notifications get Theme.color1, everything else
-// Theme.selected) for at-a-glance priority without needing to read
-// any text. Extracted out of Notifications.qml so it's independently
-// reusable/testable.
 GlassCard {
     id: card
 
@@ -18,6 +11,7 @@ GlassCard {
     property real iconSize: 40
     property real fontSizeTitle: 14
     property real fontSizeBody: 11
+    property real uiScale: 1.0
 
     signal closeRequested
 
@@ -26,8 +20,6 @@ GlassCard {
 
     height: cardHeight
 
-    // Whole-card hover tint — subtle, spans the full area since hover
-    // is a continuous state (matches ControlButton's own convention).
     Rectangle {
         anchors.fill: parent
         radius: Theme.radius
@@ -39,15 +31,13 @@ GlassCard {
         }
     }
 
-    // Priority accent bar — a persistent edge strip reads "this is
-    // critical" at a glance even when you're not looking at the icon.
     Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.margins: 8
-        width: 3
-        radius: 1.5
+        anchors.margins: 8 * card.uiScale
+        width: 3 * card.uiScale
+        radius: width / 2
         color: card.accentColor
         opacity: 0.8
     }
@@ -58,9 +48,9 @@ GlassCard {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        anchors.leftMargin: 20   // extra room for the accent bar
-        spacing: 14
+        anchors.margins: 12 * card.uiScale
+        anchors.leftMargin: 20 * card.uiScale   // extra room for the accent bar
+        spacing: 14 * card.uiScale
 
         // App icon / notification icon
         Rectangle {
@@ -70,7 +60,7 @@ GlassCard {
             color: Theme.background
             border.width: 1
             border.color: Theme.borderColor
-            clip: true   // safety net for anything else that might overflow
+            clip: true
 
             LucideIcon {
                 anchors.centerIn: parent
@@ -80,11 +70,10 @@ GlassCard {
                 visible: !notif.nAppIcon && !notif.nImage
             }
 
-            // Hidden — only used as texture source for OpacityMask below
             Image {
                 id: notifImage
                 anchors.fill: parent
-                anchors.margins: 4
+                anchors.margins: 4 * card.uiScale
                 fillMode: Image.PreserveAspectFit
                 source: notif.nAppIcon || notif.nImage || ""
                 asynchronous: true
@@ -96,13 +85,9 @@ GlassCard {
             Rectangle {
                 id: notifImageMask
                 anchors.fill: notifImage
-                radius: Theme.radius - 4   // slightly smaller to match the inset margin
+                radius: Theme.radius - (4 * card.uiScale)
                 visible: false
             }
-            // Rounds the image's corners to match the badge — plain clip:true
-            // only clips to the rectangular bounds, not the rounded shape, so
-            // the image's own square corners would still poke out past the
-            // background's curve without this.
             OpacityMask {
                 anchors.fill: notifImage
                 source: notifImage
@@ -114,7 +99,7 @@ GlassCard {
         // Text content
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 2
+            spacing: 2 * card.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
@@ -145,7 +130,7 @@ GlassCard {
                 elide: Text.ElideRight
                 font.bold: true
                 font.family: Theme.fontName
-                font.pixelSize: card.fontSizeTitle + 2
+                font.pixelSize: card.fontSizeTitle + (2 * card.uiScale)
             }
             Text {
                 Layout.fillWidth: true
@@ -160,13 +145,11 @@ GlassCard {
             }
         }
 
-        // Close button — full opacity only on hover, reducing visual
-        // noise when you're just scanning the list rather than
-        // dismissing something.
+        // Close button
         IconButton {
             icon: "x"
-            size: 28
-            iconSize: 14
+            size: 28 * card.uiScale
+            iconSize: 14 * card.uiScale
             normalColor: Theme.backgroundAlt
             radius: Theme.radius
             hoverColor: Theme.color1

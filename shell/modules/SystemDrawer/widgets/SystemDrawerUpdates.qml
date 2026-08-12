@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import qs.core
 import qs.services
 
@@ -108,6 +109,9 @@ Item {
 
                 onCountChanged: Qt.callLater(() => positionViewAtEnd())
 
+                ScrollBar.vertical: CustomScrollBar {
+                    uiScale: root.uiScale
+                }
                 delegate: Text {
                     width: logView.width
                     text: modelData

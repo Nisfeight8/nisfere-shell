@@ -1,26 +1,16 @@
 import QtQuick
+import Quickshell
 import qs.core
 import qs.services
 
-// Two DIFFERENT visual modes, ONE shared content (OSDContent.qml):
-//   - NOT fullscreen -> hosted via BaseDrawer (cornerMode bottom-right,
-//     matching the other drawers)
-//   - fullscreen -> hosted via a simple floating popup Item (no bar to
-//     dock against, no reason to use drawer-style edge positioning)
-//
-// A Loader swaps between the two MODE WRAPPERS based on hasFullscreen —
-// only ONE is ever instantiated at a time (never both simultaneously),
-// so there's no duplicate loading; only the CONTENT (OSDContent) is
-// shared/reused identically by whichever wrapper is currently active.
 Item {
     id: root
     anchors.fill: parent
 
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
+
     property bool hasFullscreen: false
 
-    // Exposed for ScreenBorder's mask — works regardless of which mode
-    // is currently active, since BOTH mode components below expose a
-    // property named `panelItem`.
     readonly property Item panelItem: modeLoader.item ? modeLoader.item.panelItem : null
 
     // ── OSD state (shared by both modes) ──────────────────────────────────
@@ -48,12 +38,6 @@ Item {
         case "brightness":
             return osdValue > 0.33 ? "sun" : "sun-dim";
         case "media":
-            // Was `osdMuted ? "pause" : "play"` — backwards relative
-            // to the established convention (MiniMedia.qml/Media.qml:
-            // `MediaService.isPlaying ? "pause" : "play"`). osdMuted
-            // here means `!isPlaying`, so the condition needs
-            // inverting to match: playing -> "pause" (the action
-            // you'd take), paused -> "play".
             return osdMuted ? "play" : "pause";
         case "battery":
             if (osdMuted)
@@ -163,7 +147,6 @@ Item {
             cornerSecondaryEdge: Qt.BottomEdge
             toggleOnHover: false
             openedRequest: root.shown
-            screenOffset: Theme.barHeight
 
             contentComponent: Component {
                 OSDContent {
@@ -192,10 +175,10 @@ Item {
                 anchors {
                     bottom: parent.bottom
                     right: parent.right
-                    bottomMargin: Theme.screenBorderSize + 20
-                    rightMargin: Theme.screenBorderSize + 20
+                    bottomMargin: Theme.screenBorderSize + (20 * root.uiScale)
+                    rightMargin: Theme.screenBorderSize + (20 * root.uiScale)
                 }
-                width: 260
+                width: 260 * root.uiScale
                 height: contentInner.implicitHeight
                 radius: Theme.radius
                 clip: true
@@ -206,7 +189,7 @@ Item {
                 opacity: root.shown ? 1.0 : 0.0
                 scale: root.shown ? 1.0 : 0.94
                 transform: Translate {
-                    y: root.shown ? 0 : 24
+                    y: root.shown ? 0 : 24 * root.uiScale
                 }
                 Behavior on opacity {
                     Anim {

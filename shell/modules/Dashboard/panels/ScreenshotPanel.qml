@@ -13,6 +13,8 @@ FocusScope {
     // ShellState.dashboardActiveComponent), not a big persistent tool
     // like Settings/Docker, so it's meant to size itself to its own
     // small content rather than filling the whole panel.
+    property real uiScale: 1.0
+
     implicitWidth: row.implicitWidth
     implicitHeight: row.implicitHeight
 
@@ -90,6 +92,7 @@ FocusScope {
             CircularActionButton {
                 icon: modelData.icon
                 label: modelData.label
+                uiScale: root.uiScale
 
                 // Keyboard-selected option reuses the same hover
                 // visuals — see CircularActionButton.forceHover.

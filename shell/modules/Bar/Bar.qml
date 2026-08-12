@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 import "widgets"
 import "widgets/Workspaces"
@@ -13,8 +14,7 @@ Item {
         right: parent.right
         top: parent.top
     }
-    implicitHeight: Theme.barHeight
-    height: Theme.barHeight
+    height: Theme.scaledBarHeight(QsWindow.window?.screen)
 
     Rectangle {
         anchors.fill: parent

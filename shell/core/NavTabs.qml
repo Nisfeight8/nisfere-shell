@@ -2,19 +2,15 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 
-// Horizontal top-tab bar with an animated underline indicator.
-// NOTE: when embedding this in a Layout, size it with
-// `Layout.preferredHeight`, not a raw `height:` — a RowLayout's own
-// height property doesn't reliably constrain fillHeight children the
-// way Layout.preferredHeight does.
 RowLayout {
     id: root
     property var tabModel: []
     property int currentIndex: 0
+    property real uiScale: 1.0
 
     signal tabClicked(int tabIndex)
 
-    spacing: 10
+    spacing: 10 * root.uiScale
 
     Repeater {
         model: root.tabModel
@@ -24,20 +20,16 @@ RowLayout {
             property bool isSelected: root.currentIndex === index
 
             Layout.fillWidth: true
-            // NOTE: fillHeight removed — this widget is meant to be a
-            // slim, fixed-height tab bar (sized via the parent's
-            // Layout.preferredHeight), not something that should stretch
-            // to consume whatever vertical space is available.
-            implicitHeight: content.implicitHeight + 12
+            implicitHeight: content.implicitHeight + (12 * root.uiScale)
 
             RowLayout {
                 id: content
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 LucideIcon {
                     icon: modelData.icon
-                    size: 18
+                    size: 18 * root.uiScale
                     color: isSelected ? Theme.selected : Theme.foreground
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
                     Behavior on color {
@@ -57,7 +49,7 @@ RowLayout {
                     color: isSelected ? Theme.selected : Theme.foreground
                     font.bold: isSelected
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
                     Behavior on color {
                         AnimColor {
@@ -76,8 +68,8 @@ RowLayout {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 color: Theme.selected
-                height: 3
-                radius: 2
+                height: 3 * root.uiScale
+                radius: 2 * root.uiScale
                 opacity: isSelected ? 1 : 0
                 width: isSelected ? parent.width * 0.6 : 0
 
@@ -86,12 +78,6 @@ RowLayout {
                         type: Anim.DefaultEffects
                     }
                 }
-                // Deliberately NOT using Anim here — Easing.OutBack's
-                // overshoot-then-settle "pop" has no equivalent among
-                // our M3 bezier curves (none of them overshoot past
-                // their target), so forcing this through Anim would
-                // lose the underline's distinctive snap. Keep as a
-                // raw NumberAnimation on purpose.
                 Behavior on width {
                     NumberAnimation {
                         duration: 350

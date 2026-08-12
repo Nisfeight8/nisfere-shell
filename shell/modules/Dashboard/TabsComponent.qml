@@ -31,7 +31,7 @@ Item {
     // Scaled by uiScale so the floor itself stays resolution-
     // appropriate — without this, a 1080p-tuned floor would be too
     // small on a 4K screen and risk overlapping content.
-    property real minContentWidth: 650 * root.uiScale
+    property real minContentWidth: 750 * root.uiScale
     property real minContentHeight: 380 * root.uiScale
 
     implicitWidth: Math.max(mainColumn.implicitWidth, minContentWidth)
@@ -64,7 +64,7 @@ Item {
     Component {
         id: productivityComp
         Productivity {
-            // uiScale: root.uiScale
+            uiScale: root.uiScale
         }
     }
 
@@ -81,6 +81,7 @@ Item {
                 id: navTabs
                 Layout.fillWidth: true
                 height: 30 * root.uiScale
+                uiScale: root.uiScale
                 currentIndex: ShellState.dashboardTabsCurrentTab
                 onTabClicked: index => ShellState.dashboardTabsCurrentTab = index
                 tabModel: [

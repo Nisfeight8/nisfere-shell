@@ -38,6 +38,7 @@ Item {
                     id: modeBtn
                     isActive: FocusService.mode === modelData.key
                     Layout.fillWidth: true
+                    uiScale: root.uiScale
                     icon: modelData.icon
                     label: modelData.label
                     onTapped: FocusService.switchMode(modelData.key)

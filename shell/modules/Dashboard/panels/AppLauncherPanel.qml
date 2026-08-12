@@ -5,24 +5,6 @@ import qs.core
 import qs.services
 import "../search"
 
-// AppLauncher adapted for CentralLauncher — SideMenu on the left
-// (All Applications / Favorites / Most Used / Recently + categories),
-// ResultsListView/SearchResultRow on the right showing whichever
-// tab/category is currently selected.
-//
-// This file used to also have its own search mode (a `searchText`
-// prop + isSearching/searchResults/displayResults), but nothing ever
-// fed it non-empty text in either place this component is used
-// (SearchComponent's "apps" entry only renders this when the query is
-// EMPTY; DashboardContent's standalone "appLauncherFull" never had a
-// search field at all) — so that whole branch was unreachable dead
-// code. Removed rather than adding a text field just to make it
-// reachable: a search box here would duplicate the Dashboard's own
-// top-level search, which already merges apps in
-// (GenericResultsList's isUnified + SearchProviders.searchAll()).
-// Browsing by SideMenu tab/category is a complete, separate
-// interaction model on its own — it doesn't need a "search within
-// this category" feature layered on top to be useful.
 Item {
     id: root
     property real uiScale: 1.0
@@ -118,19 +100,8 @@ Item {
         }
     }
 
-    // The current SideMenu tab's apps, mapped to the same
-    // SearchResultRow shape via DesktopEntryService.toResultRow that
-    // SearchProviders' own "apps" provider search() uses for the
-    // unified top-level search — same canonical row mapping, one
-    // less place for it to drift.
     readonly property var results: root.currentTabApps.map(a => DesktopEntryService.toResultRow(a))
 
-    // launchSelected() (rather than just relying on
-    // resultsList.activateSelected() directly) exists because callers
-    // (SearchComponent's inline "apps" mapping, DashboardContent's
-    // "appLauncherFull" case) each override this component instance's
-    // own activateSelected() to conditionally closeDashboard() based
-    // on whether a launch actually happened.
     function launchSelected() {
         const r = resultsList.results[resultsList.selectedIndex];
         if (r && r.action) {
@@ -147,13 +118,20 @@ Item {
     }
 
     RowLayout {
+        id: rowLayout
         anchors.fill: parent
-        spacing: 16
+        spacing: 16 * root.uiScale
 
         SideMenu {
             Layout.fillHeight: true
+            // Same cap-with-floor pattern as Productivity.qml's
+            // SideMenu — prevents it from eating a disproportionate
+            // share of width on a narrow screen (25% cap), while never
+            // shrinking below a legible minimum (140*uiScale floor).
+            Layout.preferredWidth: Math.max(140 * root.uiScale, Math.min(implicitWidth, rowLayout.width * 0.25))
             menuModel: root.sideMenuModel
             currentIndex: root.sideMenuModel.findIndex(m => m.key === ShellState.dashboardSearchAppsSubTab)
+            uiScale: root.uiScale
             onTabClicked: idx => {
                 ShellState.dashboardSearchAppsSubTab = root.sideMenuModel[idx].key;
             }
@@ -164,10 +142,10 @@ Item {
             id: resultsList
             Layout.fillWidth: true
             Layout.fillHeight: true
-
+            uiScale: root.uiScale
             results: root.results
             emptyText: "Nothing here yet"
-            maxListHeight: 400
+            maxListHeight: 400 * root.uiScale
 
             onResultActivated: (r, index) => {
                 if (r.action)

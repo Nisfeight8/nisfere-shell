@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import Quickshell
 import qs.core
 
 // Visual border decoration (the 4 bezel lines + rounded corners) and
@@ -13,7 +14,7 @@ Item {
     property real bezelSize: Theme.screenBorderSize
     property color borderLineColor: Theme.borderColor
     property int cornerRadius: Theme.radius
-    property real topBarHeight: Theme.barHeight
+    property real topBarHeight: Theme.scaledBarHeight(QsWindow.window?.screen)
 
     readonly property alias topHovered: topBorderHover.hovered
     readonly property alias bottomHovered: bottomBorderHover.hovered

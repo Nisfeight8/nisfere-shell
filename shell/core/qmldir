@@ -33,7 +33,8 @@ MiniGauge 1.0 MiniGauge.qml
 StatChartCard 1.0 StatChartCard.qml
 Sparkline 1.0 Sparkline.qml
 SearchBar 1.0 SearchBar.qml
-
+CustomScrollBar 1.0 CustomScrollBar.qml
+CustomScrollView 1.0 CustomScrollView.qml
 ToggleSwitch 1.0 ToggleSwitch.qml
 ActionButton 1.0 ActionButton.qml
 InfoRow 1.0 InfoRow.qml

@@ -87,23 +87,23 @@ BarWidget {
         targetItem: audioWidget
 
         ColumnLayout {
-            implicitWidth: 260
-            spacing: 12
+            implicitWidth: 260 * audioPopup.uiScale
+            spacing: 12 * audioPopup.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 8 * audioPopup.uiScale
 
                 LucideIcon {
                     color: Theme.selected
-                    size: 20
+                    size: 20 * audioPopup.uiScale
                     icon: "book-headphones"
                 }
                 Text {
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * audioPopup.uiScale
                     text: "Audio Settings"
                 }
             }
@@ -115,23 +115,23 @@ BarWidget {
             }
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: 4 * audioPopup.uiScale
 
                 Text {
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 10
+                    font.pixelSize: 10 * audioPopup.uiScale
                     opacity: 0.5
                     text: "OUTPUT DEVICE"
                 }
                 RowLayout {
-                    spacing: 10
+                    spacing: 10 * audioPopup.uiScale
 
                     LucideIcon {
                         id: outputMuteIcon
                         color: AudioService.muted ? Theme.color1 : Theme.foreground
-                        size: 16
+                        size: 16 * audioPopup.uiScale
                         icon: AudioService.muted ? "volume-x" : "volume-2"
 
                         Behavior on color {
@@ -150,6 +150,7 @@ BarWidget {
                     CustomSlider {
                         id: outputSlider
                         Layout.fillWidth: true
+                        uiScale: audioPopup.uiScale
 
                         Binding {
                             target: outputSlider
@@ -162,11 +163,11 @@ BarWidget {
                         onMoved: AudioService.setVolume(value)
                     }
                     Text {
-                        Layout.preferredWidth: 35
+                        Layout.preferredWidth: 35 * audioPopup.uiScale
                         color: Theme.foreground
                         font.bold: true
                         font.family: Theme.fontName
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * audioPopup.uiScale
                         horizontalAlignment: Text.AlignRight
                         text: Math.round(AudioService.volume * 100) + "%"
                     }
@@ -174,27 +175,27 @@ BarWidget {
             }
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: 4 * audioPopup.uiScale
 
                 Text {
                     color: Theme.foreground
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 10
+                    font.pixelSize: 10 * audioPopup.uiScale
                     opacity: 0.5
                     text: "INPUT DEVICE"
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: 10 * audioPopup.uiScale
 
                     RowLayout {
-                        spacing: 6
+                        spacing: 6 * audioPopup.uiScale
 
                         LucideIcon {
                             Layout.alignment: Qt.AlignVCenter
                             color: AudioService.sourceMuted ? Theme.color1 : Theme.foreground
-                            size: 16
+                            size: 16 * audioPopup.uiScale
                             icon: Icons.getMicIcon(AudioService.sourceMuted)
 
                             Behavior on color {
@@ -214,6 +215,7 @@ BarWidget {
                     CustomSlider {
                         id: inputSlider
                         Layout.fillWidth: true
+                        uiScale: audioPopup.uiScale
 
                         Binding {
                             target: inputSlider
@@ -229,7 +231,7 @@ BarWidget {
                         color: Theme.foreground
                         font.bold: true
                         font.family: Theme.fontName
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * audioPopup.uiScale
                         horizontalAlignment: Text.AlignRight
                         text: Math.round(AudioService.sourceVolume * 100) + "%"
                     }

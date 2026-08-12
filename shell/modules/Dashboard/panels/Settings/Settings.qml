@@ -4,21 +4,10 @@ import qs.core
 import qs.services
 import "tabs"
 
-// Settings — top-level container: a SideMenu of category tabs on the
-// left, the selected tab's own content on the right (Appearance,
-// Hyprland, Chroma, Palette, Wallpapers, Theme Source — all wired in).
 Item {
     id: root
     property real uiScale: 1.0
 
-    // Fixed, deliberate size — NOT derived from whichever tab happens
-    // to be selected (see original reasoning below). Scaled by uiScale
-    // so this dialog-style panel gets proportionally more room on
-    // higher-res screens rather than staying pinned at a 1080p size —
-    // internal tab content (Appearance/Hyprland/Chroma/etc.) is left
-    // unscaled deliberately: already verified to render correctly
-    // across screen sizes, so only the outer window size needs to
-    // track uiScale here, not every internal value.
     implicitWidth: 760 * uiScale
     implicitHeight: 560 * uiScale
 
@@ -86,14 +75,19 @@ Item {
         }
 
         RowLayout {
+            id: bodyRow
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 10 * root.uiScale
 
             SideMenu {
                 Layout.fillHeight: true
+                // Same cap-with-floor pattern as Productivity.qml/
+                // AppLauncherPanel's SideMenu.
+                Layout.preferredWidth: Math.max(140 * root.uiScale, Math.min(implicitWidth, bodyRow.width * 0.25))
                 menuModel: root.tabModel
                 currentIndex: root.currentIndex
+                uiScale: root.uiScale
                 onTabClicked: index => root.currentIndex = index
             }
 
@@ -107,7 +101,9 @@ Item {
                     active: root.currentKey === "chroma"
                     visible: active
                     sourceComponent: Component {
-                        ChromaTab {}
+                        ChromaTab {
+                            uiScale: root.uiScale
+                        }
                     }
                 }
                 Loader {
@@ -115,7 +111,9 @@ Item {
                     active: root.currentKey === "palette"
                     visible: active
                     sourceComponent: Component {
-                        PaletteTab {}
+                        PaletteTab {
+                            uiScale: root.uiScale
+                        }
                     }
                 }
                 Loader {
@@ -123,7 +121,9 @@ Item {
                     active: root.currentKey === "hyprland"
                     visible: active
                     sourceComponent: Component {
-                        HyprlandTab {}
+                        HyprlandTab {
+                            uiScale: root.uiScale
+                        }
                     }
                 }
                 Loader {
@@ -131,7 +131,9 @@ Item {
                     active: root.currentKey === "appearance"
                     visible: active
                     sourceComponent: Component {
-                        AppearanceTab {}
+                        AppearanceTab {
+                            uiScale: root.uiScale
+                        }
                     }
                 }
                 Loader {
@@ -139,7 +141,9 @@ Item {
                     active: root.currentKey === "wallpapers"
                     visible: active
                     sourceComponent: Component {
-                        WallpapersTab {}
+                        WallpapersTab {
+                            uiScale: root.uiScale
+                        }
                     }
                 }
                 Loader {
@@ -147,7 +151,7 @@ Item {
                     active: root.currentKey === "source"
                     visible: active
                     sourceComponent: Component {
-                        ThemeSourceTab {}
+                        ThemeSourceTab {uiScale: root.uiScale}
                     }
                 }
             }

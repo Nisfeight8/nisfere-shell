@@ -30,6 +30,7 @@ Item {
 
     ResultsListView {
         id: listView
+        uiScale: root.uiScale
         anchors.fill: parent
         results: root.results
         maxListHeight: 360 * root.uiScale

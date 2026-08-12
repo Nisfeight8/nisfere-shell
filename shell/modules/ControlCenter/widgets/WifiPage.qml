@@ -8,6 +8,7 @@ import qs.services
 Item {
     id: root
 
+    property real uiScale: 1.0
     implicitHeight: mainColumn.implicitHeight
 
     property string activeSsidPrompt: ""
@@ -18,39 +19,38 @@ Item {
     ColumnLayout {
         id: mainColumn
         width: parent.width
-        spacing: 16
+        spacing: 16 * root.uiScale
 
         // ── Header ───────────────────────────────────────────────
         PageHeader {
             Layout.fillWidth: true
             title: "Wi-Fi"
+            uiScale: root.uiScale
             onBackRequested: root.backRequested()
 
             ToggleSwitch {
                 checked: NetworkService.wifiEnabled
+                uiScale: root.uiScale
                 onToggled: NetworkService.wifi.toggle()
             }
         }
-        // Was `title: "Available Networks"` — SectionLabel is a plain
-        // Text (see SectionLabel.qml), not PageHeader; it only has the
-        // native `text` property, no `title`.
         SectionLabel {
-            Layout.bottomMargin: 6
+            Layout.bottomMargin: 6 * root.uiScale
             text: "Available Networks"
+            uiScale: root.uiScale
         }
         // ── Network List (WiFi ON) ────────────────────────────────
-        ScrollView {
+        CustomScrollView {
             id: scrollView
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(networksColumn.implicitHeight, 400)
-            clip: true
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            Layout.preferredHeight: Math.min(networksColumn.implicitHeight, 400 * root.uiScale)
+            uiScale: root.uiScale
             visible: NetworkService.wifiEnabled && root.wifiDevice !== null
 
             ColumnLayout {
                 id: networksColumn
-                width: scrollView.availableWidth
-                spacing: 6
+                width: scrollView.width
+                spacing: 6 * root.uiScale
 
                 Repeater {
                     model: root.wifiDevice ? root.wifiDevice.networks.values : null
@@ -63,7 +63,7 @@ Item {
                         property string localError: ""
                         readonly property bool hasError: localError !== ""
 
-                        implicitHeight: expanded ? (hasError ? 138 : 116) : 70
+                        implicitHeight: expanded ? (hasError ? 138 * root.uiScale : 116 * root.uiScale) : 70 * root.uiScale
                         clip: true
 
                         Behavior on implicitHeight {
@@ -94,19 +94,19 @@ Item {
                             id: infoRow
                             anchors {
                                 top: parent.top
-                                topMargin: 12
+                                topMargin: 12 * root.uiScale
                                 left: parent.left
-                                leftMargin: 12
+                                leftMargin: 12 * root.uiScale
                                 right: parent.right
-                                rightMargin: 12
+                                rightMargin: 12 * root.uiScale
                             }
-                            height: 46
-                            spacing: 10
+                            height: 46 * root.uiScale
+                            spacing: 10 * root.uiScale
 
                             LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: model.connected ? Theme.selected : Theme.foreground
-                                size: 16
+                                size: 16 * root.uiScale
                                 opacity: model.connected ? 1.0 : 0.75
                                 icon: Icons.getWifiItemIcon(model.signalStrength)
                             }
@@ -114,12 +114,12 @@ Item {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
-                                spacing: 2
+                                spacing: 2 * root.uiScale
 
                                 Text {
                                     Layout.fillWidth: true
                                     color: Theme.foreground
-                                    font.pixelSize: 13
+                                    font.pixelSize: 13 * root.uiScale
                                     font.bold: model.connected
                                     text: model.name
                                     elide: Text.ElideRight
@@ -128,7 +128,7 @@ Item {
                                 Text {
                                     Layout.fillWidth: true
                                     color: model.connected ? Theme.selected : (netCard.hasError ? Theme.color1 : Theme.foreground)
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * root.uiScale
                                     opacity: (model.connected || netCard.hasError) ? 1.0 : 0.5
                                     text: netCard.hasError ? "Connection Failed" : (model.connected ? "Connected" : "Saved")
                                     visible: model.connected || model.known || netCard.hasError
@@ -138,19 +138,16 @@ Item {
                             LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
                                 color: Theme.foreground
-                                size: 14
+                                size: 14 * root.uiScale
                                 opacity: 0.3
                                 icon: "lock"
                                 visible: model.security !== WifiSecurityType.Open && !model.connected && !model.known
                             }
 
-                            // Per-network action button — custom multi-state
-                            // logic (connected/expanded/hover intersect in
-                            // ways that don't map cleanly onto IconButton's
-                            // simpler idle/hover/active model), kept bespoke
-                            // but using AnimColor for consistency.
                             IconButton {
                                 id: actionBtn
+                                size: 32 * root.uiScale
+                                iconSize: 16 * root.uiScale
                                 Layout.alignment: Qt.AlignVCenter
                                 hoverSolid: true
                                 alwaysBorder: true
@@ -181,14 +178,14 @@ Item {
                             id: passwordRow
                             anchors {
                                 top: infoRow.bottom
-                                topMargin: 8
+                                topMargin: 8 * root.uiScale
                                 left: parent.left
-                                leftMargin: 12
+                                leftMargin: 12 * root.uiScale
                                 right: parent.right
-                                rightMargin: 12
+                                rightMargin: 12 * root.uiScale
                             }
-                            height: 38
-                            spacing: 8
+                            height: 38 * root.uiScale
+                            spacing: 8 * root.uiScale
                             opacity: netCard.expanded ? 1.0 : 0.0
                             Behavior on opacity {
                                 Anim {
@@ -200,19 +197,14 @@ Item {
                                 id: passwordInput
                                 Layout.fillWidth: true
                                 Layout.alignment: Qt.AlignVCenter
-                                implicitHeight: 34
+                                implicitHeight: 34 * root.uiScale
                                 color: Theme.foreground
                                 echoMode: TextInput.Password
                                 placeholderText: "Password…"
-                                // Was Qt.alpha(Theme.color1, 0.6) — not a
-                                // real Qt Quick function (same bug we
-                                // already fixed once in GlassBackground.qml).
-                                // Qt.rgba(r,g,b,a) is the established pattern
-                                // used everywhere else in the shell.
                                 placeholderTextColor: netCard.hasError ? Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.6) : Theme.selected
-                                font.pixelSize: 13
-                                leftPadding: 10
-                                rightPadding: 10
+                                font.pixelSize: 13 * root.uiScale
+                                leftPadding: 10 * root.uiScale
+                                rightPadding: 10 * root.uiScale
 
                                 background: Rectangle {
                                     border.color: netCard.hasError ? Theme.color1 : Theme.selected
@@ -232,9 +224,9 @@ Item {
                                 }
                             }
 
-                            // Confirm button — fits IconButton cleanly:
-                            // constant selected bg, lightens on hover.
                             IconButton {
+                                size: 32 * root.uiScale
+                                iconSize: 16 * root.uiScale
                                 icon: "check"
                                 hoverSolid: true
                                 alwaysBorder: true
@@ -253,15 +245,15 @@ Item {
                         Text {
                             anchors {
                                 top: passwordRow.bottom
-                                topMargin: 4
+                                topMargin: 4 * root.uiScale
                                 left: parent.left
-                                leftMargin: 16
+                                leftMargin: 16 * root.uiScale
                                 right: parent.right
-                                rightMargin: 12
+                                rightMargin: 12 * root.uiScale
                             }
                             text: netCard.localError
                             color: Theme.color1
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * root.uiScale
                             opacity: netCard.hasError ? 1.0 : 0.0
                             visible: opacity > 0
                             Behavior on opacity {
@@ -278,7 +270,7 @@ Item {
         // ── WiFi Off State ─────────────────────────────────────────
         DisabledStateCard {
             Layout.fillWidth: true
-            implicitHeight: 150
+            implicitHeight: 150 * root.uiScale
             visible: !NetworkService.wifiEnabled
             icon: "wifi-off"
             message: "Wi-Fi is turned off"

@@ -8,15 +8,16 @@ FooterDrawer {
     z: 10
     edge: Qt.TopEdge
     edgeMargin: 0
-    screenOffset: Theme.barHeight
+    screenOffset: Theme.scaledBarHeight(root.screen)
     minPanelWidth: 250
     toggleOnHover: false
     openedRequest: ShellState.dashboardOpened
 
     onCloseRequest: ShellState.closeDashboard()
-    footerHeight: 36
+    footerHeight: 36 * Theme.scaleFor(root.screen)
     footerComponent: Component {
-        DashboardFooter {}
+        DashboardFooter {
+        }
     }
     contentComponent: Component {
         DashboardContent {

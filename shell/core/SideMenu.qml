@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import qs.core
 
 Item {
@@ -7,26 +8,30 @@ Item {
 
     property var menuModel: []
     property int currentIndex: 0
+    property real uiScale: 1.0
     signal tabClicked(int tabIndex)
-    implicitWidth: 220
+
+    // Default preferred width — callsites in a width-constrained
+    // container (e.g. Productivity.qml on a small screen) should
+    // override this via Layout.preferredWidth with a capped formula
+    // instead of relying on this raw default, since 220 alone doesn't
+    // know anything about how much total space its container actually
+    // has.
+    implicitWidth: 220 * uiScale
 
     ListView {
         anchors.fill: parent
         model: root.menuModel
-        spacing: 5
+        spacing: 5 * root.uiScale
         clip: true
-        // Was interactive: false (fine when this only ever held a
-        // handful of items, e.g. Productivity's 2 tabs). Now also used
-        // for the launcher's Apps sub-tabs, which can have well over a
-        // dozen entries (All/Favorites/Most Used/Recent + every
-        // category) — needs to actually scroll. Backward compatible:
-        // when content already fits (the original small-list case),
-        // enabling interactive scrolling changes nothing visually.
         interactive: true
-
+        ScrollBar.vertical: CustomScrollBar {
+            uiScale: root.uiScale
+            
+        }
         delegate: Item {
             width: ListView.view.width
-            height: 45
+            height: 45 * root.uiScale
 
             property bool isHovered: itemHover.hovered
             property bool isSelected: root.currentIndex === index
@@ -45,12 +50,12 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 20
-                spacing: 12
+                anchors.leftMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 LucideIcon {
                     icon: modelData.icon
-                    size: 18
+                    size: 18 * root.uiScale
                     color: isSelected ? Theme.selected : Theme.foreground
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
 
@@ -72,7 +77,7 @@ Item {
                     color: isSelected ? Theme.selected : Theme.foreground
                     font.bold: isSelected
                     font.family: Theme.fontName
-                    font.pixelSize: 14
+                    font.pixelSize: 14 * root.uiScale
                     elide: Text.ElideRight
                     opacity: isSelected ? 1.0 : (isHovered ? 0.8 : 0.4)
 
@@ -91,11 +96,11 @@ Item {
 
             Rectangle {
                 anchors.left: parent.left
-                anchors.leftMargin: 4
+                anchors.leftMargin: 4 * root.uiScale
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.selected
-                width: 3
-                radius: 2
+                width: 3 * root.uiScale
+                radius: 2 * root.uiScale
                 opacity: isSelected ? 1 : 0
                 height: isSelected ? parent.height * 0.5 : 0
 
@@ -104,10 +109,6 @@ Item {
                         type: Anim.DefaultEffects
                     }
                 }
-                // Deliberately NOT using Anim here — same reasoning as
-                // NavTabs' underline: Easing.OutBack's overshoot-then-
-                // settle "pop" has no equivalent among our M3 bezier
-                // curves, so this stays a raw NumberAnimation on purpose.
                 Behavior on height {
                     NumberAnimation {
                         duration: 350

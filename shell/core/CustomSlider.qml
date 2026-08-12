@@ -7,6 +7,7 @@ Slider {
 
     property color progressColor: Theme.selected
     property color trackColor: Theme.backgroundAlt
+    property real uiScale: 1.0
 
     from: 0
     hoverEnabled: true
@@ -15,9 +16,9 @@ Slider {
     background: Rectangle {
         color: control.trackColor
         height: implicitHeight
-        implicitHeight: 8
-        implicitWidth: 150
-        radius: 4
+        implicitHeight: 8 * control.uiScale
+        implicitWidth: 150 * control.uiScale
+        radius: height / 2
         width: control.availableWidth
         x: control.leftPadding
         y: control.topPadding + control.availableHeight / 2 - height / 2
@@ -25,7 +26,7 @@ Slider {
         Rectangle {
             color: control.progressColor
             height: parent.height
-            radius: 4
+            radius: parent.radius
             width: control.visualPosition * parent.width
         }
     }
@@ -33,9 +34,9 @@ Slider {
         border.color: Theme.background
         border.width: 2
         color: control.pressed || control.hovered ? Theme.foreground : Theme.selected
-        implicitHeight: 16
-        implicitWidth: 16
-        radius: 8
+        implicitHeight: 16 * control.uiScale
+        implicitWidth: 16 * control.uiScale
+        radius: width / 2
         x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
         y: control.topPadding + control.availableHeight / 2 - height / 2
 

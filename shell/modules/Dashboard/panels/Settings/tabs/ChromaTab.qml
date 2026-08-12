@@ -3,14 +3,9 @@ import QtQuick.Layouts
 import qs.core
 import qs.services
 
-// Chroma extraction tuning — nisfere_chroma's 5 knobs (algorithm +
-// 4 sliders). Reads from ThemeState.chromaSettings, writes via
-// ThemeActions.setChromaSetting() — the daemon live-reapplies colors
-// from the current wallpaper automatically if one's active (see
-// ThemeManager.set_chroma_setting), so changes here are felt
-// immediately without needing any "Apply" button.
 Item {
     id: root
+    property real uiScale: 1.0
 
     readonly property var chroma: ThemeState.chromaSettings
 
@@ -33,12 +28,6 @@ Item {
         },
     ]
 
-    // Debounces slider drags — sends at most one setChromaSetting()
-    // call ~300ms after the last movement, instead of one per pixel
-    // dragged. Each call makes the daemon re-run color extraction
-    // against the current wallpaper (fine occasionally, wasteful
-    // dozens of times a second mid-drag, especially with the slower
-    // algorithms like kmeans).
     property string _pendingKey: ""
     property var _pendingValue: null
     property Timer _debounceTimer: Timer {
@@ -54,13 +43,13 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 24
+        anchors.margins: 20 * root.uiScale
+        spacing: 24 * root.uiScale
 
         // ── Info banner ──────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: noticeRow.implicitHeight + 20
+            implicitHeight: noticeRow.implicitHeight + (20 * root.uiScale)
             radius: Theme.radius
             color: Qt.rgba(Theme.selected.r, Theme.selected.g, Theme.selected.b, 0.08)
             border.width: 1
@@ -70,13 +59,13 @@ Item {
                 id: noticeRow
                 anchors {
                     fill: parent
-                    margins: 10
+                    margins: 10 * root.uiScale
                 }
-                spacing: 10
+                spacing: 10 * root.uiScale
 
                 LucideIcon {
                     icon: "info"
-                    size: 16
+                    size: 16 * root.uiScale
                     color: Theme.selected
                 }
                 Text {
@@ -86,7 +75,7 @@ Item {
                     color: Theme.foreground
                     opacity: 0.85
                     font.family: Theme.fontName
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * root.uiScale
                 }
             }
         }
@@ -94,19 +83,19 @@ Item {
         // ── Algorithm ────────────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 8 * root.uiScale
 
             Text {
                 text: "Algorithm"
                 color: Theme.foreground
                 font.family: Theme.fontName
-                font.pixelSize: 13
+                font.pixelSize: 13 * root.uiScale
                 font.bold: true
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 Repeater {
                     model: root.algorithms
@@ -114,6 +103,7 @@ Item {
                     delegate: NavTile {
                         required property var modelData
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         label: modelData.label
                         isActive: root.chroma.algorithm === modelData.key
                         onTapped: ThemeActions.setChromaSetting("algorithm", modelData.key)
@@ -127,7 +117,7 @@ Item {
         // ── Saturation ───────────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 4 * root.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
@@ -136,19 +126,20 @@ Item {
                     text: "Saturation"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                 }
                 Text {
                     text: saturationSlider.value.toFixed(2)
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
             }
             CustomSlider {
                 id: saturationSlider
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 from: 0.0
                 to: 2.5
                 value: root.chroma.saturation ?? 1.3
@@ -159,7 +150,7 @@ Item {
         // ── Background saturation ──────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 4 * root.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
@@ -168,19 +159,20 @@ Item {
                     text: "Background Saturation"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                 }
                 Text {
                     text: bgSaturationSlider.value.toFixed(2)
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
             }
             CustomSlider {
                 id: bgSaturationSlider
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 from: 0.0
                 to: 1.0
                 value: root.chroma.bg_saturation ?? 0.08
@@ -191,7 +183,7 @@ Item {
         // ── Contrast ─────────────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 4 * root.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
@@ -200,25 +192,20 @@ Item {
                     text: "Contrast"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                 }
                 Text {
                     text: contrastSlider.value.toFixed(2)
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
             }
             CustomSlider {
                 id: contrastSlider
                 Layout.fillWidth: true
-                // Capped at 2.0 — deliberately well below the point
-                // where 0.35^contrast collapses background/foreground
-                // onto the lightness floor/ceiling regardless of the
-                // actual wallpaper (hit this exact issue at
-                // contrast=3.55 earlier). Below 2.0, contrast still
-                // behaves proportionally to the image.
+                uiScale: root.uiScale
                 from: 0.5
                 to: 2.0
                 value: root.chroma.contrast ?? 1.0
@@ -231,7 +218,7 @@ Item {
         // ── Sample resolution ────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 4 * root.uiScale
 
             RowLayout {
                 Layout.fillWidth: true
@@ -240,19 +227,20 @@ Item {
                     text: "Sample Resolution"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                 }
                 Text {
                     text: Math.round(resizeSlider.value) + "px"
                     color: Theme.selected
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
             }
             CustomSlider {
                 id: resizeSlider
                 Layout.fillWidth: true
+                uiScale: root.uiScale
                 from: 50
                 to: 500
                 stepSize: 10
@@ -265,7 +253,7 @@ Item {
                 color: Theme.foreground
                 opacity: 0.45
                 font.family: Theme.fontName
-                font.pixelSize: 11
+                font.pixelSize: 11 * root.uiScale
             }
         }
 

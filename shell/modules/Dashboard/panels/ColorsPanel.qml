@@ -89,6 +89,7 @@ Item {
                 opacity: root.activeMode === "light" ? 1.0 : 0.4
             }
             ToggleSwitch {
+                uiScale: root.uiScale
                 checked: root.activeMode === "dark"
                 onToggled: root.activeMode = root.activeMode === "dark" ? "light" : "dark"
             }
@@ -115,6 +116,7 @@ Item {
             Layout.alignment: Qt.AlignTop
             results: root.results
             loading: root.loading
+            uiScale: root.uiScale
             loadingText: "Loading themes..."
             emptyText: "No matching themes"
             maxListHeight: 800 * root.uiScale

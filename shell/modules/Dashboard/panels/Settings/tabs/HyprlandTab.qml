@@ -4,25 +4,12 @@ import QtQuick.Controls
 import qs.core
 import qs.services
 
-// Hyprland-only settings (gaps, borders, opacity, blur, shadow,
-// cursor). Reads from ThemeState.hyprland, writes via
-// ThemeActions.setSetting(key, value, "hyprland").
-//
-// cursorTheme is DELIBERATELY read-only here, not an editable
-// control — ThemeManager._apply_colors() overwrites it automatically
-// on every theme change (Bibata-Modern-Classic in light mode,
-// -Ice in dark mode, matched for contrast), so an editable control
-// would just get silently reset the next time a wallpaper/theme
-// changes, same trap the palette colors are in. cursorSize is the one
-// genuinely free-standing knob here.
 Item {
     id: root
+    property real uiScale: 1.0
 
     readonly property var hypr: ThemeState.hyprland
 
-    // ── Debounced setSetting — same idea as ChromaTab's debounce,
-    // fixed to the "hyprland" scope since every key on this tab lives
-    // there. ─────────────────────────────────────────────────────
     property string _pendingKey: ""
     property var _pendingValue: null
     property Timer _debounceTimer: Timer {
@@ -36,38 +23,38 @@ Item {
         root._debounceTimer.restart();
     }
 
-    ScrollView {
+    CustomScrollView {
         anchors.fill: parent
-        contentWidth: availableWidth
         clip: true
+        uiScale: root.uiScale
 
         ColumnLayout {
             width: parent.width
-            spacing: 24
+            spacing: 24 * root.uiScale
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
+                Layout.preferredHeight: 4 * root.uiScale
             }
 
             // ── Gaps ─────────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 Text {
                     text: "Gaps"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -75,19 +62,20 @@ Item {
                             text: "Workspace Gaps"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(workspaceGapsSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: workspaceGapsSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0
                         to: 100
                         stepSize: 2
@@ -98,7 +86,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -106,19 +94,20 @@ Item {
                             text: "Window Gaps (Inner)"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(gapsInSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: gapsInSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0
                         to: 30
                         stepSize: 1
@@ -129,7 +118,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -137,19 +126,20 @@ Item {
                             text: "Window Gaps (Outer)"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(gapsOutSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: gapsOutSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0
                         to: 50
                         stepSize: 2
@@ -160,22 +150,22 @@ Item {
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Borders ──────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 4
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 4 * root.uiScale
 
                 Text {
                     text: "Borders"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
                 RowLayout {
@@ -185,19 +175,20 @@ Item {
                         text: "Border Size"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                     }
                     Text {
                         text: Math.round(borderSizeSlider.value) + "px"
                         color: Theme.selected
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         font.bold: true
                     }
                 }
                 CustomSlider {
                     id: borderSizeSlider
                     Layout.fillWidth: true
+                    uiScale: root.uiScale
                     from: 0
                     to: 10
                     stepSize: 1
@@ -207,28 +198,28 @@ Item {
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Opacity ──────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 Text {
                     text: "Opacity"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -236,19 +227,20 @@ Item {
                             text: "Active Window"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: opacityActiveSlider.value.toFixed(2)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: opacityActiveSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0.0
                         to: 1.0
                         value: root.hypr.opacityActive ?? 0.95
@@ -258,7 +250,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -266,19 +258,20 @@ Item {
                             text: "Inactive Window"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: opacityInactiveSlider.value.toFixed(2)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: opacityInactiveSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0.0
                         to: 1.0
                         value: root.hypr.opacityInactive ?? 0.85
@@ -288,7 +281,7 @@ Item {
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -296,19 +289,20 @@ Item {
                             text: "Fullscreen Window"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: opacityFullscreenSlider.value.toFixed(2)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: opacityFullscreenSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0.0
                         to: 1.0
                         value: root.hypr.opacityFullscreen ?? 1.0
@@ -318,16 +312,16 @@ Item {
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Blur ─────────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -336,18 +330,19 @@ Item {
                         text: "Blur"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         font.bold: true
                     }
                     ToggleSwitch {
                         checked: root.hypr.blurEnabled ?? true
+                        uiScale: root.uiScale
                         onToggled: ThemeActions.setSetting("blurEnabled", !checked, "hyprland")
                     }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     enabled: root.hypr.blurEnabled ?? true
                     opacity: enabled ? 1.0 : 0.4
 
@@ -358,19 +353,20 @@ Item {
                             text: "Blur Size"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(blurSizeSlider.value)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: blurSizeSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0
                         to: 20
                         stepSize: 1
@@ -385,19 +381,20 @@ Item {
                             text: "Blur Passes"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(blurPassesSlider.value)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: blurPassesSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 1
                         to: 5
                         stepSize: 1
@@ -412,10 +409,11 @@ Item {
                             text: "Blur Popups"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         ToggleSwitch {
                             checked: root.hypr.blurPopups ?? true
+                            uiScale: root.uiScale
                             onToggled: ThemeActions.setSetting("blurPopups", !checked, "hyprland")
                         }
                     }
@@ -423,16 +421,16 @@ Item {
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Shadow ───────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -441,18 +439,19 @@ Item {
                         text: "Shadow"
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 13
+                        font.pixelSize: 13 * root.uiScale
                         font.bold: true
                     }
                     ToggleSwitch {
                         checked: root.hypr.shadowEnabled ?? true
+                        uiScale: root.uiScale
                         onToggled: ThemeActions.setSetting("shadowEnabled", !checked, "hyprland")
                     }
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     enabled: root.hypr.shadowEnabled ?? true
                     opacity: enabled ? 1.0 : 0.4
 
@@ -463,19 +462,20 @@ Item {
                             text: "Shadow Range"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(shadowRangeSlider.value) + "px"
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: shadowRangeSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 0
                         to: 50
                         stepSize: 1
@@ -490,19 +490,20 @@ Item {
                             text: "Shadow Render Power"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(shadowPowerSlider.value)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: shadowPowerSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 1
                         to: 4
                         stepSize: 1
@@ -513,32 +514,30 @@ Item {
             }
 
             InfoDivider {
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── Cursor ───────────────────────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 20
-                Layout.rightMargin: 20
-                spacing: 12
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
 
                 Text {
                     text: "Cursor"
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * root.uiScale
                     font.bold: true
                 }
 
-                // Read-only — auto-managed by the daemon per dark/
-                // light mode (Bibata-Modern-Ice / -Classic), overwritten
-                // on every theme change. See file-level comment.
                 InfoRow {
                     Layout.fillWidth: true
                     label: "Cursor Theme"
                     value: root.hypr.cursorTheme ?? "—"
+                    uiScale: root.uiScale
                 }
                 Text {
                     Layout.fillWidth: true
@@ -546,13 +545,13 @@ Item {
                     color: Theme.foreground
                     opacity: 0.45
                     font.family: Theme.fontName
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * root.uiScale
                     wrapMode: Text.Wrap
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 4 * root.uiScale
                     RowLayout {
                         Layout.fillWidth: true
                         Text {
@@ -560,19 +559,20 @@ Item {
                             text: "Cursor Size"
                             color: Theme.foreground
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                         }
                         Text {
                             text: Math.round(cursorSizeSlider.value)
                             color: Theme.selected
                             font.family: Theme.fontName
-                            font.pixelSize: 13
+                            font.pixelSize: 13 * root.uiScale
                             font.bold: true
                         }
                     }
                     CustomSlider {
                         id: cursorSizeSlider
                         Layout.fillWidth: true
+                        uiScale: root.uiScale
                         from: 16
                         to: 48
                         stepSize: 4
@@ -584,7 +584,7 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 12
+                Layout.preferredHeight: 12 * root.uiScale
             }
         }
     }

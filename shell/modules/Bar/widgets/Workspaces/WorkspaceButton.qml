@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 
 Item {
@@ -15,7 +16,7 @@ Item {
     // this delegate has no BarWidget ancestor to inherit those from
     // (it's instantiated directly by Workspaces.qml's Repeater), so
     // it derives its own from Theme.barHeight for consistency.
-    readonly property real _refHeight: Theme.barHeight - 15
+    readonly property real _refHeight: Theme.scaledBarHeight(QsWindow.window?.screen) - 15
     readonly property real glyphSizeFocused: Math.max(16, _refHeight * 0.75)
     readonly property real glyphSizeUnfocused: Math.max(12, _refHeight * 0.5)
     readonly property real appIconSizeFocused: Math.max(12, _refHeight * 0.5)

@@ -12,6 +12,8 @@ PanelWindow {
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
 
+    readonly property real uiScale: Theme.scaleFor(screen)
+
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     anchors {
@@ -42,17 +44,17 @@ PanelWindow {
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 60
+        spacing: 60 * powerMenu.uiScale
 
         // ── Header ────────────────────────────────────────────────
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 10
+            spacing: 10 * powerMenu.uiScale
 
             Text {
                 text: "Goodbye, " + SystemInfo.username
                 font.family: Theme.fontName
-                font.pixelSize: 32
+                font.pixelSize: 32 * powerMenu.uiScale
                 font.bold: true
                 color: Theme.selected
                 Layout.alignment: Qt.AlignHCenter
@@ -60,7 +62,7 @@ PanelWindow {
             Text {
                 text: SystemInfo.osName + " • " + SystemInfo.uptime
                 font.family: Theme.fontName
-                font.pixelSize: 16
+                font.pixelSize: 16 * powerMenu.uiScale
                 color: Theme.selected
                 opacity: 0.7
                 Layout.alignment: Qt.AlignHCenter
@@ -70,15 +72,9 @@ PanelWindow {
         // ── Action buttons ────────────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: 40
+            spacing: 40 * powerMenu.uiScale
 
             Repeater {
-                // Was inline `cmd: [...]` arrays duplicating the exact
-                // same systemctl/loginctl/hyprshutdown commands now
-                // centralized in PowerService.qml — action is a direct
-                // function reference (plain JS array literals can hold
-                // these fine), so there's one source of truth for what
-                // each of these commands actually is.
                 model: [
                     {
                         icon: "power",
@@ -114,9 +110,10 @@ PanelWindow {
 
                 CircularActionButton {
                     icon: modelData.icon
-                    showLabel: false          // tooltip only, no permanent label
+                    showLabel: false
                     diameter: 140
                     iconSize: 48
+                    uiScale: powerMenu.uiScale
 
                     hoverColor: modelData.color
                     activeColor: modelData.color

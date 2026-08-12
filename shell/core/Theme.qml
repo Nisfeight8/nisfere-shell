@@ -10,6 +10,9 @@ QtObject {
 
     readonly property real referenceHeight: 1080
 
+    function scaledBarHeight(screen) {
+        return barHeight * scaleFor(screen);
+    }
     function scaleFor(screen) {
         if (!screen || !screen.height)
             return 1.0;

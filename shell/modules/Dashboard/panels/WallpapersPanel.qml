@@ -137,6 +137,7 @@ Item {
                 }
 
                 ToggleSwitch {
+                    uiScale: root.uiScale
                     checked: root.selectedMode === "dark"
                     onToggled: root.selectedMode = root.selectedMode === "dark" ? "light" : "dark"
                 }
@@ -173,6 +174,7 @@ Item {
             }
 
             ToggleSwitch {
+                uiScale: root.uiScale
                 checked: root.applyColors
                 onToggled: root.applyColors = !root.applyColors
             }

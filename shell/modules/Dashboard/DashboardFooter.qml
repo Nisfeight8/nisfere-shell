@@ -1,42 +1,31 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 import qs.services
 
-// Footer strip content — lives inside FooterDrawer's footerItem.
-// Left: mode toggle (Search <-> Tabs). Center: current username
-// (SystemInfo). Right: quick-action shortcuts + resumable-tool
-// indicator + "more" reveal.
 Item {
     id: root
 
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
+
     implicitHeight: parent.height
 
-    // True whenever some NON-tabs page is active — search, or any of
-    // the standalone tools (docker/sysmon/settings/screenshot/record).
-    // Written as "not tabs" (rather than "is search") so every current
-    // and future non-tabs component falls under the same toggle
-    // without needing another branch here.
     readonly property bool nonTabsActive: ShellState.dashboardActiveComponent !== "tabs"
     readonly property alias contentRow: contentRow
 
-    // "more" reveal state — inline, not a Popup (see chat: Popups
-    // reparent outside the drawer's masked item tree, same reason
-    // ProviderPicker stopped being one). Revealing more icons just
-    // means more children inside this SAME contentRow, so the
-    // footer's mask (footerMaskTarget, bound to contentRow's own
-    // bounding box) grows to match automatically — no extra plumbing.
     property bool moreExpanded: false
 
     RowLayout {
         id: contentRow
         anchors.centerIn: parent
-        spacing: 12
+        spacing: 12 * root.uiScale
+
         IconButton {
             visible: ShellState.dashboardActiveComponent !== "search"
             icon: "search"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background
@@ -52,8 +41,8 @@ Item {
         IconButton {
             visible: ShellState.dashboardActiveComponent !== "tabs"
             icon: root.nonTabsActive ? "layout-dashboard" : "search"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background
@@ -72,8 +61,8 @@ Item {
 
         // ── Username (center) ────────────────────────────────────
         Rectangle {
-            implicitWidth: userRow.implicitWidth + 24
-            implicitHeight: 36
+            implicitWidth: userRow.implicitWidth + (24 * root.uiScale)
+            implicitHeight: 36 * root.uiScale
             radius: Theme.radius
             color: Theme.background
             border.width: Theme.widgetBorderWidth
@@ -82,11 +71,11 @@ Item {
             RowLayout {
                 id: userRow
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 8 * root.uiScale
 
                 LucideIcon {
                     icon: "user"
-                    size: 16
+                    size: 16 * root.uiScale
                     color: Theme.foreground
                     opacity: 0.5
                 }
@@ -94,23 +83,19 @@ Item {
                     text: SystemInfo.username
                     color: Theme.foreground
                     font.family: Theme.fontName
-                    font.pixelSize: 16
+                    font.pixelSize: 16 * root.uiScale
                     font.bold: true
                     opacity: 0.75
                 }
             }
         }
 
-        // ── Resumable-tool indicator — same pattern as the bar
-        // clock's own indicator (see Clock.qml). Handy here too: if
-        // you're already inside the Dashboard looking at e.g. Tabs,
-        // no reason to go all the way out to the bar just to jump
-        // back into a backgrounded Docker/SysMon/Settings session. ──
+        // ── Resumable-tool indicator ──────────────────────────────
         Item {
             id: resumableIndicator
             visible: ShellState.dashboardHasResumableComponentActive
-            implicitWidth: 40
-            implicitHeight: 40
+            implicitWidth: 40 * root.uiScale
+            implicitHeight: 40 * root.uiScale
 
             readonly property var _icons: ({
                     "docker": "container",
@@ -129,7 +114,7 @@ Item {
             LucideIcon {
                 anchors.centerIn: parent
                 icon: resumableIndicator._icons[ShellState.dashboardResumableComponent] ?? "circle"
-                size: 17
+                size: 17 * root.uiScale
                 color: Theme.selected
                 opacity: 0.9
             }
@@ -153,15 +138,11 @@ Item {
             }
         }
 
-        // ── "More" — reveals additional quick actions INLINE in this
-        // same row (Color Picker today; room for more later) rather
-        // than a Popup or a separate page. isActive mirrors the
-        // expanded state so the button visually stays "pressed" while
-        // open. ─────────────────────────────────────────────────────
+        // ── "More" ─────────────────────────────────────────────────
         IconButton {
             icon: "zap"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background
@@ -175,14 +156,12 @@ Item {
             onTapped: root.moreExpanded = !root.moreExpanded
         }
 
-        // ── Screenshot — direct 1-click shortcut, no intermediate
-        // step (see chat: this and Record get their own buttons
-        // specifically because they're the ones you reach for most). ──
+        // ── Screenshot ─────────────────────────────────────────────
         IconButton {
             visible: root.moreExpanded
             icon: "camera"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background
@@ -193,16 +172,16 @@ Item {
             borderColor: Theme.borderColor
             onTapped: {
                 root.moreExpanded = false;
-                ShellState.openScreenshot(ShellState.activeScreenName)
+                ShellState.openScreenshot(ShellState.activeScreenName);
             }
         }
 
-        // ── Record — same reasoning as Screenshot above ───────────
+        // ── Record ─────────────────────────────────────────────────
         IconButton {
             visible: root.moreExpanded
             icon: "circle-dot"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background
@@ -213,23 +192,16 @@ Item {
             borderColor: Theme.borderColor
             onTapped: {
                 root.moreExpanded = false;
-                ShellState.openRecord(ShellState.activeScreenName)
+                ShellState.openRecord(ShellState.activeScreenName);
             }
         }
 
-        // Color Picker — a search PROVIDER (@pick), not a standalone
-        // component like Screenshot/Record, so a plain
-        // openDashboardSearch() here would land you on a one-result
-        // list you'd still have to click — two taps instead of one.
-        // SearchProviders.runColorPicker() is the direct entry point
-        // that skips search entirely: same close-dashboard-then-run
-        // delay the provider's own search result uses, just reachable
-        // without faking a search interaction first.
+        // ── Color Picker ───────────────────────────────────────────
         IconButton {
             visible: root.moreExpanded
             icon: "pipette"
-            size: 40
-            iconSize: 17
+            size: 40 * root.uiScale
+            iconSize: 17 * root.uiScale
             radius: Theme.radius
             hoverColor: Theme.selected
             normalColor: Theme.background

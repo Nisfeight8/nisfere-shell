@@ -136,10 +136,11 @@ Rectangle {
                 }
             }
         }
-        ScrollView {
+        CustomScrollView {
             Layout.fillHeight: true
             Layout.fillWidth: true
             clip: true
+            uiScale: root.uiScale
 
             Column {
                 spacing: 6

@@ -92,11 +92,15 @@ Item {
     }
     Component {
         id: screenshotComp
-        ScreenshotPanel {}
+        ScreenshotPanel {
+            uiScale: wrapper.uiScale
+        }
     }
     Component {
         id: recordComp
-        RecordPanel {}
+        RecordPanel {
+            uiScale: wrapper.uiScale
+        }
     }
 
     AnimLoader {

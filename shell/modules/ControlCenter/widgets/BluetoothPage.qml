@@ -7,6 +7,7 @@ import qs.services
 
 Item {
     id: root
+    property real uiScale: 1.0
 
     signal backRequested
 
@@ -15,78 +16,78 @@ Item {
     ColumnLayout {
         id: mainColumn
         width: parent.width
-        spacing: 20
+        spacing: 20 * root.uiScale
 
         // ── Header ───────────────────────────────────────────────
         PageHeader {
             Layout.fillWidth: true
             title: "Bluetooth Settings"
+            uiScale: root.uiScale
             onBackRequested: root.backRequested()
 
             ToggleSwitch {
                 checked: BluetoothService.isEnabled
+                uiScale: root.uiScale
                 onToggled: BluetoothService.toggle()
             }
         }
         // Sub-header + Scan button
         RowLayout {
             Layout.fillWidth: true
-            Layout.bottomMargin: 5
+            Layout.bottomMargin: 5 * root.uiScale
 
-            // Was `title: "..."` — SectionLabel is a plain Text (see
-            // SectionLabel.qml), only has the native `text` property.
             SectionLabel {
                 Layout.fillWidth: true
                 text: "Available & Saved Devices"
+                uiScale: root.uiScale
             }
 
             NavTile {
-                Layout.preferredWidth: 90
-                Layout.preferredHeight: 28
+                Layout.preferredWidth: 90 * root.uiScale
+                Layout.preferredHeight: 28 * root.uiScale
                 icon: BluetoothService.isScanning ? "refresh-cw" : "search"
                 label: BluetoothService.isScanning ? "Scan..." : "Scan"
                 isActive: BluetoothService.isScanning
                 activeColor: Theme.color1
+                uiScale: root.uiScale
                 onTapped: BluetoothService.toggleScan()
             }
         }
         DisabledStateCard {
             Layout.fillWidth: true
-            implicitHeight: 150
+            implicitHeight: 150 * root.uiScale
             visible: BluetoothService.isEnabled && Bluetooth.devices.values.length < 1
             icon: "bluetooth"
             message: "Scan to find available devices"
         }
         // ── Device List (BT ON) ───────────────────────────────────
-        ScrollView {
+        CustomScrollView {
             id: scrollView
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(devicesColumn.implicitHeight, 400)
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            clip: true
+            Layout.preferredHeight: Math.min(devicesColumn.implicitHeight, 400 * root.uiScale)
+            uiScale: root.uiScale
             visible: BluetoothService.isEnabled && Bluetooth.devices.values.length > 0
 
             ColumnLayout {
                 id: devicesColumn
-                spacing: 10
-                width: scrollView.availableWidth
+                spacing: 10 * root.uiScale
+                width: scrollView.width
 
-                // Device cards
                 Repeater {
                     model: Bluetooth.devices.values
 
                     delegate: GlassCard {
                         Layout.fillWidth: true
-                        implicitHeight: 60
+                        implicitHeight: 60 * root.uiScale
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 15
-                            spacing: 15
+                            anchors.margins: 15 * root.uiScale
+                            spacing: 15 * root.uiScale
 
                             LucideIcon {
                                 color: model.connected ? Theme.selected : Theme.foreground
-                                size: 20
+                                size: 20 * root.uiScale
                                 icon: model.batteryAvailable ? "headphones" : "bluetooth"
 
                                 Behavior on color {
@@ -98,22 +99,23 @@ Item {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 2
+                                spacing: 2 * root.uiScale
 
                                 Text {
                                     Layout.fillWidth: true
                                     color: Theme.foreground
                                     elide: Text.ElideRight
                                     font.bold: true
+                                    font.pixelSize: 13 * root.uiScale
                                     text: model.name !== "" ? model.name : model.deviceName
                                 }
 
                                 RowLayout {
-                                    spacing: 8
+                                    spacing: 8 * root.uiScale
 
                                     Text {
                                         color: model.connected ? Theme.selected : Theme.foreground
-                                        font.pixelSize: 11
+                                        font.pixelSize: 11 * root.uiScale
                                         opacity: model.connected ? 1.0 : 0.6
                                         text: {
                                             if (model.connected)
@@ -135,44 +137,34 @@ Item {
                                     Row {
                                         Layout.alignment: Qt.AlignVCenter
                                         visible: model.batteryAvailable && model.connected
-                                        spacing: 4
+                                        spacing: 4 * root.uiScale
                                         opacity: 0.8
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             color: Theme.foreground
-                                            font.pixelSize: 11
+                                            font.pixelSize: 11 * root.uiScale
                                             text: "•  " + Math.round(model.battery * 100) + "%"
                                         }
 
                                         LucideIcon {
                                             anchors.verticalCenter: parent.verticalCenter
                                             color: Theme.foreground
-                                            size: 14
+                                            size: 14 * root.uiScale
                                             icon: Icons.getBatteryIcon(model.battery * 100, false)
                                         }
                                     }
                                 }
                             }
 
-                            // Connect/Disconnect/Pairing button — fits
-                            // IconButton cleanly: isActive=connected (solid
-                            // color1), hoverSolid=selected, spinning=pairing.
                             IconButton {
+                                size: 32 * root.uiScale
+                                iconSize: 16 * root.uiScale
                                 hoverSolid: true
                                 alwaysBorder: true
                                 borderColor: model.connected ? Theme.color1 : Theme.selected
                                 contrastColor: Theme.background
                                 hoverColor: model.connected ? Theme.color1 : Theme.selected
-                                // Was bare expression-statements with no
-                                // `return` inside an if/else block — relies
-                                // on JS completion-value semantics to
-                                // implicitly "return" whichever branch ran.
-                                // Probably works, but every other multi-
-                                // branch text binding in this codebase uses
-                                // explicit `return` — made consistent (and
-                                // immune to breaking if a line is ever added
-                                // after the if/else later).
                                 tooltipText: {
                                     if (model.connected)
                                         return "Disconnect";
@@ -202,7 +194,7 @@ Item {
         // ── BT Off State ───────────────────────────────────────────
         DisabledStateCard {
             Layout.fillWidth: true
-            implicitHeight: 150
+            implicitHeight: 150 * root.uiScale
             visible: !BluetoothService.isEnabled
             icon: "bluetooth-off"
             message: "Bluetooth is turned off"

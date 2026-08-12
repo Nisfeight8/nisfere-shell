@@ -20,12 +20,13 @@ PopupWindow {
     id: root
 
     property string text: ""
+    property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
     required property bool showPopup
     required property Item targetItem
 
     property real targetX: targetItem.mapToItem(null, 0, 0).x + (targetItem.width / 2) - (root.width / 2)
     anchor.rect.x: Math.max(8, targetX)
-    anchor.rect.y: Theme.barHeight
+    anchor.rect.y: Theme.scaledBarHeight(QsWindow.window?.screen)
     anchor.window: targetItem.QsWindow.window
 
     color: "transparent"
@@ -35,7 +36,7 @@ PopupWindow {
 
     PopupContainer {
         id: container
-
+        uiScale: root.uiScale
         opacity: root.showPopup ? 1 : 0
         y: root.showPopup ? 0 : -10
 
@@ -43,7 +44,7 @@ PopupWindow {
             text: root.text
             color: Theme.selected
             font.family: Theme.fontName
-            font.pixelSize: 14
+            font.pixelSize: 14 * root.uiScale
             font.bold: true
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

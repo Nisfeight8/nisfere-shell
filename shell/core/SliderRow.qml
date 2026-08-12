@@ -9,6 +9,7 @@ RowLayout {
     property string mutedIcon: "volume-x"
     property bool isMuteable: false
     property bool isMuted: false
+    property real uiScale: 1.0
 
     property real value: 0.0
     property string valueText: (root.isMuteable && root.isMuted) ? "Mute" : Math.round(internalSlider.value * 100) + "%"
@@ -18,14 +19,14 @@ RowLayout {
     signal finalValueChanged(real newValue)
 
     Layout.fillWidth: true
-    spacing: 12
+    spacing: 12 * root.uiScale
 
     Rectangle {
         border.color: (root.isMuteable && root.isMuted) ? Theme.borderColor : "transparent"
         color: (root.isMuteable && root.isMuted) ? Theme.backgroundAlt : "transparent"
-        height: 36
-        radius: 18
-        width: 36
+        height: 36 * root.uiScale
+        radius: width / 2
+        width: 36 * root.uiScale
 
         Behavior on color {
             AnimColor {
@@ -40,7 +41,7 @@ RowLayout {
 
         LucideIcon {
             anchors.centerIn: parent
-            size: 18
+            size: 18 * root.uiScale
             color: (root.isMuteable && root.isMuted) ? Theme.foreground : Theme.selected
             opacity: (root.isMuteable && root.isMuted) ? 0.5 : 1.0
             icon: root.isMuted ? root.mutedIcon : root.activeIcon
@@ -71,15 +72,8 @@ RowLayout {
         id: internalSlider
         Layout.fillWidth: true
         isMuted: root.isMuteable && root.isMuted
+        uiScale: root.uiScale
 
-        // Was a plain `value: root.value` binding — the FIRST time the
-        // user drags the slider, Slider's own internal drag handling
-        // writes to `value` imperatively, silently destroying a plain
-        // declarative binding. After that this slider would stop
-        // following root.value if it ever changed externally (e.g.
-        // volume changed by a hardware key while this panel is open).
-        // Same bug MediaSlider.qml already correctly avoids — using
-        // the same Binding + when:!pressed pattern here too.
         Binding {
             target: internalSlider
             property: "value"
@@ -94,9 +88,9 @@ RowLayout {
     }
 
     Text {
-        Layout.preferredWidth: 35
+        Layout.preferredWidth: 35 * root.uiScale
         color: Theme.foreground
-        font.pixelSize: 12
+        font.pixelSize: 12 * root.uiScale
         horizontalAlignment: Text.AlignRight
         opacity: 0.7
         text: root.valueText

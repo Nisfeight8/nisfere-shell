@@ -27,7 +27,7 @@ Variants {
         readonly property var screen: modelData
 
         property real bezelSize: Theme.screenBorderSize
-        readonly property real topBarHeight: Theme.barHeight
+        readonly property real topBarHeight: Theme.scaledBarHeight(screen)
 
         // ---------------------------------------------------------
         // 1. Ο VISUAL WINDOW (μπάρα, drawers, overview, bezels)

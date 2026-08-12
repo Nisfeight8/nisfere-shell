@@ -1,3 +1,5 @@
+
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.core
@@ -9,14 +11,6 @@ Item {
 
     anchors.fill: parent
 
-    // No implicitWidth — same reasoning as Overview/Notifications:
-    // width is forced top-down via tabsLoader's Layout.fillWidth, so
-    // this tab has no real use for one.
-    //
-    // implicitHeight DOES matter (tabsLoader has no Layout.fillHeight)
-    // — rowLayout computes the real bottom-up answer from its own
-    // children (SideMenu, the divider, and whichever of Tasks/
-    // FocusTimer is currently loaded), so we just forward that.
     implicitHeight: rowLayout.implicitHeight
 
     Component {
@@ -38,9 +32,18 @@ Item {
         spacing: 12 * root.uiScale
 
         SideMenu {
+            id: sideMenu
             Layout.fillHeight: true
+            // Capped at 35% of available row width so it never dominates on a
+            // narrow screen, but floored at 140*uiScale so it never shrinks
+            // below a legible minimum either — a percentage alone can shrink
+            // indefinitely on a small enough screen, this stops it there and
+            // lets the AnimLoader content area absorb any remaining squeeze
+            // instead.
+            Layout.preferredWidth: Math.max(140 * root.uiScale, Math.min(implicitWidth, rowLayout.width * 0.25))
             currentIndex: ShellState.dashboardTabsCurrentProductivityTab
             onTabClicked: index => ShellState.dashboardTabsCurrentProductivityTab = index
+            uiScale: root.uiScale
             menuModel: [
                 {
                     icon: "list-checks",

@@ -1,11 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.core
 import qs.services
 
-// The notification card's visual content — extracted so it can be
-// loaded via BaseDrawer's contentComponent (BaseDrawer now IS the
-// NotificationPopup window; see NotificationPopup.qml).
 Item {
     id: content
 
@@ -18,27 +16,26 @@ Item {
 
     readonly property bool hasNotif: currentNotif !== null
 
-    // required properties can't be written back to their source — emit
-    // signals instead, and let NotificationPopup.qml (which owns
-    // currentNotif) react to them.
+    readonly property real uiScale: Theme.scaleFor(QsWindow.window?.screen)
+
     signal dismissRequested
     signal actionInvoked(var action)
 
-    implicitWidth: 350
-    implicitHeight: mainColumn.implicitHeight + 30
+    implicitWidth: 350 * uiScale
+    implicitHeight: mainColumn.implicitHeight + (30 * uiScale)
 
     ColumnLayout {
         id: mainColumn
         anchors {
             fill: parent
-            margins: 7
+            margins: 7 * content.uiScale
         }
-        spacing: 12
+        spacing: 12 * content.uiScale
 
         // ── Progress bar ──────────────────────────────────────────
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 3
+            Layout.preferredHeight: 3 * content.uiScale
 
             Rectangle {
                 anchors {
@@ -48,7 +45,7 @@ Item {
                 }
                 color: Theme.selected
                 width: parent.width * content.notifProgress
-                radius: 2
+                radius: height / 2
             }
         }
 
@@ -56,18 +53,11 @@ Item {
         RowLayout {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
-            spacing: 13
+            spacing: 13 * content.uiScale
 
             Rectangle {
                 id: iconBadge
-                readonly property int _size: content.hasImage ? 80 : 36
-                // Computed once, compared as a plain string BEFORE it
-                // becomes the Image's url-typed `source` — reading
-                // `image.source` back and comparing to "" (as the
-                // previous version did) isn't reliable, since `source`
-                // is stored as a `url`, not a string (same issue we
-                // already fixed once in SystemDrawerHeader.qml's avatar
-                // image).
+                readonly property real _size: (content.hasImage ? 80 : 36) * content.uiScale
                 readonly property string _imageSource: {
                     if (content.hasAppIcon)
                         return content.currentNotif.nAppIcon;
@@ -88,14 +78,14 @@ Item {
                     anchors.centerIn: parent
                     icon: content.isCritical ? "alert-triangle" : "bell"
                     color: content.isCritical ? Theme.color1 : Theme.selected
-                    size: 24
+                    size: 24 * content.uiScale
                     visible: !content.hasAppIcon && !content.hasImage
                 }
 
                 Image {
                     anchors {
                         fill: parent
-                        margins: content.hasImage ? 0 : 8
+                        margins: content.hasImage ? 0 : (8 * content.uiScale)
                     }
                     fillMode: Image.PreserveAspectCrop
                     source: iconBadge._imageSource
@@ -116,7 +106,7 @@ Item {
             ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true
-                spacing: 4
+                spacing: 4 * content.uiScale
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -127,7 +117,7 @@ Item {
                         color: content.isCritical ? Theme.color1 : Theme.selected
                         font.bold: true
                         font.family: Theme.fontName
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * content.uiScale
                     }
 
                     Item {
@@ -139,17 +129,17 @@ Item {
                         text: content.hasNotif ? content.currentNotif.timeReceived : ""
                         color: Theme.foreground
                         font.family: Theme.fontName
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * content.uiScale
                         opacity: 0.6
                     }
 
                     IconButton {
                         Layout.alignment: Qt.AlignVCenter
-                        Layout.leftMargin: 4
+                        Layout.leftMargin: 4 * content.uiScale
                         icon: "x"
-                        size: 24
-                        iconSize: 14
-                        radius: 12
+                        size: 24 * content.uiScale
+                        iconSize: 14 * content.uiScale
+                        radius: size / 2
                         hoverSolid: true
                         hoverColor: Theme.color1
                         contrastColor: Theme.background
@@ -170,7 +160,7 @@ Item {
                     elide: Text.ElideRight
                     font.bold: true
                     font.family: Theme.fontName
-                    font.pixelSize: 15
+                    font.pixelSize: 15 * content.uiScale
                 }
 
                 Text {
@@ -179,7 +169,7 @@ Item {
                     color: Theme.foreground
                     elide: Text.ElideRight
                     font.family: Theme.fontName
-                    font.pixelSize: 13
+                    font.pixelSize: 13 * content.uiScale
                     maximumLineCount: 3
                     opacity: 0.8
                     wrapMode: Text.Wrap
@@ -190,7 +180,7 @@ Item {
         // ── Actions ───────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: 12 * content.uiScale
             visible: content.hasActions
 
             Repeater {
@@ -198,14 +188,10 @@ Item {
 
                 delegate: Rectangle {
                     id: actionBtn
-                    // Was `property bool isHovered: false` +
-                    // `onHoveredChanged: actionBtn.isHovered = hovered`
-                    // — simplified to a direct alias, same as the
-                    // Tasks.qml/ClipboardPanel.qml fix.
                     readonly property bool isHovered: hover.hovered
 
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 36
+                    Layout.preferredHeight: 36 * content.uiScale
                     radius: Theme.radius
                     border.width: 1
                     border.color: Theme.borderColor
@@ -222,7 +208,7 @@ Item {
                         color: actionBtn.isHovered ? Theme.background : Theme.foreground
                         font.bold: true
                         font.family: Theme.fontName
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * content.uiScale
                         Behavior on color {
                             AnimColor {
                                 type: Anim.FastEffects

@@ -2,9 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 
-// Label + value row for info cards (Status, Interface, MAC Address, ...).
-// Usage:
-//   InfoRow { label: "Status"; value: "Connected"; valueColor: Theme.selected }
 RowLayout {
     id: root
 
@@ -12,6 +9,7 @@ RowLayout {
     property string value: ""
     property color valueColor: Theme.foreground
     property bool valueBold: true
+    property real uiScale: 1.0
 
     Layout.fillWidth: true
 
@@ -21,19 +19,15 @@ RowLayout {
         color: Theme.foreground
         opacity: 0.7
         font.family: Theme.fontName
-        font.pixelSize: 13
+        font.pixelSize: 13 * root.uiScale
     }
     Text {
         text: root.value
         color: root.valueColor
         font.family: Theme.fontName
-        font.pixelSize: 13
+        font.pixelSize: 13 * root.uiScale
         font.bold: root.valueBold
 
-        // Was missing — EthernetPage (and presumably Wifi/Bluetooth)
-        // swap valueColor based on connection state (Theme.selected vs
-        // Theme.foreground); without this it snapped instantly instead
-        // of matching the smooth transitions everywhere else.
         Behavior on color {
             AnimColor {
                 type: Anim.FastEffects
