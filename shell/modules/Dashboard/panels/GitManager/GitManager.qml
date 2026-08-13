@@ -9,13 +9,20 @@ Item {
     property real uiScale: 1.0
     required property string repoPath
 
-    // Fixed, deliberate size — same reasoning as every other
-    // standalone Dashboard tool (Docker/Settings/SysMon): no floor/
-    // ceiling system protects a standalone component's size, so
-    // without an explicit one this would collapse to the drawer's
-    // bare minimum.
+    // Bottom-up from actual content, NOT a fixed height — a git
+    // manager showing "working tree clean" (nothing else, tiny) and
+    // one showing 50 changed files are legitimately very different
+    // sizes, unlike Docker/Settings/SysMon (persistent, roughly-
+    // constant-sized content). A hard floor still applies so it
+    // doesn't feel cramped when empty; the file-list area itself is
+    // separately capped (see _maxFileListHeight below) so a huge
+    // change set scrolls internally instead of growing the whole
+    // panel unboundedly.
+    readonly property real _minHeight: 380
+    readonly property real _maxFileListHeight: 340
+
     implicitWidth: 720 * uiScale
-    implicitHeight: 640 * uiScale
+    implicitHeight: Math.max(_minHeight * uiScale, mainColumn.implicitHeight + 32 * uiScale)
 
     anchors.fill: parent
 
@@ -41,13 +48,21 @@ Item {
     }
 
     ColumnLayout {
+        id: mainColumn
         anchors.fill: parent
         anchors.margins: 16 * root.uiScale
         spacing: 12 * root.uiScale
 
-        // ── Header: repo name, branch, ahead/behind, close ────────
+        // ── Header: repo name, branch, ahead/behind, refresh ──────
+        // (X moved OUT of this row entirely — see below. A RowLayout
+        // item only ever sits where the row's own content ends, which
+        // isn't necessarily root's true corner; same lesson as
+        // SystemMonitorTool's X earlier.)
         RowLayout {
             Layout.fillWidth: true
+            // Reserve space so this row's own content doesn't slide
+            // underneath the absolutely-positioned X.
+            Layout.rightMargin: 34 * root.uiScale
             spacing: 12 * root.uiScale
 
             Rectangle {
@@ -98,25 +113,17 @@ Item {
                 icon: "refresh-cw"
                 size: 30 * root.uiScale
                 iconSize: 14 * root.uiScale
-                spinning: GitService.loading
-                tooltipText: "Refresh"
+                // No spin/rotation animation here on purpose — avoided
+                // entirely per past experience with it hanging
+                // Quickshell. A quiet opacity dim + disabled state
+                // while a request is in flight communicates "working"
+                // without any animation at all.
+                enabled: !GitService.loading
+                idleOpacity: GitService.loading ? 0.35 : 0.7
+                tooltipText: GitService.loading ? "Refreshing..." : "Refresh"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
                 onTapped: GitService.requestStatus(root.repoPath)
-            }
-
-            // Same "X" convention as Docker/SysMon/Settings —
-            // ShellState.closeResumableComponent() closes the
-            // dashboard AND forgets this as the backgrounded/
-            // resumable tool.
-            IconButton {
-                icon: "x"
-                size: 30 * root.uiScale
-                iconSize: 14 * root.uiScale
-                normalColor: Theme.backgroundAlt
-                hoverColor: Theme.color1
-                tooltipText: "Close"
-                onTapped: ShellState.closeResumableComponent()
             }
         }
 
@@ -153,13 +160,24 @@ Item {
         }
 
         // ── File lists ──────────────────────────────────────────────
+        // Layout.preferredHeight (capped, content-driven) instead of
+        // Layout.fillHeight — was stretching to fill whatever the
+        // fixed 640px root left over, wasting huge empty space on a
+        // clean repo. Now sizes to its own content up to
+        // _maxFileListHeight, scrolling internally beyond that.
         CustomScrollView {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: Math.min(root._maxFileListHeight * root.uiScale, filesColumn.implicitHeight)
+            uiScale: root.uiScale
             clip: true
 
             ColumnLayout {
-                width: parent.width
+                id: filesColumn
+                // Narrower than the full scroll-view width — reserves
+                // room for CustomScrollBar (which otherwise sits right
+                // on top of each row's stage/unstage button) without
+                // touching CustomScrollView/CustomScrollBar themselves.
+                width: parent.width - 16 * root.uiScale
                 spacing: 14 * root.uiScale
 
                 GitFileSection {
@@ -182,7 +200,6 @@ Item {
                     onSectionAction: () => GitService.stage(root.repoPath, root.status ? root.status.unstaged : [])
                     sectionActionTooltip: "Stage all"
                 }
-
                 GitFileSection {
                     uiScale: root.uiScale
                     title: "Untracked"
@@ -255,70 +272,22 @@ Item {
         }
     }
 
-
-    // ── Reusable file-list section (staged/unstaged/untracked) ─────
-    component GitFileSection: ColumnLayout {
-        id: section
-        property real uiScale: 1.0
-        property string title: ""
-        property var files: []
-        property string actionIcon: ""
-        property string actionTooltip: ""
-        property string sectionActionTooltip: ""
-        signal fileAction(string file)
-        signal sectionAction
-
-        Layout.fillWidth: true
-        spacing: 4 * uiScale
-        visible: files.length > 0
-
-        RowLayout {
-            Layout.fillWidth: true
-            Text {
-                Layout.fillWidth: true
-                text: section.title + " (" + section.files.length + ")"
-                color: Theme.foreground
-                font.family: Theme.fontName
-                font.pixelSize: 12 * section.uiScale
-                font.bold: true
-                opacity: 0.6
-            }
-            IconButton {
-                icon: "chevrons-" + (section.actionIcon === "plus" ? "up" : "down")
-                size: 22 * section.uiScale
-                iconSize: 12 * section.uiScale
-                tooltipText: section.sectionActionTooltip
-                normalColor: "transparent"
-                hoverColor: Theme.selected
-                onTapped: section.sectionAction()
-            }
-        }
-
-        Repeater {
-            model: section.files
-            delegate: RowLayout {
-                required property string modelData
-                Layout.fillWidth: true
-                spacing: 6 * section.uiScale
-
-                Text {
-                    Layout.fillWidth: true
-                    text: modelData
-                    color: Theme.foreground
-                    font.family: Theme.fontName
-                    font.pixelSize: 12 * section.uiScale
-                    elide: Text.ElideMiddle
-                }
-                IconButton {
-                    icon: section.actionIcon
-                    size: 22 * section.uiScale
-                    iconSize: 12 * section.uiScale
-                    tooltipText: section.actionTooltip
-                    normalColor: "transparent"
-                    hoverColor: Theme.selected
-                    onTapped: section.fileAction(modelData)
-                }
-            }
-        }
+    // Same "X" convention as Docker/SysMon/Settings —
+    // ShellState.closeResumableComponent() closes the dashboard AND
+    // forgets this as the backgrounded/resumable tool. Anchored
+    // directly to root's own corner (NOT a RowLayout child) — see
+    // SystemMonitorTool's own header comment for why that's more
+    // reliable than relying on row content to end exactly at the true
+    // edge.
+    IconButton {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        icon: "x"
+        size: 30 * root.uiScale
+        iconSize: 14 * root.uiScale
+        normalColor: Theme.backgroundAlt
+        hoverColor: Theme.color1
+        tooltipText: "Close"
+        onTapped: ShellState.closeResumableComponent()
     }
 }

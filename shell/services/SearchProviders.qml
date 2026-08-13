@@ -166,31 +166,6 @@ Singleton {
                         title: h.alias,
                         subtitle: subtitle,
                         icon: "server",
-                        actions: [
-                            {
-                                icon: "copy",
-                                trigger: () => root._copyToClipboard("ssh " + h.alias)
-                            },
-                            {
-                                icon: "folder-open",
-                                // gio open (GLib/GTK's URI opener)
-                                // respects GVFS/file-manager
-                                // associations for sftp:// more
-                                // reliably than xdg-open, which
-                                // was resolving to the browser on
-                                // some setups — some browsers
-                                // register themselves as handlers
-                                // for broad URI schemes even when
-                                // they can't actually do anything
-                                // useful with an sftp:// link.
-                                // Falls back to xdg-open if gio
-                                // isn't installed.
-                                trigger: () => {
-                                    const quoted = root._shellQuote(root._sftpUrl(h));
-                                    Quickshell.execDetached(["sh", "-c", "gio open " + quoted + " 2>/dev/null || xdg-open " + quoted]);
-                                }
-                            }
-                        ],
                         action: () => {
                             SshUsageService.recordConnect(h.alias);
                             root.runInTerminal("ssh " + h.alias);
@@ -251,15 +226,28 @@ Singleton {
                         actions: [
                             {
                                 icon: "terminal",
-                                trigger: () => root.runInTerminal("cd " + root._shellQuote(r.path))
+                                // action buttons (unlike the main
+                                // row action below) don't go
+                                // through GenericResultsList's
+                                // automatic closeDashboard()-then-
+                                // act flow — that's only applied to
+                                // the row's own primary action, so
+                                // each trigger needs to close
+                                // explicitly or the dashboard just
+                                // sits there open.
+                                trigger: () => {
+                                    root.runInTerminal("cd " + root._shellQuote(r.path));
+                                    ShellState.closeDashboard();
+                                }
                             },
                             {
                                 icon: "folder-open",
                                 // Same gio-open-with-xdg-open-fallback
-                                // as the ssh provider's sftp action.
+                                // pattern used elsewhere.
                                 trigger: () => {
                                     const quoted = root._shellQuote(r.path);
                                     Quickshell.execDetached(["sh", "-c", "gio open " + quoted + " 2>/dev/null || xdg-open " + quoted]);
+                                    ShellState.closeDashboard();
                                 }
                             }
                         ],
@@ -381,7 +369,7 @@ Singleton {
                         title: query,
                         subtitle: "Run in terminal",
                         icon: "terminal",
-                        action: () => root.runTerminalCommand(query)
+                        action: () => root.runInTerminal(query)
                     }
                 ];
             }
@@ -415,63 +403,16 @@ Singleton {
         return "'" + str.replace(/'/g, "'\\''") + "'";
     }
 
-    // Fills the command into the terminal's prompt WITHOUT running it
-    // — you see it pre-typed, editable, and press Enter yourself (or
-    // change your mind first). Uses zsh's `print -z`, which pushes a
-    // string onto zle's buffer stack; the next prompt draw pulls from
-    // it instead of starting empty. This is zsh-specific (no simple
-    // bash equivalent — bash would need a more involved
-    // READLINE_LINE/bind setup), so non-zsh shells fall back to
-    // running the command directly instead.
-    //
-    // Quickshell.execDetached() rather than a Process object — a
-    // reused Process property stays "busy" for as long as the spawned
-    // window is open (a terminal/browser isn't a quick command like
-    // `cliphist list`, it runs until you close it), so a second call
-    // while the first window was still open silently did nothing
-    // until you closed it. execDetached has no such lifecycle to get
-    // stuck on — every call is fully independent.
-    function runTerminalCommand(cmd) {
-        const shell = root._userShell();
-        const isZsh = shell.indexOf("zsh") !== -1;
-        if (isZsh) {
-            const quoted = root._shellQuote(cmd);
-            Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-i", "-c", "print -z " + quoted + "; exec " + shell + " -i"]);
-        } else {
-            Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-c", cmd + "; exec " + shell]);
-        }
-    }
-
-    // Direct-connect variant — runs cmd immediately instead of
-    // pre-filling the prompt. Used for SSH: picking an already-
-    // configured host should connect right away, not wait for another
-    // Enter (unlike runTerminalCommand above, which is for arbitrary
-    // typed commands you might want to double-check first).
+    // Runs cmd immediately in a terminal — used both for arbitrary
+    // typed commands (the ">" provider) and for picking an already-
+    // configured SSH host / opening a git repo's terminal. Was two
+    // separate functions (this one direct-run, plus a pre-fill-only-
+    // don't-run variant using zsh's `print -z` trick for the ">"
+    // provider specifically) — simplified back to just running
+    // directly everywhere, no more pre-fill-and-wait-for-Enter step.
     function runInTerminal(cmd) {
         const shell = root._userShell();
         Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-c", cmd + "; exec " + shell]);
-    }
-
-    // wl-copy — same "write arbitrary text to the clipboard" building
-    // block ClipboardService's copyEntry() uses internally.
-    function _copyToClipboard(text) {
-        Quickshell.execDetached(["sh", "-c", "printf '%s' " + root._shellQuote(text) + " | wl-copy"]);
-    }
-
-    // sftp:// URL built from the host's RESOLVED hostname (not the
-    // config alias) — GVFS/file-manager sftp:// handlers parse the URL
-    // directly rather than resolving it through ~/.ssh/config, so the
-    // alias alone wouldn't necessarily work if HostName differs from
-    // it.
-    function _sftpUrl(host) {
-        let url = "sftp://";
-        if (host.user !== "")
-            url += host.user + "@";
-        url += host.hostName !== "" ? host.hostName : host.alias;
-        if (host.port !== "" && host.port !== "22")
-            url += ":" + host.port;
-        url += "/";
-        return url;
     }
 
     // Default search engine — one line to change if you'd rather use
@@ -488,7 +429,7 @@ Singleton {
     // that's the browser's own single-instance IPC behavior (every
     // major browser does this), not something we need to detect or
     // implement ourselves. Same execDetached() fix as
-    // runTerminalCommand above — same reused-Process bug applied here
+    // runInTerminal above — same reused-Process bug applied here
     // too (had to close the browser window before a second search
     // would open anything).
     function runWebSearch(query) {

@@ -6,6 +6,7 @@ import qs.services
 import "panels"
 import "panels/DockerManager" as DockerNS // adjust path once files are physically moved
 import "panels/Settings" as SettingsNS   // ditto
+import "panels/GitManager"
 
 // Top-level content host for the Dashboard drawer — the single place
 // that decides which of the 8 top-level components is on screen,
