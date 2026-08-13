@@ -100,7 +100,8 @@ Item {
             readonly property var _icons: ({
                     "docker": "container",
                     "sysmon": "activity",
-                    "settings": "settings"
+                    "settings": "settings",
+                    "git": "git-branch"
                 })
 
             Rectangle {

@@ -17,6 +17,7 @@ Singleton {
     // For IPC-triggered opens (keybinds), which don't have a "which
     // screen did this come from" of their own.
     readonly property string focusedScreenName: HyprlandData.focusedMonitor?.name ?? ""
+
     property bool isLocked: false
     property bool powerMenuOpened: false
 
@@ -128,7 +129,8 @@ Singleton {
             "sysmon": "onDemand",
             "settings": "onDemand",
             "screenshot": "exclusive",
-            "record": "exclusive"
+            "record": "exclusive",
+            "git": "onDemand"
         })
 
     readonly property bool dashboardWantsExclusiveFocus: dashboardOpened && root._dashboardFocusModeByComponent[dashboardActiveComponent] === "exclusive"
@@ -159,7 +161,7 @@ Singleton {
 
     // Components that are "extended-use tools" (you're doing ongoing
     // work in them, like a real app) rather than one-shot actions.
-    readonly property var _dashboardResumableComponents: ["docker", "sysmon", "settings"]
+    readonly property var _dashboardResumableComponents: ["docker", "sysmon", "settings", "git"]
 
     // Which resumable tool (if any) is remembered as "still open in
     // the background" — "" means none. Deliberately SEPARATE from
@@ -349,6 +351,17 @@ Singleton {
     // scoping data of their own, unlike search providers, so this is
     // intentionally simpler than openDashboardSearch.
     function openDashboardComponent(screenName, componentId) {
+        // If a closeDashboard() call from a split-second ago is still
+        // waiting to reset dashboardActiveComponent back to "tabs" (see
+        // _closeTabsResetTimer), cancel it — we're explicitly
+        // navigating somewhere else right now, and without this the
+        // stale timer would fire ~250ms later and snap whatever we're
+        // about to open back to "tabs" out from under it. Concretely
+        // hit by: a search result whose action opens a standalone
+        // component (e.g. a git repo row opening the git manager) —
+        // GenericResultsList calls closeDashboard() before running
+        // that action.
+        _closeTabsResetTimer.stop();
         activeScreenName = screenName;
         dashboardOpened = true;
         dashboardActiveComponent = componentId;
@@ -370,6 +383,17 @@ Singleton {
     }
     function openSettings(screenName) {
         openDashboardComponent(screenName, "settings");
+    }
+    // Unlike docker/sysmon/settings (self-contained singleton tools),
+    // the git manager needs to know WHICH repo — dashboardActiveComponent
+    // alone doesn't carry that, so this sets both together. Opening a
+    // DIFFERENT repo while one is already open just replaces the path
+    // (this remembers the single LAST repo you were working in, not a
+    // list of several).
+    property string gitManagerRepoPath: ""
+    function openGitManager(screenName, repoPath) {
+        gitManagerRepoPath = repoPath;
+        openDashboardComponent(screenName, "git");
     }
     function openScreenshot(screenName) {
         openDashboardComponent(screenName, "screenshot");

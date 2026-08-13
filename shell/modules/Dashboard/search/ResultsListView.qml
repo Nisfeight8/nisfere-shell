@@ -45,7 +45,7 @@ Item {
 
     Text {
         anchors.centerIn: parent
-        visible: root.results.length === 0
+        visible: root.loading || root.results.length === 0
         text: root.loading && root.loadingText !== "" ? root.loadingText : root.emptyText
         color: Theme.foreground
         opacity: 0.4
@@ -58,10 +58,9 @@ Item {
         id: list
         anchors.fill: parent
         clip: true
-        visible: root.results.length > 0
+        visible: root.results.length > 0 && !root.loading
         spacing: root.rowSpacing
         model: root.results
-        
         delegate: SearchResultRow {
             required property var modelData
             required property int index

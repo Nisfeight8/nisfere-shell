@@ -114,7 +114,89 @@ Singleton {
             pushOnActivate: false // connects + closes launcher immediately
             ,
             search: function (query) {
-                return []; // TODO: wire to real ssh-config parsing later
+                const q = query.toLowerCase();
+                let hosts = SshHostsService.hosts;
+                if (q !== "") {
+                    hosts = hosts.filter(h => h.alias.toLowerCase().includes(q) || h.hostName.toLowerCase().includes(q) || h.user.toLowerCase().includes(q));
+                }
+
+                // Recent/most-used first, alphabetical otherwise — same
+                // "decorate, sort, undecorate" approach as file
+                // search's ranking (score computed once per item, not
+                // recomputed inside the sort comparator).
+                const decorated = hosts.map(h => {
+                    const recentIdx = SshUsageService.recentAliases.indexOf(h.alias);
+                    // Lower recentIdx = more recently used = higher
+                    // priority; never-used (-1) sorts after anything
+                    // that's ever been connected to.
+                    const recencyScore = recentIdx === -1 ? -1 : (1000 - recentIdx);
+                    return {
+                        host: h,
+                        recencyScore: recencyScore,
+                        usageCount: SshUsageService.usageCount(h.alias)
+                    };
+                });
+                decorated.sort((a, b) => {
+                    if (a.recencyScore !== b.recencyScore)
+                        return b.recencyScore - a.recencyScore;
+                    if (a.usageCount !== b.usageCount)
+                        return b.usageCount - a.usageCount;
+                    return a.host.alias.localeCompare(b.host.alias);
+                });
+
+                return decorated.map(d => {
+                    const h = d.host;
+                    const displayHost = h.hostName !== "" ? h.hostName : h.alias;
+                    // When the config doesn't specify a User, ssh
+                    // falls back to your current OS username by
+                    // default — showing NOTHING here was
+                    // ambiguous about what would actually happen
+                    // (e.g. a VPS you normally log into as "root"
+                    // but ssh would actually attempt your local
+                    // username, silently, unless you'd set User
+                    // explicitly). Showing the real effective
+                    // value either way removes that ambiguity.
+                    const effectiveUser = h.user !== "" ? h.user : Quickshell.env("USER");
+                    let subtitle = (effectiveUser ? effectiveUser + "@" : "") + displayHost;
+                    if (h.port !== "" && h.port !== "22")
+                        subtitle += ":" + h.port;
+
+                    return {
+                        id: "ssh-" + h.alias,
+                        title: h.alias,
+                        subtitle: subtitle,
+                        icon: "server",
+                        actions: [
+                            {
+                                icon: "copy",
+                                trigger: () => root._copyToClipboard("ssh " + h.alias)
+                            },
+                            {
+                                icon: "folder-open",
+                                // gio open (GLib/GTK's URI opener)
+                                // respects GVFS/file-manager
+                                // associations for sftp:// more
+                                // reliably than xdg-open, which
+                                // was resolving to the browser on
+                                // some setups — some browsers
+                                // register themselves as handlers
+                                // for broad URI schemes even when
+                                // they can't actually do anything
+                                // useful with an sftp:// link.
+                                // Falls back to xdg-open if gio
+                                // isn't installed.
+                                trigger: () => {
+                                    const quoted = root._shellQuote(root._sftpUrl(h));
+                                    Quickshell.execDetached(["sh", "-c", "gio open " + quoted + " 2>/dev/null || xdg-open " + quoted]);
+                                }
+                            }
+                        ],
+                        action: () => {
+                            SshUsageService.recordConnect(h.alias);
+                            root.runInTerminal("ssh " + h.alias);
+                        }
+                    };
+                });
             }
         },
         {
@@ -122,10 +204,75 @@ Singleton {
             keyword: "@git",
             label: "Git Repos",
             icon: "git-branch",
-            pushOnActivate: true // pushes a repo-browser panel
-            ,
+            // Was `true` ("pushes a repo-browser panel") — stale from
+            // before the git manager became a standalone Dashboard
+            // component (like Docker/Settings) instead of a pushed
+            // search panel. `false` here means GenericResultsList
+            // closes the search UI before running a row's action,
+            // which for git means immediately opening the standalone
+            // manager (see action below) — see ShellState's
+            // openDashboardComponent for why that transition needed
+            // its own small fix (a stale deferred close animation
+            // could otherwise snap it back to "tabs" ~250ms later).
+            pushOnActivate: false,
             search: function (query) {
-                return [];
+                const q = query.toLowerCase();
+                let repos = GitReposService.repos;
+                if (q !== "")
+                    repos = repos.filter(r => r.name.toLowerCase().includes(q) || r.path.toLowerCase().includes(q));
+
+                // Recent/most-used first, alphabetical otherwise —
+                // same "decorate, sort, undecorate" approach as the
+                // ssh provider above.
+                const decorated = repos.map(r => {
+                    const recentIdx = GitUsageService.recentPaths.indexOf(r.path);
+                    const recencyScore = recentIdx === -1 ? -1 : (1000 - recentIdx);
+                    return {
+                        repo: r,
+                        recencyScore: recencyScore,
+                        usageCount: GitUsageService.usageCount(r.path)
+                    };
+                });
+                decorated.sort((a, b) => {
+                    if (a.recencyScore !== b.recencyScore)
+                        return b.recencyScore - a.recencyScore;
+                    if (a.usageCount !== b.usageCount)
+                        return b.usageCount - a.usageCount;
+                    return a.repo.name.localeCompare(b.repo.name);
+                });
+
+                return decorated.map(d => {
+                    const r = d.repo;
+                    return {
+                        id: "git-" + r.path,
+                        title: r.name,
+                        subtitle: r.path,
+                        icon: "git-branch",
+                        actions: [
+                            {
+                                icon: "terminal",
+                                trigger: () => root.runInTerminal("cd " + root._shellQuote(r.path))
+                            },
+                            {
+                                icon: "folder-open",
+                                // Same gio-open-with-xdg-open-fallback
+                                // as the ssh provider's sftp action.
+                                trigger: () => {
+                                    const quoted = root._shellQuote(r.path);
+                                    Quickshell.execDetached(["sh", "-c", "gio open " + quoted + " 2>/dev/null || xdg-open " + quoted]);
+                                }
+                            }
+                        ],
+                        // Main action: open our own git manager for
+                        // this specific repo — not a generic
+                        // "browse" action, this repo's path becomes
+                        // ShellState.gitManagerRepoPath.
+                        action: () => {
+                            GitUsageService.recordOpen(r.path);
+                            ShellState.openGitManager(ShellState.activeScreenName, r.path);
+                        }
+                    };
+                });
             }
         },
         {
@@ -295,6 +442,38 @@ Singleton {
         }
     }
 
+    // Direct-connect variant — runs cmd immediately instead of
+    // pre-filling the prompt. Used for SSH: picking an already-
+    // configured host should connect right away, not wait for another
+    // Enter (unlike runTerminalCommand above, which is for arbitrary
+    // typed commands you might want to double-check first).
+    function runInTerminal(cmd) {
+        const shell = root._userShell();
+        Quickshell.execDetached([root._terminalEmulator(), "-e", shell, "-c", cmd + "; exec " + shell]);
+    }
+
+    // wl-copy — same "write arbitrary text to the clipboard" building
+    // block ClipboardService's copyEntry() uses internally.
+    function _copyToClipboard(text) {
+        Quickshell.execDetached(["sh", "-c", "printf '%s' " + root._shellQuote(text) + " | wl-copy"]);
+    }
+
+    // sftp:// URL built from the host's RESOLVED hostname (not the
+    // config alias) — GVFS/file-manager sftp:// handlers parse the URL
+    // directly rather than resolving it through ~/.ssh/config, so the
+    // alias alone wouldn't necessarily work if HostName differs from
+    // it.
+    function _sftpUrl(host) {
+        let url = "sftp://";
+        if (host.user !== "")
+            url += host.user + "@";
+        url += host.hostName !== "" ? host.hostName : host.alias;
+        if (host.port !== "" && host.port !== "22")
+            url += ":" + host.port;
+        url += "/";
+        return url;
+    }
+
     // Default search engine — one line to change if you'd rather use
     // DuckDuckGo/Bing/etc (e.g. "https://duckduckgo.com/?q=%s"). A
     // Settings toggle for this is a natural future addition, same as
@@ -362,9 +541,9 @@ Singleton {
             if (!p || !p.search)
                 continue;
             const tagged = p.search(query).map(r => Object.assign({}, r, {
-                        providerId: id,
-                        providerIcon: p.icon
-                    }));
+                    providerId: id,
+                    providerIcon: p.icon
+                }));
             out = out.concat(tagged);
         }
         return out;
