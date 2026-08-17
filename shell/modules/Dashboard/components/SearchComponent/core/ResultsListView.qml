@@ -41,6 +41,26 @@ Item {
             root.resultActivated(r, selectedIndex);
     }
 
+    // For callers that need to restore selection to a specific index
+    // AFTER `results` has changed (e.g. re-selecting the same item by
+    // id once a provider's results array regenerates due to
+    // Colors.sourceType/wallpaper/etc changing — see ColorsPanel/
+    // WallpapersPanel) — plain `selectedIndex = idx` only updates
+    // which row is highlighted, it doesn't scroll the ListView to it.
+    // If the list's own scroll position had already reset to the top
+    // (which appears to happen whenever the underlying model gets a
+    // new array reference, even with identical content), the
+    // highlighted row could end up correct but off-screen, or briefly
+    // visible jumping from the top row down to it. This does both
+    // together in one call, same as navigate() already does for
+    // keyboard movement.
+    function positionAt(index) {
+        if (index < 0 || index >= root.results.length)
+            return;
+        selectedIndex = index;
+        list.positionViewAtIndex(selectedIndex, ListView.Contain);
+    }
+
     onResultsChanged: selectedIndex = 0
 
     Text {

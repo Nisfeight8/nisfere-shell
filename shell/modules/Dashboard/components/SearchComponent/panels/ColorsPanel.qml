@@ -26,6 +26,34 @@ Item {
                 swatches: ["color1", "color2", "color3", "color4", "color5"].map(k => t.colors?.[k] ?? Theme.borderColor)
             }))
 
+    // Applying a theme changes Colors.sourceType/sourceName/mode —
+    // which `results` above itself reads (confirmed/subtitle), so the
+    // WHOLE array regenerates (new objects) the instant you apply one.
+    // ResultsListView's own `onResultsChanged: selectedIndex = 0`
+    // treats that as "entirely new results", snapping the highlight
+    // back to the top row even though you're still looking at (and
+    // just picked) the same theme, just further down the list.
+    //
+    // Restores selection by matching id (theme name), not index — the
+    // list order doesn't change here, only the confirmed/subtitle
+    // fields do, but id-matching is correct regardless. Deferred via
+    // Qt.callLater so this runs strictly AFTER ResultsListView's own
+    // reset, whatever the relative order of the two onResultsChanged
+    // handlers actually turns out to be — same pattern already used
+    // for a similar ordering race in SearchComponent.
+    property string _pendingSelectId: ""
+    onResultsChanged: {
+        if (root._pendingSelectId === "")
+            return;
+        const savedId = root._pendingSelectId;
+        root._pendingSelectId = "";
+        Qt.callLater(() => {
+            const idx = root.results.findIndex(r => r.id === savedId);
+            if (idx !== -1)
+                resultsList.positionAt(idx);
+        });
+    }
+
     function navigate(delta) {
         resultsList.navigate(delta);
     }
@@ -119,11 +147,13 @@ Item {
             uiScale: root.uiScale
             loadingText: "Loading themes..."
             emptyText: "No matching themes"
-            maxListHeight: 800 * root.uiScale
+            maxListHeight: 400 * root.uiScale
             onResultActivated: (r, index) => {
                 const t = root.filteredThemes[index];
-                if (t)
+                if (t) {
+                    root._pendingSelectId = t.name;
                     ThemeActions.setColors(t.name, root.activeMode);
+                }
             }
         }
     }
