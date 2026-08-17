@@ -14,10 +14,48 @@ Singleton {
 
     property var statusByRepo: ({})   // repoPath -> {branch, ahead, behind, staged, unstaged, untracked}
     property var errorByRepo: ({})    // repoPath -> {action, message}
-    property bool loading: false
+
+    // Was a single flat `loading: bool` — set true by ANY _send() call
+    // and false by ANY response, regardless of which repo either
+    // belonged to. With two repos open and requests in flight for
+    // both, the first one to respond incorrectly cleared loading for
+    // the OTHER repo's still-pending request too. Per-repo, per-action
+    // tracking instead — repoPath -> action string ("push"/"pull"/
+    // "commit"/"stage"/"unstage"/"status"), absent/undefined if
+    // nothing's pending for that repo.
+    property var pendingActionByRepo: ({})
+
+    // Backward-compatible aggregate — true if ANYTHING is pending
+    // anywhere, for any existing UI that just wants a single "is git
+    // doing something right now" signal rather than per-repo detail.
+    readonly property bool loading: Object.keys(pendingActionByRepo).length > 0
+
+    // What callers actually want for a specific button (e.g. "is push
+    // in flight for THIS repo") — the whole point of this refactor.
+    function isPending(repo, action) {
+        return root.pendingActionByRepo[repo] === action;
+    }
+    function isRepoBusy(repo) {
+        return root.pendingActionByRepo.hasOwnProperty(repo);
+    }
 
     signal statusUpdated(string repo)
     signal errorOccurred(string repo, string action, string message)
+
+    function _setPending(repo, action) {
+        const copy = Object.assign({}, root.pendingActionByRepo);
+        copy[repo] = action;
+        root.pendingActionByRepo = copy;
+        root.pendingStartTimeByRepo[repo] = Date.now();
+    }
+    function _clearPending(repo) {
+        if (!root.pendingActionByRepo.hasOwnProperty(repo))
+            return;
+        const copy = Object.assign({}, root.pendingActionByRepo);
+        delete copy[repo];
+        root.pendingActionByRepo = copy;
+        delete root.pendingStartTimeByRepo[repo];
+    }
 
     Connections {
         target: SocketService
@@ -25,7 +63,6 @@ Singleton {
             if (type === "git_status") {
                 console.log(JSON.stringify(payload));
 
-                root._requestTimeoutTimer.stop();
                 const repo = payload.repo;
                 const copy = Object.assign({}, root.statusByRepo);
                 copy[repo] = payload;
@@ -37,10 +74,9 @@ Singleton {
                     delete errCopy[repo];
                     root.errorByRepo = errCopy;
                 }
-                root.loading = false;
+                root._clearPending(repo);
                 root.statusUpdated(repo);
             } else if (type === "git_error") {
-                root._requestTimeoutTimer.stop();
                 const repo = payload.repo;
                 const errCopy = Object.assign({}, root.errorByRepo);
                 errCopy[repo] = {
@@ -48,7 +84,7 @@ Singleton {
                     message: payload.message
                 };
                 root.errorByRepo = errCopy;
-                root.loading = false;
+                root._clearPending(repo);
                 root.errorOccurred(repo, payload.action, payload.message);
             }
         }
@@ -59,33 +95,40 @@ Singleton {
     // SOME response eventually IF the request actually reaches it and
     // the daemon is alive. This covers the remaining gap: the socket
     // disconnecting mid-request, or the request never making it there
-    // at all — without this, `loading` would just stay true forever
-    // with nothing telling you anything went wrong.
-    property string _pendingRepo: ""
-    property string _pendingAction: ""
-    property Timer _requestTimeoutTimer: Timer {
-        interval: 20000
+    // at all — without this, a pending entry would just sit there
+    // forever with nothing telling you anything went wrong.
+    //
+    // A single sweep timer checking every pending repo's own start
+    // timestamp — not one Timer per request (QML doesn't make
+    // dynamically creating/destroying named Timer instances pleasant)
+    // — running only while there's actually something to watch.
+    property var pendingStartTimeByRepo: ({})
+    readonly property int _timeoutMs: 20000
+    property Timer _timeoutSweepTimer: Timer {
+        interval: 1000
+        repeat: true
+        running: Object.keys(root.pendingStartTimeByRepo).length > 0
         onTriggered: {
-            root.loading = false;
-            if (root._pendingRepo !== "")
-                root.errorOccurred(root._pendingRepo, root._pendingAction, "No response from daemon (timed out) — check the daemon is running.");
+            const now = Date.now();
+            for (const repo in root.pendingStartTimeByRepo) {
+                if (now - root.pendingStartTimeByRepo[repo] > root._timeoutMs) {
+                    const action = root.pendingActionByRepo[repo];
+                    root._clearPending(repo);
+                    root.errorOccurred(repo, action, "No response from daemon (timed out) — check the daemon is running.");
+                }
+            }
         }
     }
 
     function _send(action, repo, extraPayload) {
-        root.loading = true;
-        root._pendingRepo = repo;
-        root._pendingAction = action;
-        root._requestTimeoutTimer.restart();
+        root._setPending(repo, action);
         const payload = Object.assign({
             repo: repo
         }, extraPayload ?? {});
-        console.log("INSIDE");
         SocketService.sendCommand("git", action, payload);
     }
 
     function requestStatus(repo) {
-        console.log(repo);
         root._send("status", repo);
     }
     function stage(repo, files) {

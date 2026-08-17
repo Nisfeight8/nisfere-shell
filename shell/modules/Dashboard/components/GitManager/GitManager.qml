@@ -114,14 +114,15 @@ Item {
                 icon: "refresh-cw"
                 size: 30 * root.uiScale
                 iconSize: 14 * root.uiScale
-                // No spin/rotation animation here on purpose — avoided
-                // entirely per past experience with it hanging
-                // Quickshell. A quiet opacity dim + disabled state
-                // while a request is in flight communicates "working"
-                // without any animation at all.
-                enabled: !GitService.loading
-                idleOpacity: GitService.loading ? 0.35 : 0.7
-                tooltipText: GitService.loading ? "Refreshing..." : "Refresh"
+                // Disabled while ANYTHING is pending for this repo
+                // (not just "status" specifically) — refreshing while
+                // a push/pull/commit is already in flight for the same
+                // repo would just race it. isPending/isRepoBusy are
+                // per-repo now (see GitService) — a request for a
+                // DIFFERENT repo no longer affects this button at all.
+                enabled: !GitService.isRepoBusy(root.repoPath)
+                idleOpacity: GitService.isRepoBusy(root.repoPath) ? 0.35 : 0.7
+                tooltipText: GitService.isPending(root.repoPath, "status") ? "Refreshing..." : "Refresh"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
                 onTapped: GitService.requestStatus(root.repoPath)
@@ -247,7 +248,8 @@ Item {
                 tooltipText: "Commit staged changes"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
-                enabled: root.commitMessage.trim() !== "" && root.status && root.status.staged.length > 0
+                enabled: root.commitMessage.trim() !== "" && root.status && root.status.staged.length > 0 && !GitService.isRepoBusy(root.repoPath)
+                spinning: GitService.isPending(root.repoPath, "commit")
                 onTapped: GitService.commit(root.repoPath, root.commitMessage.trim())
             }
 
@@ -258,7 +260,8 @@ Item {
                 tooltipText: "Pull"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
-                spinning: GitService.loading
+                enabled: !GitService.isRepoBusy(root.repoPath)
+                spinning: GitService.isPending(root.repoPath, "pull")
                 onTapped: GitService.pull(root.repoPath)
             }
 
@@ -269,7 +272,8 @@ Item {
                 tooltipText: "Push"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
-                spinning: GitService.loading
+                enabled: !GitService.isRepoBusy(root.repoPath)
+                spinning: GitService.isPending(root.repoPath, "push")
                 onTapped: GitService.push(root.repoPath)
             }
         }

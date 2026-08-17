@@ -481,4 +481,43 @@ Singleton {
     function togglePowerMenu(screenName) {
         _toggleFlag("powerMenuOpened", screenName);
     }
+
+    // ── Bar popup registry ──────────────────────────────────────────
+    // Which BarPopup Items currently need to be interactive — i.e.
+    // included in ScreenBorder's mask (see chat: BarPopup switched
+    // from its own separate PopupWindow surface to a plain Item
+    // reparented into the already-live visualWindow, same approach
+    // that's already smooth for Dashboard/ControlCenter/SystemDrawer.
+    // A plain Item has no interactivity of its own outside whatever
+    // the window's mask carves out for it — this list IS that carve-
+    // out, built dynamically in ScreenBorder via a Repeater).
+    //
+    // A LIST, not a single item — multiple bar popups can genuinely
+    // be open at once (e.g. the tray menu open via click while
+    // separately hovering an unrelated widget's own popup).
+    //
+    // Registered the INSTANT a popup's showPopup becomes true,
+    // unregistered the INSTANT it becomes false — deliberately NOT
+    // tied to the popup's own fade-out animation. A closing popup
+    // becomes click-through immediately rather than staying
+    // interactive for the whole fade — concretely, this is what fixes
+    // (structurally, not just patches) a fading popup "resurrecting"
+    // itself if the cursor happens to pass back through it afterward:
+    // it's no longer in the mask, so input passes straight through to
+    // whatever's actually behind it.
+    property var activePopupItems: []
+
+    function registerPopup(item) {
+        if (activePopupItems.indexOf(item) !== -1)
+            return;
+        activePopupItems = activePopupItems.concat([item]);
+    }
+    function unregisterPopup(item) {
+        const idx = activePopupItems.indexOf(item);
+        if (idx === -1)
+            return;
+        const copy = activePopupItems.slice();
+        copy.splice(idx, 1);
+        activePopupItems = copy;
+    }
 }

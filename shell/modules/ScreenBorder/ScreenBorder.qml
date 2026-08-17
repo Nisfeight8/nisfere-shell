@@ -238,6 +238,24 @@ Variants {
                     height: overviewLoader.shouldBeActive ? visualWindow.height : 0
                 }
                 Region {
+                    item: ShellState.activePopupItems.length > 0 ? ShellState.activePopupItems[0] : null
+                }
+                Region {
+                    item: ShellState.activePopupItems.length > 1 ? ShellState.activePopupItems[1] : null
+                }
+                Region {
+                    item: ShellState.activePopupItems.length > 2 ? ShellState.activePopupItems[2] : null
+                }
+                Region {
+                    item: ShellState.activePopupItems.length > 3 ? ShellState.activePopupItems[3] : null
+                }
+                Region {
+                    item: ShellState.activePopupItems.length > 4 ? ShellState.activePopupItems[4] : null
+                }
+                Region {
+                    item: ShellState.activePopupItems.length > 5 ? ShellState.activePopupItems[5] : null
+                }
+                Region {
                     item: borderBezels.topBorderItem
                 }
                 Region {
