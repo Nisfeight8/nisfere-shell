@@ -258,6 +258,7 @@ Item {
                 tooltipText: "Pull"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
+                spinning: GitService.loading
                 onTapped: GitService.pull(root.repoPath)
             }
 
@@ -268,6 +269,7 @@ Item {
                 tooltipText: "Push"
                 normalColor: Theme.backgroundAlt
                 hoverColor: Theme.selected
+                spinning: GitService.loading
                 onTapped: GitService.push(root.repoPath)
             }
         }
