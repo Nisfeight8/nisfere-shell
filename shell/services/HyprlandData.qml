@@ -20,7 +20,8 @@ Singleton {
         let ids = [];
         for (let i = 0; i < workspaces.values.length; i++) {
             let id = workspaces.values[i].id;
-            if (id >= 1 && id <= 100) ids.push(id);
+            if (id >= 1 && id <= 100)
+                ids.push(id);
         }
         return ids.sort((a, b) => a - b);
     }
@@ -50,6 +51,8 @@ Singleton {
                 // Απενεργοποίηση και ενεργοποίηση για να τρέξει σίγουρα
                 getClients.running = false;
                 getClients.running = true;
+                getMonitorsSpecial.running = false;
+                getMonitorsSpecial.running = true;
             }
         }
     }
@@ -62,7 +65,7 @@ Singleton {
         running: true
         onTriggered: {
             bootRetryCount++;
-            
+
             // Αναγκάζουμε το native API να δει τις αλλαγές του Lua
             Hyprland.refreshToplevels();
             Hyprland.refreshWorkspaces();
@@ -83,7 +86,23 @@ Singleton {
         target: Hyprland
         function onRawEvent(event) {
             const n = `${event?.name ?? ""}`;
-            if (n.endsWith("v2")) return;
+            if (n.endsWith("v2"))
+                return;
+
+            // Was calling scheduleClientsUpdate() only inside specific
+            // matched branches below — required correctly guessing the
+            // exact Hyprland event name for every action that should
+            // trigger a refresh. Got this wrong repeatedly for special-
+            // workspace actions specifically (move-to-special + toggle
+            // visible didn't match any of the explicit names/patterns
+            // below, so windowList silently went stale and never
+            // picked up the special-workspace window at all — even
+            // though `hyprctl clients -j` itself already reported it
+            // correctly). Unconditional now: every single event
+            // schedules a refresh, debounced to 60ms regardless, so
+            // this can never again silently miss an event whose exact
+            // name we didn't happen to anticipate.
+            root.scheduleClientsUpdate();
 
             if (["workspace", "moveworkspace", "focusedmon", "activespecial"].includes(n)) {
                 Hyprland.refreshWorkspaces();
@@ -91,21 +110,17 @@ Singleton {
             } else if (["openwindow", "closewindow", "movewindow"].includes(n)) {
                 Hyprland.refreshToplevels();
                 Hyprland.refreshWorkspaces();
-                // Εδώ τα παράθυρα κουνήθηκαν, οπότε τρέχουμε το Process για νέα x,y,w,h
-                root.scheduleClientsUpdate();
             } else if (n.includes("mon")) {
                 Hyprland.refreshMonitors();
             } else if (n.includes("workspace")) {
                 Hyprland.refreshWorkspaces();
             } else if (n.includes("window") || n.includes("group") || ["pin", "fullscreen", "changefloatingmode", "minimize"].includes(n)) {
                 Hyprland.refreshToplevels();
-                // Εδώ τα παράθυρα άλλαξαν κατάσταση/μέγεθος, οπότε τρέχουμε το Process
-                root.scheduleClientsUpdate();
             }
         }
     }
 
-    // ── 5. ΤΟ ΜΟΝΑΔΙΚΟ PROCESS ΠΟΥ ΑΠΕΜΕΙΝΕ ─────────────────────────────
+    // ── 5. ΤΑ PROCESSES ΓΙΑ JSON ΔΕΔΟΜΕΝΑ ────────────────────────────────
     Process {
         id: getClients
         command: ["hyprctl", "clients", "-j"]
@@ -118,8 +133,36 @@ Singleton {
                         byAddr[w.address] = w;
                     root.windowByAddress = byAddr;
                     root.addresses = root.windowList.map(w => w.address);
-                } catch (e) { 
+                } catch (e) {
                     console.warn("HyprlandData: failed to parse clients:", e);
+                }
+            }
+        }
+    }
+
+    // Per-client mapped/hidden/visible fields in `hyprctl clients -j`
+    // do NOT reliably reflect whether a special workspace is actually
+    // toggled visible right now — they stayed "mapped: true, hidden:
+    // false" even while the special workspace containing that client
+    // was hidden (same false-positive already hit with DropTermService
+    // — see chat). `hyprctl monitors -j`'s specialWorkspace field per
+    // monitor is the one place that's actually reliable for this,
+    // confirmed working there already.
+    property var monitorSpecialWorkspaceByName: ({}) // screenName -> "special:name" or "" if none shown
+
+    Process {
+        id: getMonitorsSpecial
+        command: ["hyprctl", "monitors", "-j"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const mons = JSON.parse(text);
+                    const map = {};
+                    for (const m of mons)
+                        map[m.name] = (m.specialWorkspace && m.specialWorkspace.name) ? m.specialWorkspace.name : "";
+                    root.monitorSpecialWorkspaceByName = map;
+                } catch (e) {
+                    console.warn("HyprlandData: failed to parse monitors (special):", e);
                 }
             }
         }
@@ -130,9 +173,18 @@ Singleton {
         const monitor = root.monitors.values.find(m => m.name === screenName);
         if (!monitor || !monitor.activeWorkspace)
             return null;
-        
+
         const tops = monitor.activeWorkspace.toplevels.values;
-        return tops.length > 0 ? tops[0] : null;
+        if (tops.length === 0)
+            return null;
+
+        // .activated marks the single globally-focused toplevel in
+        // Hyprland — find it among THIS workspace's windows first.
+        // Falls back to tops[0] only if none of them are the globally
+        // active one (e.g. focus is currently on a different
+        // monitor's workspace entirely).
+        const active = tops.find(t => t.activated);
+        return active ?? tops[0];
     }
 
     function hasFullscreenOnScreen(screenName) {
@@ -140,8 +192,35 @@ Singleton {
         return monitor && monitor.activeWorkspace ? monitor.activeWorkspace.hasFullscreen : false;
     }
 
+    // A special workspace showing on top of the regular active
+    // workspace never changes monitor.activeWorkspace at all — so
+    // activeWindowForScreen (which only ever looks at activeWorkspace)
+    // had no way to see it. Concretely: opening a special-workspace
+    // window (e.g. a dropdown terminal) while the underlying regular
+    // workspace was empty still reported "showing wallpaper", so
+    // WallpaperOverlay rendered right on top of a window that was
+    // actually covering the whole screen.
+    //
+    // Was checking windowList's per-client mapped/hidden fields —
+    // confirmed unreliable (stayed "mapped: true, hidden: false" even
+    // while the containing special workspace was actually hidden, so
+    // this was permanently true the moment ANY window had ever been
+    // moved to a special workspace, regardless of whether it was
+    // currently shown — exactly the over-eager bug reported). monitors
+    // .specialWorkspace (see getMonitorsSpecial above) is the
+    // confirmed-reliable source for "is a special workspace actually
+    // visible on this monitor right now" — same source already proven
+    // correct for DropTermService's own state tracking.
+    function _hasVisibleSpecialWorkspace(screenName) {
+        return (root.monitorSpecialWorkspaceByName[screenName] ?? "") !== "";
+    }
+
     function isShowingWallpaper(screenName) {
-        return root.activeWindowForScreen(screenName) === null;
+        if (root.activeWindowForScreen(screenName) !== null)
+            return false;
+        if (root._hasVisibleSpecialWorkspace(screenName))
+            return false;
+        return true;
     }
 
     readonly property bool anyScreenShowingWallpaper: {
