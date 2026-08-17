@@ -34,7 +34,7 @@ Item {
             hoverSolid: true
             alwaysBorder: true
             borderColor: Theme.borderColor
-            onTapped: ShellState.openDashboardSearch(ShellState.activeScreenName)
+            onTapped: ShellState.openDashboardSearch(ShellState.activeScreenName, "apps")
         }
 
         // ── Mode toggle: Search entry point / back to Tabs ────────
@@ -55,7 +55,7 @@ Item {
                 if (root.nonTabsActive)
                     ShellState.openDashboardTabs(ShellState.activeScreenName);
                 else
-                    ShellState.openDashboardSearch(ShellState.activeScreenName);
+                    ShellState.openDashboardSearch(ShellState.activeScreenName, "apps");
             }
         }
 

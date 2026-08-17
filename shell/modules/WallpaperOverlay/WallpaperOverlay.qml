@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.core
 import qs.services
+import "widgets"
 
 // Generic container for anything shown directly over the wallpaper
 // (no windows open, nothing else on screen) — visualizer+lyrics+clock.

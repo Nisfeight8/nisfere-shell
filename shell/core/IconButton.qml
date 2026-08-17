@@ -84,7 +84,13 @@ Rectangle {
     LucideIcon {
         id: iconItem
         anchors.centerIn: parent
-        icon: root.icon
+        // Swapped to a dedicated spinner glyph while spinning, instead
+        // of rotating whatever icon the button normally shows. Most
+        // icons (play, refresh-cw, ...) have an inherent up/down
+        // orientation — rotating them looks wrong at almost every
+        // angle, not just when stopped. loader-circle has none, so it
+        // reads correctly through the whole rotation AND at rest.
+        icon: root.spinning ? "loader-circle" : root.icon
         size: root.iconSize
 
         color: {
@@ -123,12 +129,28 @@ Rectangle {
             }
         }
 
-        RotationAnimator on rotation {
+        NumberAnimation {
+            target: iconItem
+            property: "rotation"
             from: 0
             to: 360
             duration: 900
             loops: Animation.Infinite
             running: root.spinning
+            // Was a RotationAnimator, reset via root's onSpinningChanged
+            // — RotationAnimator runs on the render thread, which
+            // doesn't reliably synchronize with a direct property write
+            // from the GUI thread (root.spinning changing and our reset
+            // could race against the animator's own last write). A
+            // plain NumberAnimation runs on the GUI thread like any
+            // other property write, and resetting HERE (in the
+            // animation's own onRunningChanged, which only fires once
+            // it has actually fully stopped) removes the race entirely
+            // — guaranteed to happen after, not possibly before/during.
+            onRunningChanged: {
+                if (!running)
+                    iconItem.rotation = 0;
+            }
         }
     }
 

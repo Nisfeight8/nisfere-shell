@@ -304,7 +304,7 @@ class ThemeManager:
                 daemon=True,
             ).start()
             threading.Thread(
-                target=self.desktop.reload_gtk,
+                target=self.desktop.reload_desktop,
                 args=(mode,),
                 kwargs={"cursor_theme": cursor_theme, "cursor_size": cursor_size},
                 daemon=True,

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Widgets
 import qs.core
+import qs.services
 
 // Hosts the drawer's content: wraps it in a WrapperItem (for directional
 // margins), loads/unloads it based on `opened`, and reports the loaded
@@ -12,13 +13,8 @@ Item {
     property Component contentComponent
     property bool opened: false
     property bool asynchronousLoad: true
-    // Was 300 — shorter than BaseDrawer's own 500ms DefaultSpatial
-    // offset animation, so content could be destroyed before the
-    // close animation visually finished (same bug found via
-    // BarPopup/ActiveWindow — see DelayedUnloadLoader.qml). Not
-    // confirmed as visibly broken here yet, but the same latent
-    // mismatch, fixed proactively.
-    property int unloadDelay: AnimTokens.durationDefaultSpatial + 50
+    
+    property int unloadDelay: ShellState.drawerDelayInterval
 
     property real marginTop: 0
     property real marginBottom: 0

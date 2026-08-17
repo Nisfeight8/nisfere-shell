@@ -87,6 +87,7 @@ BarWidget {
                 spacing: 12 * batteryPopup.uiScale
 
                 HoverHandler {
+                    enabled: root.popupOpen
                     onHoveredChanged: root.popupContentHovered = hovered
                 }
 

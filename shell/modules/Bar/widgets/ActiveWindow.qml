@@ -14,7 +14,7 @@ BarWidget {
     readonly property var activeWin: HyprlandData.activeWindowForScreen(screenName)
 
     readonly property bool hasWindow: activeWin !== null
-    readonly property string windowClass: hasWindow ? activeWin.lastIpcObject.class : ""
+    readonly property string windowClass: (hasWindow && activeWin.lastIpcObject.class) ? activeWin.lastIpcObject.class : ""
     readonly property string windowTitle: hasWindow ? activeWin.title : "Desktop"
     readonly property string iconName: hasWindow && windowClass !== "" ? Icons.getAppIcon(windowClass) : Icons.getAppIcon("desktop")
     useGradient: true
@@ -97,7 +97,8 @@ BarWidget {
         ColumnLayout {
             spacing: 10 * winPopup.uiScale
 
-            HoverHandler {
+            HoverHandler {                
+                enabled: root.popupOpen
                 onHoveredChanged: root.popupContentHovered = hovered
             }
 

@@ -50,11 +50,11 @@ Singleton {
     }
 
     // ── Pending-capture delay ────────────────────────────────────────
-    // Gives the QuickActions drawer time to finish its close-slide
+    // Gives the Dashboard drawer time to finish its close-slide
     // animation before grim actually fires — otherwise "Full screen" and
     // "Window" modes catch the drawer itself mid-close in the screenshot.
     property Timer _pendingCaptureTimer: Timer {
-        interval: 320
+        interval: ShellState.drawerDelayInterval
         property string pendingCmd: ""
         onTriggered: root._run(pendingCmd)
     }

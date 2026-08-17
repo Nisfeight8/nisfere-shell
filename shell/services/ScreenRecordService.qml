@@ -62,11 +62,33 @@ Singleton {
         property string geom
         onTriggered: root._run(`wf-recorder -g "${geom}" --file='${root.outputPath}'`)
     }
+
+    // ── Pending-start delay (full/window only) ──────────────────────
+    // Same reasoning as ScreenshotService's _pendingCaptureTimer/
+    // _scheduleCapture: closeDashboard() only STARTS the drawer's
+    // close animation, it doesn't finish instantly, so starting
+    // wf-recorder right away risked the first moment(s) of the
+    // recording showing the drawer itself still visibly closing. Lives
+    // here (not in RecordPanel.qml) so any future entry point into
+    // recording gets this correctly for free, instead of every caller
+    // needing to remember to wait itself. "area" doesn't need this —
+    // it already waits on you to interact with the area picker, which
+    // only makes sense once the drawer is out of the way regardless.
+    property Timer _pendingStartTimer: Timer {
+        interval: ShellState.drawerDelayInterval
+        property string pendingCmd: ""
+        onTriggered: root._run(pendingCmd)
+    }
+
+    function _scheduleStart(bashCmd) {
+        _pendingStartTimer.pendingCmd = bashCmd;
+        _pendingStartTimer.restart();
+    }
+
     function _run(bashCmd) {
         console.log("ScreenRecordService: running:", bashCmd);
         root.duration = 0;
         root.isRecording = true;
-        // ✅ Correctly wrap in bash -c so $() substitution works
         _recorderProc.command = ["bash", "-c", bashCmd];
         _recorderProc.running = true;
         _durationTimer.start();
@@ -81,7 +103,7 @@ Singleton {
 
         switch (mode) {
         case "full":
-            root._run(`wf-recorder --file='${root.outputPath}'`);
+            root._scheduleStart(`wf-recorder --file='${root.outputPath}'`);
             break;
         case "area":
             AreaPickerService.request((x, y, w, h) => {
@@ -92,7 +114,7 @@ Singleton {
             break;
         case "window":
             // Records the active monitor. Requires: jq (pacman -S jq)
-            root._run(`wf-recorder -o "$(hyprctl activeworkspace -j | jq -r '.monitor')" --file='${root.outputPath}'`);
+            root._scheduleStart(`wf-recorder -o "$(hyprctl activeworkspace -j | jq -r '.monitor')" --file='${root.outputPath}'`);
             break;
         }
     }

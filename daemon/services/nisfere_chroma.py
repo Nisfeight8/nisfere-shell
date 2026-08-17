@@ -44,6 +44,17 @@ def _load_and_resize(image_path: str, resize_to: int):
         img.thumbnail((resize_to, resize_to))
     return img
 
+def pop_score(rgb):
+    """
+    It rates how "striking" a color is to the eye.
+    It combines saturation with the ideal lightness (around 0.5–0.7).
+    """
+    r, g, b = [c / 255.0 for c in rgb]
+    _, l, s = colorsys.rgb_to_hls(r, g, b)
+    
+    lightness_factor = 1.0 - abs(l - 0.6)
+    
+    return s * (lightness_factor ** 1.5)
 
 def adjust_min_delta(rgb, factor, min_delta=0.12):
     """Like adjust(), but guarantees at least `min_delta` absolute
@@ -206,9 +217,13 @@ def adjust(rgb, factor):
 
 
 def color_distance(c1, c2):
-    """Euclidean distance in RGB space, as a quick proxy for how
+    """Redmean distance in RGB space, as a quick proxy for how
     'different' two colors look."""
-    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
+    r_mean = (c1[0] + c2[0]) / 2
+    r = c1[0] - c2[0]
+    g = c1[1] - c2[1]
+    b = c1[2] - c2[2]
+    return (((512 + r_mean) * r * r) / 256 + 4 * g * g + ((767 - r_mean) * b * b) / 256) ** 0.5
 
 
 def set_saturation(rgb, target_s):
@@ -409,8 +424,25 @@ def generate_16_palette(
     accent_pool = (
         select_diverse_colors(accent_pool, 6, min_dist=40) if accent_pool else []
     )
+
     accents = ensure_distinct(accent_pool, 6, min_dist=35)
-    accents = [boost_saturation(c, saturation) for c in accents]
+    processed_accents = []
+    for c in accents:
+        c_boosted = boost_saturation(c, saturation)
+        
+        r, g, b = [x / 255.0 for x in c_boosted]
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        
+        if not light_mode:
+            l = max(l, 0.55) 
+        else:
+            l = min(l, 0.45)
+            
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        processed_accents.append((int(r * 255), int(g * 255), int(b * 255)))
+
+    accents = processed_accents
+    accents = sorted(accents, key=lambda c: colorsys.rgb_to_hls(*[x / 255.0 for x in c])[0])
 
     for i, col in enumerate(accents, start=1):
         palette[f"color{i}"] = adjust(col, 1.0)
@@ -443,6 +475,10 @@ def generate_16_palette(
     by_saturation = sorted(accents, key=saturation_of, reverse=True)
     if by_saturation:
         palette["accent"] = adjust(by_saturation[0], 1.0)
+
+    by_pop = sorted(accents, key=pop_score, reverse=True)
+    if by_pop:
+        palette["accent"] = adjust(by_pop[0], 1.0)
 
     return palette
 

@@ -27,7 +27,7 @@ PopupWindow {
 
     OpenCloseOffset {
         id: motion
-        opened: root.showPopup
+        opened: root.showPopup && contentLoader.item !== null
     }
 
     PopupContainer {
@@ -41,7 +41,7 @@ PopupWindow {
         DelayedUnloadLoader {
             id: contentLoader
             shown: root.showPopup
-            unloadDelay: AnimTokens.durationDefaultSpatial + 50
+            asynchronousLoad: true
             sourceComponent: root.contentComponent
         }
     }

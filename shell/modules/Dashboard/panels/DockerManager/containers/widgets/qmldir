@@ -1,4 +1,0 @@
-# widgets/containers/widgets/qmldir
-ContainerRow        1.0 ContainerRow.qml
-DeleteConfirmModal  1.0 DeleteConfirmModal.qml
-StandaloneSection   1.0 StandaloneSection.qml

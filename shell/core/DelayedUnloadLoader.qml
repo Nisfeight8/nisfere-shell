@@ -1,5 +1,5 @@
 import QtQuick
-
+import qs.services
 // Drop-in replacement for a bare `Loader` that keeps the loaded item
 // alive for `unloadDelay` ms after `shown` goes false — long enough
 // for whatever close/fade animation the CALLER runs on its own
@@ -32,7 +32,26 @@ Item {
     // the caller's open/visible intent, not the Loader's own active.
     property bool shown: false
     property bool asynchronousLoad: true
-    property int unloadDelay: 300   // ms to keep content alive after close, for the close animation
+    property int unloadDelay: ShellState.drawerDelayInterval   // ms to keep content alive after close, for the close animation
+
+    // When true: starts loading immediately (asynchronously — this
+    // never blocks anything) as soon as THIS item exists, regardless
+    // of `shown`, and once loaded, NEVER unloads again (unloadDelay/
+    // gc() no longer apply). For content that's cheap to keep around
+    // and gets shown via a fade animation (a bar popup's menu/
+    // tooltip, say) — trades a small amount of persistent memory for
+    // eliminating load-time stutter on EVERY open, including the very
+    // first one. Was previously a choice between two bad options for
+    // that first open specifically: asynchronousLoad: true raced the
+    // open animation (content visibly popping in partway through, as
+    // the Loader finished in the background while the fade was
+    // already playing), asynchronousLoad: false avoided that race but
+    // synchronously blocked the GUI thread right at the moment the
+    // animation was supposed to start (a freeze instead of a pop-in).
+    // Preloading well before the animation ever runs sidesteps the
+    // tradeoff entirely — by the time you actually open it, there's
+    // nothing left to load.
+    property bool preload: false
 
     readonly property alias item: loader.item
 
@@ -42,6 +61,8 @@ Item {
     signal contentSizeChanged
 
     onShownChanged: {
+        if (preload)
+            return; // preloaded content stays loaded permanently — see below
         if (shown)
             unloadTimer.stop();
         else
@@ -57,7 +78,10 @@ Item {
     Loader {
         id: loader
         anchors.fill: parent
-        active: root.shown || unloadTimer.running
+        // preload keeps this active unconditionally, from the moment
+        // this item is created, regardless of shown/unloadTimer —
+        // loads once, in the background, stays loaded forever after.
+        active: root.preload || root.shown || unloadTimer.running
         asynchronous: root.asynchronousLoad
         sourceComponent: root.sourceComponent
 

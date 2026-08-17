@@ -264,7 +264,170 @@ Singleton {
             }
         },
         {
-            id: "clipboard",
+            id: "containers",
+            keyword: "@containers",
+            label: "Docker Containers",
+            icon: "box",
+            pushOnActivate: false,
+            // Fires once when you enter this scope (not on every
+            // keystroke) — same hook clipboard's provider uses.
+            // DockerService's own refresh timer only runs while the
+            // full DockerManager GUI is open, so without this,
+            // arriving here without ever having opened that GUI in
+            // this session would show a stale/empty list.
+            onScopeEnter: () => DockerService.requestDockerStats(),
+            search: function (query) {
+                const q = query.toLowerCase();
+
+                // Two different kinds of row, merged into one ranked
+                // list: compose PROJECTS (act on the whole stack) and
+                // individual CONTAINERS (act on just one) — including
+                // containers that belong to a compose project, not
+                // just standalone ones. "Restart the whole dev stack"
+                // and "just restart the backend" are both one click,
+                // at whichever granularity you actually want right
+                // now (see chat for the reasoning).
+                const items = [];
+
+                for (const projectName in DockerService.composeProjects) {
+                    const project = DockerService.composeProjects[projectName];
+                    if (q === "" || projectName.toLowerCase().includes(q))
+                        items.push({
+                            kind: "compose",
+                            key: "compose:" + projectName,
+                            name: projectName,
+                            project: project
+                        });
+                    for (const c of project.containers) {
+                        if (q === "" || c.name.toLowerCase().includes(q) || projectName.toLowerCase().includes(q))
+                            items.push({
+                                kind: "container",
+                                key: "container:" + c.name,
+                                name: c.name,
+                                container: c,
+                                projectName: projectName
+                            });
+                    }
+                }
+                for (const c of DockerService.standaloneContainers) {
+                    if (q === "" || c.name.toLowerCase().includes(q))
+                        items.push({
+                            kind: "container",
+                            key: "container:" + c.name,
+                            name: c.name,
+                            container: c,
+                            projectName: ""
+                        });
+                }
+
+                // Same "decorate, sort, undecorate" ranking as ssh/git
+                // above — recency/usage first, alphabetical otherwise.
+                const decorated = items.map(item => {
+                    const recentIdx = DockerUsageService.recentKeys.indexOf(item.key);
+                    const recencyScore = recentIdx === -1 ? -1 : (1000 - recentIdx);
+                    return {
+                        item: item,
+                        recencyScore: recencyScore,
+                        usageCount: DockerUsageService.usageCount(item.key)
+                    };
+                });
+                decorated.sort((a, b) => {
+                    if (a.recencyScore !== b.recencyScore)
+                        return b.recencyScore - a.recencyScore;
+                    if (a.usageCount !== b.usageCount)
+                        return b.usageCount - a.usageCount;
+                    return a.item.name.localeCompare(b.item.name);
+                });
+
+                return decorated.map(d => {
+                    const item = d.item;
+
+                    if (item.kind === "compose") {
+                        const count = item.project.containers.length;
+                        return {
+                            id: "docker-" + item.key,
+                            title: item.name,
+                            subtitle: count + (count === 1 ? " container" : " containers"),
+                            icon: "layers",
+                            actions: [
+                                {
+                                    icon: "play",
+                                    trigger: () => {
+                                        DockerUsageService.recordUse(item.key);
+                                        DockerService.composeAction("up", item.project);
+                                        ShellState.closeDashboard();
+                                    }
+                                },
+                                {
+                                    icon: "refresh-cw",
+                                    trigger: () => {
+                                        DockerUsageService.recordUse(item.key);
+                                        DockerService.composeAction("restart", item.project);
+                                        ShellState.closeDashboard();
+                                    }
+                                }
+                            ],
+                            action: () => ShellState.openDocker(ShellState.activeScreenName)
+                        };
+                    }
+
+                    // kind === "container"
+                    const c = item.container;
+                    const isRunning = c.status === "running";
+                    const containerActions = isRunning ? [
+                        {
+                            icon: "square",
+                            trigger: () => {
+                                DockerUsageService.recordUse(item.key);
+                                DockerService.containerAction("stop", c.id);
+                                ShellState.closeDashboard();
+                            }
+                        },
+                        {
+                            icon: "refresh-cw",
+                            trigger: () => {
+                                DockerUsageService.recordUse(item.key);
+                                DockerService.containerAction("restart", c.id);
+                                ShellState.closeDashboard();
+                            }
+                        }
+                    ] : [
+                        {
+                            icon: "play",
+                            trigger: () => {
+                                DockerUsageService.recordUse(item.key);
+                                DockerService.containerAction("start", c.id);
+                                ShellState.closeDashboard();
+                            }
+                        }
+                    ];
+
+                    return {
+                        id: "docker-" + item.key,
+                        title: item.name,
+                        subtitle: c.status + (item.projectName !== "" ? " · part of " + item.projectName : " · standalone"),
+                        icon: "box",
+                        actions: containerActions,
+                        // Opens straight to THIS container's details
+                        // view — DockerManager always starts fresh
+                        // on the Containers tab (currentTab: 0), and
+                        // DockerService.requestAndNavigate is the
+                        // same call ContainerRow.qml itself uses on
+                        // click, so ContainersWidget's AnimLoader
+                        // (driven by DockerService.isViewingDetails)
+                        // shows the details view immediately — no
+                        // new ShellState property needed, unlike
+                        // git's gitManagerRepoPath (Docker already
+                        // had this state living in DockerService).
+                        action: () => {
+                            ShellState.openDocker(ShellState.activeScreenName);
+                            DockerService.requestAndNavigate(c.id);
+                        }
+                    };
+                });
+            }
+        },
+        {
             keyword: "@clip",
             label: "Clipboard History",
             icon: "clipboard-list",
@@ -444,7 +607,7 @@ Singleton {
     // Same 200ms the old bottom-drawer's QuickActions used.
     Timer {
         id: _pickerDelayTimer
-        interval: 200
+        interval: ShellState.drawerDelayInterval
         onTriggered: ColorPickerService.run()
     }
 

@@ -27,12 +27,8 @@ class DesktopIntegration:
     def sync_papirus_folders(self, accent_hex: str) -> None:
         """
         Recolors Papirus folder icons to match the current accent color.
-        Requires: papirus-folders installed + papirus icon theme.
-        Uses sudo -n (non-interactive) — add to sudoers if needed:
-          username ALL=(ALL) NOPASSWD: /usr/bin/papirus-folders
-
-        Shells out twice and can take a moment — callers should run
-        this in a background thread rather than blocking on it.
+        Uses a nearest-neighbor RGB distance algorithm against the known 
+        Papirus folder color palette.
         """
         try:
             if (
@@ -56,30 +52,49 @@ class DesktopIntegration:
             if len(hex_color) != 6:
                 return
 
-            r, g, b = (int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
-            max_val = max(r, g, b)
-            min_val = min(r, g, b)
-            delta = max_val - min_val
+            # Target RGB from the accent hex
+            target_r, target_g, target_b = (int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
-            saturation = 0 if max_val == 0 else (delta * 100) // max_val
-            brightness = max_val
+            # The exact color palette supported by papirus-folders
+            papirus_palette = {
+                "black": (84, 84, 84),
+                "blue": (82, 148, 226),
+                "bluegrey": (84, 110, 122),
+                "breeze": (61, 174, 233),
+                "brown": (121, 85, 72),
+                "carmine": (224, 79, 95),
+                "cyan": (0, 188, 212),
+                "darkcyan": (0, 150, 136),
+                "deeporange": (255, 112, 67),
+                "green": (76, 175, 80),
+                "grey": (158, 158, 158),
+                "indigo": (63, 81, 181),
+                "magenta": (233, 30, 99),
+                "nordic": (76, 86, 106),
+                "orange": (255, 152, 0),
+                "palebrown": (161, 136, 127),
+                "paleorange": (255, 183, 77),
+                "pink": (244, 143, 177),
+                "red": (244, 67, 54),
+                "teal": (0, 150, 136),
+                "violet": (126, 87, 194),
+                "white": (250, 250, 250),
+                "yellow": (255, 235, 59),
+            }
 
-            if saturation < 20:
-                color = (
-                    "black"
-                    if brightness < 85
-                    else "grey" if brightness < 170 else "white"
-                )
-            else:
-                if max_val == r:
-                    hue = 60 * (((g - b) / delta) % 6)
-                elif max_val == g:
-                    hue = 60 * ((b - r) / delta + 2)
-                else:
-                    hue = 60 * ((r - g) / delta + 4)
+            # Find the closest matching Papirus color using simple RGB Euclidean distance
+            best_color_name = "blue"
+            min_distance = float("inf")
 
-                pale = saturation < 60 and brightness > 180
-                color = hue_to_papirus_color(hue, pale)
+            for name, (pr, pg, pb) in papirus_palette.items():
+                # Μπορούμε να χρησιμοποιήσουμε την απλή Ευκλείδεια απόσταση
+                # ή τον αλγόριθμο Redmean για ακόμα καλύτερο οπτικό ταίριασμα
+                distance = ((target_r - pr) ** 2) + ((target_g - pg) ** 2) + ((target_b - pb) ** 2)
+                if distance < min_distance:
+                    min_distance = distance
+                    best_color_name = name
+
+            color = best_color_name
 
             # Detect which Papirus variant is currently active
             icon_theme_result = subprocess.run(
@@ -89,11 +104,6 @@ class DesktopIntegration:
                 check=False,
             )
             active_icon_theme = icon_theme_result.stdout.strip().strip("'")
-            # Fallback matters more than it looks — gsettings get
-            # likely returns empty/stale under Hyprland (no
-            # gnome-settings-daemon backing it, same root cause as
-            # reload_gtk()'s own gsettings-doesn't-work issue), so
-            # this branch is the one that actually runs in practice.
             papirus_theme = (
                 active_icon_theme if "apirus" in active_icon_theme else "Papirus"
             )
@@ -144,47 +154,22 @@ class DesktopIntegration:
 
         try:
             subprocess.run(
-                [
-                    "gsettings",
-                    "set",
-                    "org.gnome.desktop.interface",
-                    "gtk-theme",
-                    "",
-                ],
+                ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", ""],
                 check=False,
             )
         except Exception as e:
-            logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
+            logger.warning("gsettings gtk-theme reset failed (non-fatal): %s", e)
 
         try:
             subprocess.run(
-                [
-                    "gsettings",
-                    "set",
-                    "org.gnome.desktop.interface",
-                    "gtk-theme",
-                    gtk_theme,
-                ],
+                ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme],
                 check=False,
             )
         except Exception as e:
             logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
 
         if cursor_theme:
-            try:
-                # Updates the live cursor immediately for apps already
-                # running (hyprcursor-aware ones, e.g. Qt/Chromium/
-                # Electron) — subprocess.run requires str args, hence
-                # str(cursor_size) (an int here would raise TypeError
-                # and abort this whole method before settings.ini,
-                # the part that actually matters most, ever gets written).
-                subprocess.run(
-                    ["hyprctl", "setcursor", cursor_theme, str(cursor_size)],
-                    check=False,
-                )
-            except Exception as e:
-                logger.warning("hyprctl setcursor failed (non-fatal): %s", e)
-
+            # Το hyprctl setcursor αφαιρέθηκε από εδώ για να πάει στην reload_hyprland
             try:
                 subprocess.run(
                     [
@@ -223,3 +208,58 @@ class DesktopIntegration:
             cursor_theme,
             cursor_size,
         )
+
+    def reload_hyprland(self, cursor_theme: str = "", cursor_size: int = 24) -> None:
+        """
+        Updates the live cursor for hyprcursor-aware apps and reloads Hyprland.
+        """
+        if cursor_theme:
+            try:
+                subprocess.run(
+                    ["hyprctl", "setcursor", cursor_theme, str(cursor_size)],
+                    check=False,
+                )
+                logger.debug("Hyprland live cursor updated.")
+            except Exception as e:
+                logger.warning("hyprctl setcursor failed (non-fatal): %s", e)
+        
+        try:
+            subprocess.run(["hyprctl", "reload"], check=False)
+            logger.debug("Hyprland configuration reloaded.")
+        except Exception as e:
+            logger.warning("hyprctl reload failed: %s", e)
+
+    def reload_thunar(self) -> None:
+        """
+        Checks if Thunar is running. If not, runs `thunar -q` in the background
+        to ensure any stuck daemon is killed/refreshed.
+        """
+        try:
+            # Το pgrep επιστρέφει 0 αν βρει τη διεργασία, 1 αν δεν τη βρει
+            result = subprocess.run(["pgrep", "-x", "thunar"], capture_output=True, check=False)
+            is_running = (result.returncode == 0)
+
+            if is_running:
+                logger.debug("Thunar is running, skipping reload so we don't close user windows.")
+            else:
+                logger.debug("Thunar is not running, issuing 'thunar -q' just in case.")
+                subprocess.run(
+                    ["thunar", "-q"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False
+                )
+        except Exception as e:
+            logger.warning("Thunar check/reload failed: %s", e)
+
+    def reload_desktop(
+        self, mode: str, cursor_theme: str = "", cursor_size: int = 24
+    ) -> None:
+        """
+        Central orchestration method for all desktop-related reloads.
+        """
+        logger.info("Initiating full desktop reload...")
+        self.reload_gtk(mode, cursor_theme, cursor_size)
+        self.reload_hyprland(cursor_theme, cursor_size)
+        self.reload_thunar()
+        logger.info("Desktop reload complete.")

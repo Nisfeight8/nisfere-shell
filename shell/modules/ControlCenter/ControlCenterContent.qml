@@ -4,7 +4,8 @@ import QtQuick.Layouts
 import Quickshell
 import qs.core
 import qs.services
-import "widgets"
+import "pages"
+import "components"
 import "widgets/SlidersCard"
 import "widgets/Toggles"
 

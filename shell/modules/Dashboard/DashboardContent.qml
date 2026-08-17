@@ -3,10 +3,12 @@ import QtQuick
 import Quickshell
 import qs.core
 import qs.services
-import "panels"
-import "panels/DockerManager" as DockerNS // adjust path once files are physically moved
-import "panels/Settings" as SettingsNS   // ditto
-import "panels/GitManager"
+import "components"
+import "components/DockerManager"
+import "components/Settings"
+import "components/GitManager"
+import "components/TabsComponent"
+import "components/SearchComponent"
 
 // Top-level content host for the Dashboard drawer — the single place
 // that decides which of the 8 top-level components is on screen,
@@ -78,7 +80,7 @@ Item {
     }
     Component {
         id: dockerComp
-        DockerNS.DockerManager {
+        DockerManager {
             color: Theme.background
             uiScale: wrapper.uiScale
         }
@@ -91,7 +93,7 @@ Item {
     }
     Component {
         id: settingsComp
-        SettingsNS.Settings {
+        Settings {
             uiScale: wrapper.uiScale
         }
     }

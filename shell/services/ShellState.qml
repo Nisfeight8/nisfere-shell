@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import Quickshell
 
 import QtQuick
+import qs.core
 import qs.services
 
 Singleton {
@@ -24,15 +25,6 @@ Singleton {
     property bool controlCenterOpened: false
     property int controlCenterPageIndex: 0
     property bool systemDrawerOpened: false
-
-    // ── Quick Actions (bottom drawer) ───────────────────────────────
-    // Design still pending unification — kept here untouched, but no
-    // longer wired into ScreenBorder (drawer instance removed there).
-    // TODO: this whole block is currently dead (nothing loads it) —
-    // remove once the quick-actions merge is actually decided, rather
-    // than carrying it through further refactors.
-    property string quickAction: ""
-    property bool quickActionsOpened: false
 
     // ── Dashboard ────────────────────────────────────────────────────
     // FULL REFACTOR (see chat) — replaces the old
@@ -71,6 +63,7 @@ Singleton {
     // search-bar-less version could never offer. No use case lost.)
     property bool dashboardOpened: false
     property string dashboardActiveComponent: "tabs"
+    property int drawerDelayInterval: AnimTokens.durationDefaultSpatial + 50
 
     // ── "tabs" component state ────────────────────────────────────────
     property int dashboardTabsCurrentTab: 0
@@ -116,12 +109,6 @@ Singleton {
     // adding a new standalone Dashboard component that needs
     // Exclusive/OnDemand focus means adding ONE entry here, not
     // editing a hand-written `||` chain in ScreenBorder.
-    //
-    // TODO: "docker" and "settings" are placeholders (onDemand) —
-    // haven't reviewed DockerManager.qml/Settings.qml's actual content
-    // yet. Confirm/adjust once we look at those files. "sysmon" is
-    // confirmed onDemand — SystemMonitorTool has its own process-filter
-    // SearchBar.
     readonly property var _dashboardFocusModeByComponent: ({
             "tabs": "none",
             "search": "exclusive",
@@ -211,19 +198,34 @@ Singleton {
     // the drawer is already gone.
     function closeDashboard() {
         dashboardOpened = false;
-        dashboardSearchText = "";
-        closeSearchDrilldown();
         _closeTabsResetTimer.restart();
     }
 
-    // 250ms is a guess matching a typical drawer close-slide duration
-    // in this shell (Anim.DefaultEffects-ish) — tune to match
-    // OpenCloseOffset's actual close duration if it visibly fires too
-    // early/late.
     Timer {
         id: _closeTabsResetTimer
-        interval: 250
-        onTriggered: dashboardActiveComponent = "tabs"
+        // Was a hardcoded 250ms guess — now matches the drawer's
+        // actual close-slide duration exactly (see BaseDrawer/
+        // FooterDrawer's own AnimTokens.durationDefaultSpatial + 50
+        // usage), so this can never silently drift out of sync with
+        // it again.
+        interval: drawerDelayInterval
+        onTriggered: {
+            dashboardActiveComponent = "tabs";
+            // Was immediate inside closeDashboard() itself — cleared
+            // the search text (and any drilldown) synchronously while
+            // the drawer was still visually fading/sliding closed and
+            // the results list was still on screen. providerId stayed
+            // the same but the query text momentarily became "",
+            // so GenericResultsList briefly recomputed against an
+            // EMPTY query (e.g. "apps".search("") — every app,
+            // alphabetically) before the drawer actually finished
+            // closing — visible as a flash of different results right
+            // as you activated one. Same class of race as the
+            // component-swap fix above, same fix: defer until the
+            // close motion has plausibly finished.
+            dashboardSearchText = "";
+            closeSearchDrilldown();
+        }
     }
 
     function toggleDashboard(screenName) {
@@ -283,8 +285,18 @@ Singleton {
         activeScreenName = screenName;
         dashboardOpened = true;
         dashboardActiveComponent = "search";
-        dashboardSearchText = "";
         closeSearchDrilldown();
+        // Only touches dashboardSearchText when a providerId is
+        // actually given — leaves it untouched otherwise. When one IS
+        // given, this is a SINGLE write, not "" followed immediately
+        // by the real keyword — two separate assignments fire two
+        // separate change notifications in QML (consecutive writes to
+        // the same property aren't batched), and anything reactively
+        // watching dashboardSearchText (SearchComponent's parsed)
+        // would briefly re-evaluate against the empty string in
+        // between. Concretely: opening "@wp" via shortcut was
+        // flashing AppLauncherPanel (providerId "apps" for that
+        // momentary empty text) before landing on the wallpapers panel.
         if (providerId !== undefined) {
             const p = SearchProviders.findById(providerId);
             dashboardSearchText = (p && p.keyword !== "") ? p.keyword + " " : "";
@@ -402,7 +414,7 @@ Singleton {
         openDashboardComponent(screenName, "record");
     }
 
-    property int workspacesPerMonitor: ThemeState.shared.workspacesPerMonitor
+    property int workspacesPerMonitor: ThemeState.shared.workspacesPerMonitor || 10
     property bool overviewOpen: false
     property int overviewRows: 2
     property int overviewColumns: workspacesPerMonitor / overviewRows
@@ -469,5 +481,4 @@ Singleton {
     function togglePowerMenu(screenName) {
         _toggleFlag("powerMenuOpened", screenName);
     }
-
 }

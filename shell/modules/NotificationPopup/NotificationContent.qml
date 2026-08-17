@@ -76,7 +76,7 @@ Item {
 
                 LucideIcon {
                     anchors.centerIn: parent
-                    icon: content.isCritical ? "alert-triangle" : "bell"
+                    icon: content.isCritical ? "triangle-alert" : "bell"
                     color: content.isCritical ? Theme.color1 : Theme.selected
                     size: 24 * content.uiScale
                     visible: !content.hasAppIcon && !content.hasImage

@@ -3,15 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# python-docker is optional — Docker itself is opt-in at install time
-# (not every machine runs containers). Without this guard, a missing
-# package here would crash this module's import, which cascades
-# straight up through docker_manager.py's own top-level import into
-# main.py's `from modules import docker_manager, ...` — taking the
-# ENTIRE daemon down with it, not just the Docker tab. Every public
-# method below already has its own try/except around client calls
-# (handles the daemon-not-running case at runtime just fine) — the
-# only gap was this import itself never getting that chance to run.
 try:
     import docker
     from docker import DockerClient
@@ -38,11 +29,6 @@ class DockerService:
         return docker.from_env()
 
     # ── Streaming ────────────────────────────────────────────────
-    # These shell out to the `docker`/`docker compose` CLI binaries
-    # directly, not the Python library — a missing CLI binary raises
-    # FileNotFoundError here, already caught by docker_manager.py's
-    # own outer try/except around every action, so no extra guard
-    # needed in this section.
 
     async def get_stats_process(self, container_id: str):
         return await asyncio.create_subprocess_exec(
@@ -94,7 +80,7 @@ class DockerService:
                         "working_dir": labels.get(
                             "com.docker.compose.project.working_dir", ""
                         ),
-                        "config_files": [],  # list, not comma-joined string
+                        "config_files": [],
                         "containers": [],
                     }
 
@@ -117,7 +103,15 @@ class DockerService:
         result = []
         for img in client.images.list():
             tags = img.tags or ["<none>:<none>"]
-            size_mb = round(img.attrs.get("VirtualSize", 0) / (1024 * 1024), 1)
+            # Was img.attrs.get("VirtualSize", 0) — VirtualSize is
+            # deprecated in newer Docker Engine API versions and often
+            # comes back unset (0) there, which is exactly why every
+            # image was showing "0.0 MB" regardless of its real size.
+            # "Size" is the current, consistently-populated field;
+            # falling back to VirtualSize keeps this working against
+            # older daemons that only report that one.
+            size_bytes = img.attrs.get("Size", img.attrs.get("VirtualSize", 0))
+            size_mb = round(size_bytes / (1024 * 1024), 1)
             for tag in tags:
                 name, t = tag.split(":", 1) if ":" in tag else (tag, "latest")
                 result.append(
@@ -128,10 +122,17 @@ class DockerService:
                         "size": f"{size_mb} MB",
                     }
                 )
+        # client.images.list() doesn't guarantee stable ordering
+        # between calls — without this, the list visibly reordered on
+        # every 3s poll refresh while the tab was open, even though
+        # nothing had actually changed.
+        result.sort(key=lambda r: (r["name"].lower(), r["tag"].lower()))
         return result
 
     def _fetch_volumes(self, client) -> list[dict]:
-        return [
+        # Same non-deterministic-ordering issue as images — sorted for
+        # a stable list across refreshes.
+        volumes = [
             {
                 "name": vol.name,
                 "driver": vol.attrs.get("Driver", "local"),
@@ -139,6 +140,8 @@ class DockerService:
             }
             for vol in client.volumes.list()
         ]
+        volumes.sort(key=lambda v: v["name"].lower())
+        return volumes
 
     # ── Public API ────────────────────────────────────────────────
 
@@ -215,9 +218,30 @@ class DockerService:
                 case "image":
                     if action == "delete":
                         client.images.remove(target, force=True)
+                    elif action == "prune":
+                        # Dangling only (untagged <none>:<none> images)
+                        # — same scope as plain `docker image prune` on
+                        # the CLI, deliberately NOT the more aggressive
+                        # `-a` (which also removes any image not
+                        # currently used by a container, even ones you
+                        # might want to reuse without re-pulling).
+                        # `target` is unused/irrelevant for a bulk
+                        # prune.
+                        client.images.prune()
+                    else:
+                        logger.warning("Unknown image action: %s", action)
+                        return False
                 case "volume":
                     if action == "delete":
                         client.volumes.get(target).remove(force=True)
+                    elif action == "prune":
+                        # Removes volumes not attached to any
+                        # container — same scope as plain `docker
+                        # volume prune`, no extra flags.
+                        client.volumes.prune()
+                    else:
+                        logger.warning("Unknown volume action: %s", action)
+                        return False
             return True
         except Exception as e:
             logger.error(
@@ -231,7 +255,6 @@ class DockerService:
         """Runs a docker compose command."""
         try:
             working_dir = target_obj.get("working_dir")
-            # config_files is now a list (not comma-joined)
             config_files: list[str] = target_obj.get("config_files", [])
 
             cmd = ["docker", "compose"]
