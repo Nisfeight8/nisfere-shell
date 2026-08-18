@@ -8,7 +8,7 @@ BarWidget {
 
     visible: BatteryService.hasBattery
     spacing: 8
-    useGradient: false
+    useGradient: true
     readonly property bool isCritical: !BatteryService.isCharging && BatteryService.percentage <= 15
     readonly property color statusColor: BatteryService.isCharging ? Theme.selected : (isCritical ? Theme.color1 : Theme.foreground)
 
