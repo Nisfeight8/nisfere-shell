@@ -59,7 +59,7 @@ Rectangle {
                         text: "Images"
                     }
                     Text {
-                        color: Theme.color8
+                        color: Theme.foregroundAlt
                         font.family: Theme.fontName
                         font.pixelSize: 10 * root.uiScale
                         text: DockerService.dockerImages.length + " images"

@@ -109,11 +109,11 @@ QtObject {
         },
         "45": {
             icon: "cloud-fog",
-            color: Theme.color8
+            color: Theme.foregroundAlt
         },
         "48": {
             icon: "cloud-fog",
-            color: Theme.color8
+            color: Theme.foregroundAlt
         },
         "51": {
             icon: "cloud-rain",

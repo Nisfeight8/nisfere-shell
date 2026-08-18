@@ -89,7 +89,7 @@ Column {
                     text: root.proj.name
                 }
                 Text {
-                    color: Theme.color8
+                    color: Theme.foregroundAlt
                     elide: Text.ElideMiddle
                     font.pixelSize: 10 * root.uiScale
                     text: root.proj.working_dir || "—"
@@ -97,7 +97,7 @@ Column {
                 }
             }
             Text {
-                color: root.projRunning === root.proj.containers.length ? Theme.color10 : root.projRunning === 0 ? Theme.color8 : Theme.color3
+                color: root.projRunning === root.proj.containers.length ? Theme.color10 : root.projRunning === 0 ? Theme.foregroundAlt : Theme.color3
                 font.bold: true
                 font.pixelSize: 11 * root.uiScale
                 text: root.projRunning + "/" + root.proj.containers.length
@@ -166,9 +166,9 @@ Column {
                     iconSize: 12 * root.uiScale
                     enabled: root.pendingAction === ""
                     spinning: root.pendingAction === "down"
-                    normalColor: Qt.rgba(Theme.color9.r, Theme.color9.g, Theme.color9.b, 0.10)
-                    hoverColor: Theme.color9
-                    fixedIconColor: Theme.color9
+                    normalColor: Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.10)
+                    hoverColor: Theme.color1
+                    fixedIconColor: Theme.color1
                     tooltipText: "Tear down project"
                     onTapped: {
                         root.pendingAction = "down";

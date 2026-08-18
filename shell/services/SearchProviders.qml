@@ -427,7 +427,8 @@ Singleton {
                 });
             }
         },
-        {
+        {   
+            id: "clipboard",
             keyword: "@clip",
             label: "Clipboard History",
             icon: "clipboard-list",

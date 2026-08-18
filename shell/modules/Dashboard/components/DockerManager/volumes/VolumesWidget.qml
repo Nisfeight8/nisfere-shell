@@ -57,7 +57,7 @@ Rectangle {
                         text: "Volumes"
                     }
                     Text {
-                        color: Theme.color8
+                        color: Theme.foregroundAlt
                         font.family: Theme.fontName
                         font.pixelSize: 10 * root.uiScale
                         text: DockerService.dockerVolumes.length + " volumes"

@@ -43,7 +43,7 @@ Rectangle {
                 text: root.img.name + ":" + root.img.tag
             }
             Text {
-                color: Theme.color8
+                color: Theme.foregroundAlt
                 font.family: Theme.fontName
                 font.pixelSize: 10 * root.uiScale
                 text: root.img.size
@@ -54,9 +54,9 @@ Rectangle {
             icon: "x"
             size: 22 * root.uiScale
             iconSize: 12 * root.uiScale
-            normalColor: Qt.rgba(Theme.color9.r, Theme.color9.g, Theme.color9.b, 0.10)
-            hoverColor: Theme.color9
-            fixedIconColor: Theme.color9
+            normalColor: Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.10)
+            hoverColor: Theme.color1
+            fixedIconColor: Theme.color1
             tooltipText: "Delete"
             onTapped: root.deleteRequested(root.img.id, root.img.name + ":" + root.img.tag)
         }

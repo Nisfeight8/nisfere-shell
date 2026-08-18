@@ -74,7 +74,7 @@ Rectangle {
                         text: "Docker"
                     }
                     Text {
-                        color: Theme.color8
+                        color: Theme.foregroundAlt
                         font.family: Theme.fontName
                         font.pixelSize: 10 * root.uiScale
                         text: root.projectsArray.length + " projects · " + DockerService.standaloneContainers.length + " standalone"
@@ -88,7 +88,7 @@ Rectangle {
                 Rectangle {
                     id: badge
 
-                    property color bc: hasError ? Theme.color1 : DockerService.runningContainers > 0 ? Theme.color10 : Theme.color8
+                    property color bc: hasError ? Theme.color1 : DockerService.runningContainers > 0 ? Theme.color10 : Theme.foregroundAlt
                     property bool hasError: DockerService.errorMessage !== ""
 
                     border.color: Qt.rgba(bc.r, bc.g, bc.b, 0.45)

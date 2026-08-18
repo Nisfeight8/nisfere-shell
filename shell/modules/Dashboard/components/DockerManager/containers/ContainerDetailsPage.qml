@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import qs.core
 import qs.services
 
@@ -47,7 +46,7 @@ Rectangle {
 
     Text {
         anchors.centerIn: parent
-        color: Theme.color8
+        color: Theme.foregroundAlt
         font.family: Theme.fontName
         font.pixelSize: 14 * root.uiScale
         text: "Loading..."
@@ -108,7 +107,7 @@ Rectangle {
                     text: root.details ? root.details.name : ""
                 }
                 Text {
-                    color: Theme.color8
+                    color: Theme.foregroundAlt
                     elide: Text.ElideRight
                     font.pixelSize: 11 * root.uiScale
                     text: "Image: " + (root.details ? root.details.image : "")

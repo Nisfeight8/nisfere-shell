@@ -51,7 +51,7 @@ Rectangle {
             return Theme.color6;
         if (s === "dead")
             return Theme.color1;
-        return Theme.color8;
+        return Theme.foregroundAlt;
     }
 
     border.color: cd.status === "running" ? Qt.rgba(Theme.color10.r, Theme.color10.g, Theme.color10.b, 0.25) : Qt.rgba(Theme.borderColor.r, Theme.borderColor.g, Theme.borderColor.b, 0.40)
@@ -216,9 +216,9 @@ Rectangle {
                 size: 22 * root.uiScale
                 iconSize: 12 * root.uiScale
                 enabled: root.pendingAction === ""
-                normalColor: Qt.rgba(Theme.color9.r, Theme.color9.g, Theme.color9.b, 0.10)
-                hoverColor: Theme.color9
-                fixedIconColor: Theme.color9
+                normalColor: Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.05)
+                hoverColor: Theme.color1
+                fixedIconColor: Theme.color1
                 tooltipText: "Delete"
                 onTapped: root.deleteRequested(cd.id, cd.name)
             }
