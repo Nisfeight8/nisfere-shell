@@ -166,9 +166,9 @@ Column {
                     iconSize: 12 * root.uiScale
                     enabled: root.pendingAction === ""
                     spinning: root.pendingAction === "down"
-                    normalColor: Qt.rgba(Theme.color1.r, Theme.color1.g, Theme.color1.b, 0.10)
-                    hoverColor: Theme.color1
-                    fixedIconColor: Theme.color1
+                    normalColor: Qt.rgba(Theme.color9.r, Theme.color9.g, Theme.color9.b, 0.10)
+                    hoverColor: Theme.color9
+                    fixedIconColor: Theme.color9
                     tooltipText: "Tear down project"
                     onTapped: {
                         root.pendingAction = "down";

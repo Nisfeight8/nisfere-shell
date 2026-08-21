@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Dialogs
+import Quickshell
 import qs.core
 import qs.services
 
@@ -26,6 +28,20 @@ Item {
         root._debounceTimer.restart();
     }
 
+    // Native OS file picker for choosing an avatar image — see chat
+    // for why a real FileDialog rather than reusing the shell's own
+    // @files search provider here. selectedFile comes back as a
+    // file:// URL, not a plain path; AvatarService.setAvatarFromUrl
+    // handles that conversion.
+    FileDialog {
+        id: avatarDialog
+        title: "Choose profile picture"
+        currentFolder: "file://" + Quickshell.env("HOME") + "/Pictures"
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp)"]
+        fileMode: FileDialog.OpenFile
+        onAccepted: AvatarService.setAvatarFromUrl(selectedFile)
+    }
+
     CustomScrollView {
         anchors.fill: parent
         clip: true
@@ -38,6 +54,104 @@ Item {
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 4 * root.uiScale
+            }
+
+            // ── Profile ──────────────────────────────────────────
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
+                spacing: 12 * root.uiScale
+
+                Text {
+                    text: "Profile"
+                    color: Theme.foreground
+                    font.family: Theme.fontName
+                    font.pixelSize: 13 * root.uiScale
+                    font.bold: true
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 14 * root.uiScale
+
+                    Rectangle {
+                        width: 64 * root.uiScale
+                        height: 64 * root.uiScale
+                        radius: width / 2
+                        color: Theme.backgroundAlt
+                        border.width: 1
+                        border.color: Theme.borderColor
+                        clip: true
+
+                        Image {
+                            anchors.fill: parent
+                            visible: AvatarService.hasAvatar
+                            source: AvatarService.hasAvatar ? AvatarService.avatarPath : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                        }
+                        LucideIcon {
+                            anchors.centerIn: parent
+                            visible: !AvatarService.hasAvatar
+                            icon: "user"
+                            size: 28 * root.uiScale
+                            color: Theme.foreground
+                            opacity: 0.4
+                        }
+                    }
+
+                    ColumnLayout {
+                        spacing: 6 * root.uiScale
+
+                        Text {
+                            text: "Profile Picture"
+                            color: Theme.foreground
+                            font.family: Theme.fontName
+                            font.pixelSize: 13 * root.uiScale
+                        }
+                        Text {
+                            text: "Shown on the lock screen and system drawer"
+                            color: Theme.foreground
+                            font.family: Theme.fontName
+                            font.pixelSize: 10 * root.uiScale
+                            opacity: 0.5
+                        }
+                        RowLayout {
+                            spacing: 8 * root.uiScale
+
+                            NavTile {
+                                icon: "image"
+                                label: "Choose..."
+                                uiScale: root.uiScale
+                                Layout.preferredWidth: 110 * root.uiScale
+                                Layout.preferredHeight: 32 * root.uiScale
+                                onTapped: {
+                                    ShellState.closeDashboard();
+                                    avatarDialog.open();
+                                }
+                            }
+                            IconButton {
+                                icon: "x"
+                                size: 32 * root.uiScale
+                                iconSize: 14 * root.uiScale
+                                visible: AvatarService.hasAvatar
+                                normalColor: Theme.backgroundAlt
+                                hoverColor: Theme.color1
+                                tooltipText: "Remove"
+                                onTapped: AvatarService.clearAvatar()
+                            }
+                        }
+                    }
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
+            InfoDivider {
+                Layout.leftMargin: 20 * root.uiScale
+                Layout.rightMargin: 20 * root.uiScale
             }
 
             // ── General (shared scope) ──────────────────────────

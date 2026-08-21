@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import Quickshell
 import Quickshell.Wayland
+import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
@@ -122,32 +122,70 @@ WlSessionLock {
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 20 * lockContainer.uiScale
 
-                    Rectangle {
+                    Item {
                         id: avatarBadge
                         width: 100 * lockContainer.uiScale
                         height: 100 * lockContainer.uiScale
-                        radius: width / 2
-                        color: Theme.backgroundAlt
-                        border.color: Theme.borderColor
-                        border.width: 2
-                        clip: true
                         Layout.alignment: Qt.AlignHCenter
 
-                        readonly property string _avatarSource: ThemeState.shared.avatarPath ? "file://" + ThemeState.shared.avatarPath : ""
+                        // Was ThemeState.shared.avatarPath — see chat, avatar moved to
+                        // its own dedicated AvatarService (FileView+JsonAdapter, same
+                        // pattern as SshUsageService/GitUsageService/DockerUsageService).
+                        readonly property string _avatarSource: AvatarService.hasAvatar ? "file://" + AvatarService.avatarPath : ""
 
+                        // OpacityMask, not clip+radius — clip only ever clips to the
+                        // plain rectangular bounding box in QtQuick, it ignores radius
+                        // entirely for child clipping purposes, so the image was
+                        // rendering square underneath despite the rounded border/
+                        // background drawn around it. Same pattern already used
+                        // correctly for album art in the Media tab, and just applied to
+                        // SystemDrawerHeader's own avatar the same way.
                         Image {
+                            id: avatarImage
                             anchors.fill: parent
                             fillMode: Image.PreserveAspectCrop
                             source: avatarBadge._avatarSource
+                            asynchronous: true
+                            cache: false
+                            visible: false
+                            sourceSize.width: width * 2
+                            sourceSize.height: height * 2
+                        }
+                        Rectangle {
+                            id: avatarCircleMask
+                            anchors.fill: parent
+                            color: "black"
+                            radius: width / 2
+                            visible: false
+                        }
+                        OpacityMask {
+                            anchors.fill: parent
+                            maskSource: avatarCircleMask
+                            source: avatarImage
                             visible: avatarBadge._avatarSource !== ""
                         }
-
-                        LucideIcon {
-                            anchors.centerIn: parent
-                            icon: "user"
-                            size: 50 * lockContainer.uiScale
-                            color: Theme.foreground
+                        Rectangle {
+                            anchors.fill: parent
+                            border.color: Theme.borderColor
+                            border.width: 2
+                            color: "transparent"
+                            radius: width / 2
+                            visible: avatarBadge._avatarSource !== ""
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            border.color: Theme.borderColor
+                            border.width: 2
+                            color: Theme.backgroundAlt
+                            radius: width / 2
                             visible: avatarBadge._avatarSource === ""
+
+                            LucideIcon {
+                                anchors.centerIn: parent
+                                icon: "user"
+                                size: 50 * lockContainer.uiScale
+                                color: Theme.foreground
+                            }
                         }
                     }
 

@@ -87,8 +87,6 @@ class DesktopIntegration:
             min_distance = float("inf")
 
             for name, (pr, pg, pb) in papirus_palette.items():
-                # Μπορούμε να χρησιμοποιήσουμε την απλή Ευκλείδεια απόσταση
-                # ή τον αλγόριθμο Redmean για ακόμα καλύτερο οπτικό ταίριασμα
                 distance = ((target_r - pr) ** 2) + ((target_g - pg) ** 2) + ((target_b - pb) ** 2)
                 if distance < min_distance:
                     min_distance = distance
@@ -169,7 +167,6 @@ class DesktopIntegration:
             logger.warning("gsettings gtk-theme set failed (non-fatal): %s", e)
 
         if cursor_theme:
-            # Το hyprctl setcursor αφαιρέθηκε από εδώ για να πάει στην reload_hyprland
             try:
                 subprocess.run(
                     [
@@ -235,7 +232,6 @@ class DesktopIntegration:
         to ensure any stuck daemon is killed/refreshed.
         """
         try:
-            # Το pgrep επιστρέφει 0 αν βρει τη διεργασία, 1 αν δεν τη βρει
             result = subprocess.run(["pgrep", "-x", "thunar"], capture_output=True, check=False)
             is_running = (result.returncode == 0)
 

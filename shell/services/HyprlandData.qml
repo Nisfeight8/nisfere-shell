@@ -9,13 +9,14 @@ import Quickshell.Hyprland
 Singleton {
     id: root
 
-    // ── 1. NATIVE API (Γρήγορο, χωρίς καθυστερήσεις, έχει τα πάντα εκτός από x,y,w,h)
+    // ── 1. NATIVE API (Fast, no delays, contains everything except x, y, w, h)
     readonly property var toplevels: Hyprland.toplevels
     readonly property var workspaces: Hyprland.workspaces
     readonly property var monitors: Hyprland.monitors
     readonly property bool usingLua: Hyprland.usingLua
     readonly property var focusedMonitor: Hyprland.focusedMonitor
-    // Φτιάχνουμε το workspaceIds απευθείας από το native API (δεν χρειάζεται process!)
+
+    // Build workspaceIds directly from the native API (no Process needed!)
     readonly property var workspaceIds: {
         let ids = [];
         for (let i = 0; i < workspaces.values.length; i++) {
@@ -26,7 +27,7 @@ Singleton {
         return ids.sort((a, b) => a - b);
     }
 
-    // ── 2. JSON ΔΕΔΟΜΕΝΑ (Μόνο για τα παραθυρα, για να έχουμε τα "at" και "size" στο Overview)
+    // ── 2. JSON DATA (Only for windows, to get "at" and "size" in the Overview)
     property var windowList: []
     property var windowByAddress: ({})
     property var addresses: []
@@ -35,7 +36,7 @@ Singleton {
     property bool pendingWindows: false
     property int bootRetryCount: 0
 
-    // Καλούμε αυτή τη συνάρτηση μόνο όταν κάτι αλλάζει στα παράθυρα
+    // Call this function only when there's a window change
     function scheduleClientsUpdate() {
         pendingWindows = true;
         debounceTimer.restart();
@@ -48,7 +49,7 @@ Singleton {
         onTriggered: {
             if (pendingWindows) {
                 pendingWindows = false;
-                // Απενεργοποίηση και ενεργοποίηση για να τρέξει σίγουρα
+                // Disable and enable to guarantee execution
                 getClients.running = false;
                 getClients.running = true;
                 getMonitorsSpecial.running = false;
@@ -57,7 +58,7 @@ Singleton {
         }
     }
 
-    // ── 3. ΕΚΚΙΝΗΣΗ / ΣΥΓΧΡΟΝΙΣΜΟΣ ΜΕ ΤΟ LUA SCRIPT ────────────────────
+    // ── 3. BOOT / SYNCHRONIZATION WITH LUA SCRIPT ───────────────────────
     Timer {
         id: bootSyncTimer
         interval: 400
@@ -66,22 +67,22 @@ Singleton {
         onTriggered: {
             bootRetryCount++;
 
-            // Αναγκάζουμε το native API να δει τις αλλαγές του Lua
+            // Force the native API to see the Lua changes
             Hyprland.refreshToplevels();
             Hyprland.refreshWorkspaces();
             Hyprland.refreshMonitors();
 
-            // Αναγκάζουμε και το JSON να κατεβάσει τις θέσεις των παραθύρων
+            // Force JSON to fetch window positions as well
             root.scheduleClientsUpdate();
 
-            // Σταματάει μετά από ~2.5 δευτερόλεπτα (όταν το Lua έχει τελειώσει σίγουρα)
+            // Stop after ~2.5 seconds (when Lua has certainly finished)
             if (bootRetryCount >= 6) {
                 running = false;
             }
         }
     }
 
-    // ── 4. ΕΠΕΞΕΡΓΑΣΙΑ ΣΥΜΒΑΝΤΩΝ (IPC EVENTS) ───────────────────────────
+    // ── 4. EVENT PROCESSING (IPC EVENTS) ────────────────────────────────
     Connections {
         target: Hyprland
         function onRawEvent(event) {
@@ -120,7 +121,7 @@ Singleton {
         }
     }
 
-    // ── 5. ΤΑ PROCESSES ΓΙΑ JSON ΔΕΔΟΜΕΝΑ ────────────────────────────────
+    // ── 5. PROCESSES FOR JSON DATA ──────────────────────────────────────
     Process {
         id: getClients
         command: ["hyprctl", "clients", "-j"]
@@ -168,7 +169,7 @@ Singleton {
         }
     }
 
-    // ── 6. HELPER FUNCTIONS ΓΙΑ ΤΟ WALLPAPER ΚΑΙ ΤΟ ACTIVE WINDOW ───────
+    // ── 6. HELPER FUNCTIONS FOR WALLPAPER AND ACTIVE WINDOW ─────────────
     function activeWindowForScreen(screenName) {
         const monitor = root.monitors.values.find(m => m.name === screenName);
         if (!monitor || !monitor.activeWorkspace)

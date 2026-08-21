@@ -46,7 +46,6 @@ Item {
             bgColor: root.bgColor
             borderColor: root._borderColor
             edge: root.edge
-            // bottomOffset: 0 // Αν τυχόν περάσεις το bottomOffset στον BaseDrawer, μπορείς να το κάνεις bind εδώ
             Behavior on borderColor {
                 AnimColor {
                     type: Anim.DefaultEffects

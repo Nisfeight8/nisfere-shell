@@ -12,10 +12,20 @@
 # daemon/, dots/, shell/, templates/, themes/, templates.json).
 #
 # Usage:
-#   ./install.sh            normal run
+#   ./install.sh            normal (fresh) run — packages, dotfiles,
+#                            prompts, the works.
 #   ./install.sh --dry-run  print every command that WOULD run, touch
 #                           nothing — safe to run on your real machine
 #                           just to sanity-check paths/package list.
+#   ./install.sh --update   for machines that already have nisfere
+#                           installed — re-syncs daemon/shell/
+#                           templates/themes from this checkout and
+#                           restarts the daemon + Quickshell to pick
+#                           up the change, but skips EVERYTHING that's
+#                           one-time setup (packages, dotfiles, XDG
+#                           dirs, sudoers/docker/SDDM prompts, the
+#                           default-theme apply). Combine with
+#                           --dry-run to preview an update too.
 #
 # For active development against a git checkout, use dev-mode.sh
 # instead (switches ~/.config/nisfere between this install and a
@@ -25,12 +35,24 @@
 set -euo pipefail
 
 DRY_RUN=0
-if [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=1
-fi
+UPDATE_MODE=0
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=1 ;;
+        --update) UPDATE_MODE=1 ;;
+        *) ;;
+    esac
+done
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NISFERE_DIR="$HOME/.config/nisfere"
+
+# How many timestamped .bak-<epoch> copies to keep per destination —
+# was unbounded before (every single re-run of install.sh added one
+# more, forever), which is exactly what made re-running it for updates
+# unpleasant. 3 is enough to recover from "the last update broke
+# something" without accumulating indefinitely.
+MAX_BACKUPS=3
 
 log()  { echo -e "\033[1;34m[nisfere]\033[0m $*"; }
 warn() { echo -e "\033[1;33m[nisfere]\033[0m $*"; }
@@ -48,8 +70,31 @@ run() {
     fi
 }
 
+# Deletes all but the newest MAX_BACKUPS backups matching
+# <dst>.bak-<epoch> — called right after copy_backed_up creates a new
+# one, so the pile never grows past the cap.
+prune_backups() {
+    local dst="$1"
+    local dir base
+    dir="$(dirname "$dst")"
+    base="$(basename "$dst")"
+
+    local backups=()
+    while IFS= read -r -d '' f; do
+        backups+=("$f")
+    done < <(find "$dir" -maxdepth 1 -name "${base}.bak-*" -print0 2>/dev/null | sort -z -r)
+
+    if (( ${#backups[@]} > MAX_BACKUPS )); then
+        local old
+        for old in "${backups[@]:$MAX_BACKUPS}"; do
+            run rm -rf "$old"
+        done
+    fi
+}
+
 # Backs up any existing destination (file, dir, or symlink — never
-# silently overwrites/deletes), then copies src -> dst.
+# silently overwrites/deletes), then copies src -> dst. Prunes old
+# backups for this destination down to MAX_BACKUPS right after.
 #   copy_backed_up <src> <dst>
 copy_backed_up() {
     local src="$1"
@@ -58,6 +103,7 @@ copy_backed_up() {
     if [[ -e "$dst" || -L "$dst" ]]; then
         warn "Existing $dst found — backing up to ${dst}.bak-$(date +%s)"
         run mv "$dst" "${dst}.bak-$(date +%s)"
+        prune_backups "$dst"
     fi
     run mkdir -p "$(dirname "$dst")"
     run cp -r "$src" "$dst"
@@ -77,6 +123,21 @@ fi
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "DRY RUN — no packages will be installed, no files written, nothing enabled. Just printing what would happen."
 fi
+if [[ $UPDATE_MODE -eq 1 ]]; then
+    log "UPDATE MODE — skipping packages/dotfiles/prompts, only re-syncing daemon/shell/templates/themes and restarting the daemon + Quickshell."
+    if [[ ! -d "$NISFERE_DIR" ]]; then
+        err "--update given, but $NISFERE_DIR doesn't exist yet — run a normal (non --update) install first."
+        exit 1
+    fi
+fi
+
+# ═══════════════════════════════════════════════════════════════════
+# ONE-TIME SETUP — packages, dotfiles, prompts. Skipped entirely in
+# --update mode: these rarely change between updates, and re-running
+# them risks clobbering edits you've made yourself since the last
+# install (e.g. to ~/.config/hypr) for no benefit.
+# ═══════════════════════════════════════════════════════════════════
+if [[ $UPDATE_MODE -eq 0 ]]; then
 
 # ── 1. AUR helper (yay) ──────────────────────────────────────────────────────
 
@@ -219,7 +280,12 @@ install_zsh() {
 }
 install_zsh
 
-# ── 5. Nisfere daemon + shell + templates/themes ─────────────────────────────
+fi # end one-time setup (UPDATE_MODE -eq 0)
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. Nisfere daemon + shell + templates/themes — the part that
+# actually matters for BOTH fresh installs and updates.
+# ═══════════════════════════════════════════════════════════════════
 
 log "Installing daemon + shell + templates/themes -> $NISFERE_DIR"
 run mkdir -p "$NISFERE_DIR"
@@ -231,11 +297,21 @@ copy_backed_up "$REPO_DIR/themes" "$NISFERE_DIR/themes"
 copy_backed_up "$REPO_DIR/templates.json" "$NISFERE_DIR/templates.json"
 
 QUICKSHELL_DEFAULT_DIR="$HOME/.config/quickshell"
-if [[ -e "$QUICKSHELL_DEFAULT_DIR" || -L "$QUICKSHELL_DEFAULT_DIR" ]]; then
-    warn "Existing $QUICKSHELL_DEFAULT_DIR found — backing up to ${QUICKSHELL_DEFAULT_DIR}.bak-$(date +%s)"
-    run mv "$QUICKSHELL_DEFAULT_DIR" "${QUICKSHELL_DEFAULT_DIR}.bak-$(date +%s)"
+if [[ $UPDATE_MODE -eq 0 ]]; then
+    if [[ -e "$QUICKSHELL_DEFAULT_DIR" || -L "$QUICKSHELL_DEFAULT_DIR" ]]; then
+        warn "Existing $QUICKSHELL_DEFAULT_DIR found — backing up to ${QUICKSHELL_DEFAULT_DIR}.bak-$(date +%s)"
+        run mv "$QUICKSHELL_DEFAULT_DIR" "${QUICKSHELL_DEFAULT_DIR}.bak-$(date +%s)"
+    fi
+    run ln -s "$NISFERE_DIR/shell" "$QUICKSHELL_DEFAULT_DIR"
+else
+    # The symlink itself never needs touching on update — shell/ was
+    # just re-synced above, and the symlink already points at it.
+    if [[ ! -L "$QUICKSHELL_DEFAULT_DIR" ]]; then
+        warn "$QUICKSHELL_DEFAULT_DIR isn't a symlink to $NISFERE_DIR/shell — something's unusual about this install. Leaving it alone; check it manually if the shell doesn't pick up the update."
+    fi
 fi
-run ln -s "$NISFERE_DIR/shell" "$QUICKSHELL_DEFAULT_DIR"
+
+if [[ $UPDATE_MODE -eq 0 ]]; then
 
 # ── 6. Cache/data/media directories ──────────────────────────────────────────
 
@@ -346,38 +422,72 @@ else
     fi
 fi
 
-# ── 9. Daemon systemd --user service + socket ────────────────────────────────
-# Static files, copied as-is (always — symlinked systemd unit files are
-# more trouble than they're worth) — uses systemd's own %h specifier
-# (expands to the invoking user's home dir at RUN time) instead of a
-# baked-in path, so the unit files themselves never need to know who's
-# installing them.
-#
-# Socket activation: nisfere-daemon.socket is what actually gets
-# enabled/started here, NOT nisfere-daemon.service directly. systemd
-# owns and creates the socket file itself the moment the .socket unit
-# starts — independent of whether the Python daemon has even started
-# yet. This is what fixes the race where Quickshell (launched via
-# Hyprland's exec-once) could start before the daemon and never
-# recover the connection if the timing landed that way. The matching
-# .service unit has no [Install] section anymore — systemd starts it
-# automatically (same basename convention) the first time something
-# actually connects to the socket, so it's never enabled directly.
+fi # end one-time setup (UPDATE_MODE -eq 0), part 2
+
+# ═══════════════════════════════════════════════════════════════════
+# 9. Daemon systemd --user service + socket — files always re-synced
+# (they're small and rarely change, and update mode needs the latest
+# copy too in case a unit file itself changed), but the *enable* step
+# only runs on fresh installs — an update should RESTART an already-
+# running daemon (see below), not re-enable something already enabled.
+# ═══════════════════════════════════════════════════════════════════
 
 log "Installing systemd --user service + socket for the daemon..."
 run mkdir -p "$HOME/.config/systemd/user"
 run cp "$REPO_DIR/dots/systemd/nisfere-daemon.service" "$HOME/.config/systemd/user/nisfere-daemon.service"
 run cp "$REPO_DIR/dots/systemd/nisfere-daemon.socket" "$HOME/.config/systemd/user/nisfere-daemon.socket"
-
 run systemctl --user daemon-reload
-# Only the .socket gets enabled/started directly. Enabling the
-# .service here too would fight with socket activation — it'd try to
-# bind/create the socket itself independently instead of receiving the
-# already-open fd systemd hands it on first connection.
-run systemctl --user enable --now nisfere-daemon.socket
-log "Daemon socket enabled and listening (daemon service itself starts on-demand, on first connection)."
+
+if [[ $UPDATE_MODE -eq 0 ]]; then
+    # Only the .socket gets enabled/started directly. Enabling the
+    # .service here too would fight with socket activation — it'd try
+    # to bind/create the socket itself independently instead of
+    # receiving the already-open fd systemd hands it on first
+    # connection.
+    run systemctl --user enable --now nisfere-daemon.socket
+    log "Daemon socket enabled and listening (daemon service itself starts on-demand, on first connection)."
+else
+    # Fresh files are on disk now (see section 5 above) — an already-
+    # running daemon process is still executing the OLD code in memory
+    # until restarted.
+    #
+    # Was `systemctl --user restart nisfere-daemon.service` directly —
+    # exactly the anti-pattern dev-mode.sh's own switch_off() already
+    # warns about: restarting the SERVICE directly starts it without
+    # the LISTEN_FDS/LISTEN_PID env vars systemd only sets when a unit
+    # is triggered THROUGH its socket, so the daemon falls back to
+    # self-managed socket creation (see socket_manager.py) — which, in
+    # practice, unlinked the socket file out from under systemd's own
+    # bookkeeping: `systemctl status nisfere-daemon.socket` kept
+    # reporting "active (listening)" (it just remembers "I successfully
+    # bound this at startup", it doesn't re-verify continuously) while
+    # the actual file at /tmp/nisfere-shell.sock was gone — exactly the
+    # ServerNotFoundError this caused.
+    #
+    # Restarting the SOCKET instead: stops it (cleanly releasing the
+    # path), stops the currently-running service with it (dependency),
+    # then re-listens fresh via systemd, with the service starting on
+    # the NEXT connection — through proper socket activation again,
+    # now running the just-updated code. Only restarted if it was
+    # actually active; if it wasn't running, there's nothing to
+    # restart — the next connection starts it fresh with the new code
+    # automatically either way.
+    if [[ $DRY_RUN -eq 0 ]] && systemctl --user is-active --quiet nisfere-daemon.socket; then
+        log "Restarting nisfere-daemon.socket to pick up the updated daemon code..."
+        run systemctl --user restart nisfere-daemon.socket
+    else
+        log "Daemon socket isn't currently active — nothing to restart, it'll come up fresh (with the updated code) next time it's started."
+    fi
+fi
 
 # ── 10. First-run defaults ───────────────────────────────────────────────────
+# Skipped ENTIRELY in --update mode — applying the tokyo-night default
+# theme here would silently override whatever theme the user has
+# actually chosen since their original install, every single time they
+# update. This section only makes sense once, on a genuinely fresh
+# install.
+
+if [[ $UPDATE_MODE -eq 0 ]]; then
 
 SOCKET_PATH="/tmp/nisfere-shell.sock"
 
@@ -419,36 +529,61 @@ except Exception as e:
 "
 fi
 
+fi # end first-run defaults (UPDATE_MODE -eq 0)
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 
 echo
-log "$([ $DRY_RUN -eq 1 ] && echo 'Dry run complete — nothing was changed.' || echo 'Install complete!')"
+if [[ $DRY_RUN -eq 1 ]]; then
+    log "Dry run complete — nothing was changed."
+elif [[ $UPDATE_MODE -eq 1 ]]; then
+    log "Update complete!"
+else
+    log "Install complete!"
+fi
 echo
-echo "Next steps:"
-echo "  1. Drop at least one wallpaper image into ~/Pictures/Wallpapers/"
-echo "     (a default static theme is already applied, but no wallpaper is set yet)."
-echo "  2. Check dots/hypr/modules/autostart.lua includes:"
-echo "       exec-once = quickshell > ~/.cache/nisfere/quickshell.log 2>&1"
-echo "     (no -p needed anymore — ~/.config/quickshell now symlinks to the"
-echo "     real shell folder, so the default path is already correct, and"
-echo "     'qs ipc call'/'qs ipc show' will find the running instance too)."
-echo "  3. systemctl --user status nisfere-daemon.socket nisfere-daemon.service"
-echo "     -> the .socket should show 'active (listening)'; the .service starts"
-echo "     automatically on first connection, no need to start it yourself."
-echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
 
-# ── 11. Launch Hyprland now? ─────────────────────────────────────────────────
+if [[ $UPDATE_MODE -eq 0 ]]; then
+    echo "Next steps:"
+    echo "  1. Drop at least one wallpaper image into ~/Pictures/Wallpapers/"
+    echo "     (a default static theme is already applied, but no wallpaper is set yet)."
+    echo "  2. Check dots/hypr/modules/autostart.lua includes:"
+    echo "       exec-once = quickshell > ~/.cache/nisfere/quickshell.log 2>&1"
+    echo "     (no -p needed anymore — ~/.config/quickshell now symlinks to the"
+    echo "     real shell folder, so the default path is already correct, and"
+    echo "     'qs ipc call'/'qs ipc show' will find the running instance too)."
+    echo "  3. systemctl --user status nisfere-daemon.socket nisfere-daemon.service"
+    echo "     -> the .socket should show 'active (listening)'; the .service starts"
+    echo "     automatically on first connection, no need to start it yourself."
+    echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
+fi
+
+# ═══════════════════════════════════════════════════════════════════
+# 11. Reload Hyprland config + restart Quickshell (both modes) / offer
+# to launch Hyprland now (fresh install only, when not already running
+# inside a session).
+# ═══════════════════════════════════════════════════════════════════
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    warn "Skipping the 'launch Hyprland now' step in dry-run mode."
+    warn "Skipping the Hyprland reload / launch step in dry-run mode."
 elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-    # Already running inside an active Hyprland session (e.g. re-running
-    # install.sh to pick up new dotfiles/packages) — nothing to launch.
-    # Just reload the config and make sure Quickshell is running.
-    log "Detected an active Hyprland session — reloading config instead of launching a new one."
+    # Already running inside an active Hyprland session — reload config
+    # and make sure Quickshell is running with the latest shell code.
+    log "Detected an active Hyprland session — reloading config."
     run hyprctl reload
 
-    if ! pgrep -x quickshell >/dev/null 2>&1; then
+    if [[ $UPDATE_MODE -eq 1 ]] && pgrep -x quickshell >/dev/null 2>&1; then
+        # Was: leave it running as-is if already up. For an UPDATE that
+        # doesn't help — shell/ was just re-synced above, and an
+        # already-running Quickshell process is still holding the OLD
+        # QML in memory regardless of whether it happens to support
+        # partial hot-reload. Kill and relaunch to guarantee a clean
+        # state on the new code.
+        log "Restarting Quickshell to pick up the updated shell..."
+        run pkill -x quickshell
+        sleep 0.3
+        run bash -c "mkdir -p '$HOME/.cache/nisfere' && quickshell > '$HOME/.cache/nisfere/quickshell.log' 2>&1 &"
+    elif ! pgrep -x quickshell >/dev/null 2>&1; then
         log "Quickshell isn't running — starting it in the background."
         run bash -c "mkdir -p '$HOME/.cache/nisfere' && quickshell > '$HOME/.cache/nisfere/quickshell.log' 2>&1 &"
     else
@@ -456,6 +591,8 @@ elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
     fi
 elif [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
     warn "Detected an SSH session — can't launch a Wayland/Hyprland session from here (no real seat/display to render into). Log in on the actual console/TTY and run 'Hyprland', or reboot into it."
+elif [[ $UPDATE_MODE -eq 1 ]]; then
+    warn "Not currently inside a Hyprland session — nothing running to restart. The update will take effect next time you start Hyprland."
 else
     echo
     read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Launch Hyprland now? (replaces this shell session) [y/N] " launch_now

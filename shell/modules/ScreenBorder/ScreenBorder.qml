@@ -30,7 +30,7 @@ Variants {
         readonly property real topBarHeight: Theme.scaledBarHeight(screen)
 
         // ---------------------------------------------------------
-        // 1. Ο VISUAL WINDOW (μπάρα, drawers, overview, bezels)
+        // 1. VISUAL WINDOW
         // ---------------------------------------------------------
         PanelWindow {
             id: visualWindow
@@ -92,6 +92,18 @@ Variants {
 
             readonly property bool hasFullscreen: screen ? HyprlandData.hasFullscreenOnScreen(screen.name) : false
             readonly property bool showingWallpaper: screen ? HyprlandData.isShowingWallpaper(screen.name) : false
+         
+            onHasFullscreenChanged: {
+                if (!hasFullscreen || !_isActiveScreen)
+                    return;
+                if (ShellState.dashboardOpened)
+                    ShellState.closeDashboard();
+                if (ShellState.controlCenterOpened)
+                    ShellState.closeControlCenter();
+                if (ShellState.systemDrawerOpened)
+                    ShellState.closeSystemDrawer();
+                ShellState.activePopupItems = [];
+            }
 
             // ── Adjacent-monitor detection ─────────────────────────────
 
@@ -156,16 +168,19 @@ Variants {
             Dashboard {
                 id: dashboardDrawer
                 screen: visualWindow.screen
+                visible: !visualWindow.hasFullscreen
                 triggerHovered: borderBezels.topHovered
             }
             ControlCenter {
                 id: controlCenterDrawer
                 screen: visualWindow.screen
+                visible: !visualWindow.hasFullscreen
                 triggerHovered: borderBezels.rightHovered
             }
             SystemDrawer {
                 id: systemDrawer
                 screen: visualWindow.screen
+                visible: !visualWindow.hasFullscreen
                 triggerHovered: borderBezels.leftHovered
             }
 

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
@@ -62,7 +63,7 @@ Item {
         // ── Username (center) ────────────────────────────────────
         Rectangle {
             implicitWidth: userRow.implicitWidth + (24 * root.uiScale)
-            implicitHeight: 36 * root.uiScale
+            implicitHeight: 40 * root.uiScale
             radius: Theme.radius
             color: Theme.background
             border.width: Theme.widgetBorderWidth
@@ -73,11 +74,61 @@ Item {
                 anchors.centerIn: parent
                 spacing: 8 * root.uiScale
 
-                LucideIcon {
-                    icon: "user"
-                    size: 16 * root.uiScale
-                    color: Theme.foreground
-                    opacity: 0.5
+                Item {
+                    id: avatarBadge
+                    width: 32 * root.uiScale
+                    height: 32 * root.uiScale
+                    Layout.alignment: Qt.AlignHCenter
+
+                    readonly property string _avatarSource: AvatarService.hasAvatar ? "file://" + AvatarService.avatarPath : ""
+
+                    Image {
+                        id: avatarImage
+                        anchors.fill: parent
+                        fillMode: Image.PreserveAspectCrop
+                        source: avatarBadge._avatarSource
+                        asynchronous: true
+                        cache: false
+                        visible: false
+                        sourceSize.width: width * 2
+                        sourceSize.height: height * 2
+                    }
+                    Rectangle {
+                        id: avatarCircleMask
+                        anchors.fill: parent
+                        color: "black"
+                        radius: width / 2
+                        visible: false
+                    }
+                    OpacityMask {
+                        anchors.fill: parent
+                        maskSource: avatarCircleMask
+                        source: avatarImage
+                        visible: avatarBadge._avatarSource !== ""
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        border.color: Theme.borderColor
+                        border.width: 2
+                        color: "transparent"
+                        radius: width / 2
+                        visible: avatarBadge._avatarSource !== ""
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        border.color: Theme.borderColor
+                        border.width: 2
+                        color: Theme.backgroundAlt
+                        radius: width / 2
+                        visible: avatarBadge._avatarSource === ""
+
+                        LucideIcon {
+                            anchors.centerIn: parent
+                            icon: "user"
+                            size: 32 * root.uiScale
+                            color: Theme.foreground
+                        }
+                    }
                 }
                 Text {
                     text: SystemInfo.username

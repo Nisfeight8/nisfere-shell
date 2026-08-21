@@ -333,12 +333,16 @@ Singleton {
     // the provider too (search has one extra piece of state that the
     // standalone components don't).
     function toggleDashboardSearch(screenName, providerId) {
-        if (dashboardOpened && activeScreenName === screenName && dashboardActiveComponent === "search" && (providerId === undefined || dashboardSearchProviderId === providerId))
-            closeDashboard();
-        else
+        if (dashboardOpened && activeScreenName === screenName && dashboardActiveComponent === "search" && (providerId === undefined || dashboardSearchProviderId === providerId)) {
+            closeDashboardSearch();
+        } else
             openDashboardSearch(screenName, providerId);
     }
 
+    function closeDashboardSearch(screenName) {
+        closeDashboard();
+        dashboardSearchProviderId = '';
+    }
     function toggleWallpapers(screenName) {
         toggleDashboardSearch(screenName, "wallpapers");
     }

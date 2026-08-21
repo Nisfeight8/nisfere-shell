@@ -9,8 +9,6 @@ Item {
     property int edge: Qt.RightEdge
     property int invRadius: 16
     
-    // Το normalRadius δεν χρησιμοποιείται σε αυτό το full-height σχήμα, 
-    // αλλά το αφήνουμε ως property για να μην "σπάσει" το API.
     property int normalRadius: Theme.radius
 
     property int bottomOffset: 0
@@ -36,7 +34,7 @@ Item {
             startY: 0
             strokeColor: "transparent"
 
-            // 1. Πάνω αριστερά: Inverse γωνία (fillet)
+            // Top left
             PathArc {
                 radiusX: root.invRadius
                 radiusY: root.invRadius
@@ -44,13 +42,12 @@ Item {
                 y: root.invRadius
             }
             
-            // 2. Κατακόρυφη ευθεία προς τα κάτω
             PathLine {
                 x: root.invRadius
                 y: theShape.height - root.invRadius - root.bottomOffset
             }
             
-            // 3. Κάτω αριστερά: Inverse γωνία (fillet)
+            // Bottom left
             PathArc {
                 direction: PathArc.Clockwise
                 radiusX: root.invRadius
@@ -59,19 +56,16 @@ Item {
                 y: theShape.height - root.bottomOffset
             }
             
-            // 4. Οριζόντια γραμμή προς τα δεξιά (Γεμίζει το κάτω μέρος)
             PathLine {
                 x: theShape.width
                 y: theShape.height - root.bottomOffset
             }
             
-            // 5. Ευθεία γραμμή προς τα πάνω
             PathLine {
                 x: theShape.width
                 y: 0
             }
             
-            // 6. Κλείσιμο (Επιστροφή στην αρχή)
             PathLine {
                 x: 0
                 y: 0
@@ -88,19 +82,16 @@ Item {
             strokeColor: root.borderColor
             strokeWidth: Theme.widgetBorderWidth
 
-            // Πάνω αριστερή εσωτερική καμπύλη
             PathArc {
                 radiusX: root.invRadius
                 radiusY: root.invRadius
                 x: root.invRadius
                 y: root.invRadius
             }
-            // Αριστερή κάθετη γραμμή
             PathLine {
                 x: root.invRadius
                 y: theShape.height - root.invRadius - root.bottomOffset
             }
-            // Κάτω αριστερή εσωτερική καμπύλη
             PathArc {
                 direction: PathArc.Clockwise
                 radiusX: root.invRadius
@@ -109,10 +100,6 @@ Item {
                 y: theShape.height - root.bottomOffset
             }
             
-            // ΤΕΛΟΣ BORDER: Ακριβώς όπως στο CornerShape η πάνω πλευρά 
-            // δεν έχει γραμμή border, έτσι κι εδώ αφήνουμε την κάτω 
-            // πλευρά (bottom edge) "ανοιχτή" χωρίς stroke, για να μην 
-            // πατάει πάνω στη χρωματιστή λωρίδα του ScreenBorder!
         }
     }
 }

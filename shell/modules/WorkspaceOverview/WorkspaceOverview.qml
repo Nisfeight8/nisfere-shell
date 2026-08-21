@@ -73,7 +73,7 @@ Item {
         }
     }
 
-    // ── Χειρισμός Πληκτρολογίου (Arrows/Vim bindings) ─────────────────────
+    // ── Arrows/Vim bindings ─────────────────────
     Keys.onShortcutOverride: event => {
         if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down) {
             event.accepted = true;
@@ -109,14 +109,14 @@ Item {
         event.accepted = true;
     }
 
-    // ── Layer για Drag & Drop ─────────────────────────────────────────────
+    // ── Layer for Drag & Drop ─────────────────────────────────────────────
     Item {
         id: dragLayer
         anchors.fill: parent
         z: 10000
     }
 
-    // ── Κεντρικό Container (Grid) ─────────────────────────────────────────
+    // ── Central Container (Grid) ─────────────────────────────────────────
     Item {
         id: contentCard
         anchors {

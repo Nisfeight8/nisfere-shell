@@ -61,7 +61,6 @@ Singleton {
         target: SocketService
         function onMessageReceived(type, payload) {
             if (type === "git_status") {
-                console.log(JSON.stringify(payload));
 
                 const repo = payload.repo;
                 const copy = Object.assign({}, root.statusByRepo);

@@ -33,7 +33,7 @@ ColumnLayout {
         height: root.diameter * root.uiScale
         radius: width / 2
 
-        color: root.isActive ? root.activeColor : root.isHovered ? Qt.rgba(root.hoverColor.r, root.hoverColor.g, root.hoverColor.b, 0.25) : Theme.background
+        color: root.isActive ? root.activeColor : root.isHovered ? Qt.rgba(root.hoverColor.r, root.hoverColor.g, root.hoverColor.b, 0.40) : Theme.background
         border.width: Theme.widgetBorderWidth
         border.color: root.isActive ? root.activeColor : root.isHovered ? root.hoverColor : Theme.borderColor
 

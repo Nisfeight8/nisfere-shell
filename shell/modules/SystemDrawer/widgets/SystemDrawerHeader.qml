@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import qs.core
 import qs.services
 
@@ -10,7 +11,13 @@ Item {
     implicitWidth: col.implicitWidth
     implicitHeight: col.implicitHeight
 
-    readonly property string _avatarSource: ThemeState.shared.avatarPath ? "file://" + ThemeState.shared.avatarPath : ""
+    // Was ThemeState.shared.avatarPath — the avatar is user-specific,
+    // pure client-side "remember one string" state, no reason to be
+    // routed through ThemeState's shared/shell settings machinery.
+    // See chat: AvatarService (FileView+JsonAdapter, same pattern as
+    // SshUsageService/GitUsageService/DockerUsageService) is the
+    // dedicated home for it now.
+    readonly property string _avatarSource: AvatarService.hasAvatar ? "file://" + AvatarService.avatarPath : ""
 
     ColumnLayout {
         id: col
@@ -23,26 +30,62 @@ Item {
             Layout.fillWidth: true
             spacing: 14 * root.uiScale
 
-            // Avatar
-            Rectangle {
+            // Avatar — OpacityMask, not clip+radius (clip only ever
+            // clips to the plain rectangular bounding box in QtQuick,
+            // it ignores radius entirely for child clipping purposes
+            // — the image was rendering square underneath despite the
+            // rounded border/background around it). Same pattern
+            // already used correctly for album art in the Media tab.
+            Item {
                 width: 56 * root.uiScale
                 height: 56 * root.uiScale
-                radius: width / 2
-                color: Theme.backgroundAlt
-                clip: true
+
                 Image {
-                    id: avatar
+                    id: avatarImage
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     source: root._avatarSource
+                    asynchronous: true
+                    cache: false
+                    visible: false
+                    sourceSize.width: width * 2
+                    sourceSize.height: height * 2
+                }
+                Rectangle {
+                    id: avatarCircleMask
+                    anchors.fill: parent
+                    color: "black"
+                    radius: width / 2
+                    visible: false
+                }
+                OpacityMask {
+                    anchors.fill: parent
+                    maskSource: avatarCircleMask
+                    source: avatarImage
                     visible: root._avatarSource !== ""
                 }
-                LucideIcon {
-                    anchors.centerIn: parent
-                    icon: "user"
-                    size: 26 * root.uiScale
-                    color: Theme.selected
+                Rectangle {
+                    anchors.fill: parent
+                    border.color: Theme.borderColor
+                    border.width: 2
+                    color: "transparent"
+                    radius: width / 2
+                    visible: root._avatarSource !== ""
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    border.color: Theme.borderColor
+                    border.width: 2
+                    color: Theme.backgroundAlt
+                    radius: width / 2
                     visible: root._avatarSource === ""
+
+                    LucideIcon {
+                        anchors.centerIn: parent
+                        icon: "user"
+                        size: 26 * root.uiScale
+                        color: Theme.selected
+                    }
                 }
             }
 

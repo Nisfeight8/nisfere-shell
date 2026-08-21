@@ -55,11 +55,11 @@ Rectangle {
         if (isActive && activeSolid)
             return activeColor;
         if (isActive)
-            return Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.18);
+            return Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.40);
         if (isHovered && hoverSolid)
             return hoverColor;
         if (isHovered)
-            return Qt.rgba(hoverColor.r, hoverColor.g, hoverColor.b, 0.15);
+            return Qt.rgba(hoverColor.r, hoverColor.g, hoverColor.b, 0.40);
         return normalColor;
     }
     border.width: flat ? 0 : alwaysBorder ? Theme.widgetBorderWidth : ((isActive || isHovered) ? 1 : 0)

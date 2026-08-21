@@ -26,12 +26,9 @@ Singleton {
 
         if (newState) {
             _stateFile.setText("1");
-            // Το -T είναι η μέρα και το -t η νύχτα. Βάζοντας 4000 και στα δύο,
-            // το wlsunset εφαρμόζει το φίλτρο ακαριαία, ό,τι ώρα και να είναι!
             Quickshell.execDetached(["wlsunset", "-T", "10000", "-t", "4000"]);
         } else {
             _stateFile.setText("0");
-            // Το pkill κλείνει το wlsunset και η οθόνη επανέρχεται στο κανονικό
             Quickshell.execDetached(["pkill", "wlsunset"]);
         }
     }
