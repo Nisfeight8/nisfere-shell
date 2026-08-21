@@ -58,13 +58,20 @@ class DevShellSocket:
 
         systemd_sock = self._get_systemd_socket()
         if systemd_sock is not None:
-            server = await asyncio.start_unix_server(self._handle_client, sock=systemd_sock)
+            server = await asyncio.start_unix_server(
+                self._handle_client, sock=systemd_sock
+            )
             logger.info("Socket listening via systemd activation on %s", self.path)
         else:
             self._remove_stale_socket()
-            server = await asyncio.start_unix_server(self._handle_client, path=self.path)
+            server = await asyncio.start_unix_server(
+                self._handle_client, path=self.path
+            )
             os.chmod(self.path, 0o600)  # owner-only access
-            logger.info("Socket listening on %s (self-managed, no systemd activation)", self.path)
+            logger.info(
+                "Socket listening on %s (self-managed, no systemd activation)",
+                self.path,
+            )
 
         return server
 

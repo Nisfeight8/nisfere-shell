@@ -20,14 +20,16 @@ async def _send_status(repo: str, sock) -> None:
 
 async def _send_error(repo: str, action: str, message: str, sock) -> None:
     logger.warning("Git · %s · %s failed: %s", action, repo, message)
-    await sock.send({
-        "type": "git_error",
-        "payload": {
-            "repo": repo,
-            "action": action,
-            "message": message.strip() or f"git {action} failed",
-        },
-    })
+    await sock.send(
+        {
+            "type": "git_error",
+            "payload": {
+                "repo": repo,
+                "action": action,
+                "message": message.strip() or f"git {action} failed",
+            },
+        }
+    )
 
 
 # ── Command handler ───────────────────────────────────────────────────────────

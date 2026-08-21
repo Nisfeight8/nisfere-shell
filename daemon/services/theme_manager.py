@@ -126,7 +126,9 @@ class ThemeManager:
 
         logger.info(
             "Chroma setting updated: %s = %r (live-reapplied=%s)",
-            key, value, reapplied,
+            key,
+            value,
+            reapplied,
         )
         return {
             "success": True,

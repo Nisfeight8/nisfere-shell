@@ -19,7 +19,9 @@ class GitService:
     # an SSH-agent passphrase prompt or similar hang.
     NETWORK_TIMEOUT_SECONDS = 15.0
 
-    async def _run_git(self, repo: str, args: list[str], timeout: float | None = None) -> tuple[int, str, str]:
+    async def _run_git(
+        self, repo: str, args: list[str], timeout: float | None = None
+    ) -> tuple[int, str, str]:
         """Runs `git <args>` in `repo`. Returns (returncode, stdout, stderr).
         -1 as returncode signals our own timeout kill, not git's exit code."""
         if timeout is None:
@@ -31,7 +33,10 @@ class GitService:
         logger.debug("git -C %s %s", repo, " ".join(args))
 
         proc = await asyncio.create_subprocess_exec(
-            "git", "-C", repo, *args,
+            "git",
+            "-C",
+            repo,
+            *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=env,
@@ -39,15 +44,31 @@ class GitService:
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except asyncio.TimeoutError:
-            logger.warning("git -C %s %s timed out after %.0fs", repo, " ".join(args), timeout)
+            logger.warning(
+                "git -C %s %s timed out after %.0fs", repo, " ".join(args), timeout
+            )
             proc.kill()
             await proc.wait()
-            return -1, "", f"Timed out after {timeout:.0f}s (likely waiting on credentials/SSH agent)"
+            return (
+                -1,
+                "",
+                f"Timed out after {timeout:.0f}s (likely waiting on credentials/SSH agent)",
+            )
 
         if proc.returncode != 0:
-            logger.debug("git -C %s %s exited %s: %s", repo, " ".join(args), proc.returncode, stderr.decode(errors="replace").strip())
+            logger.debug(
+                "git -C %s %s exited %s: %s",
+                repo,
+                " ".join(args),
+                proc.returncode,
+                stderr.decode(errors="replace").strip(),
+            )
 
-        return proc.returncode, stdout.decode(errors="replace"), stderr.decode(errors="replace")
+        return (
+            proc.returncode,
+            stdout.decode(errors="replace"),
+            stderr.decode(errors="replace"),
+        )
 
     async def get_status(self, repo: str) -> dict:
         """Parses `git status --porcelain=v2 -b` into a structured dict.
@@ -83,7 +104,11 @@ class GitService:
                 # worktree (unstaged) respectively; "." means unchanged
                 # in that slot.
                 xy = line.split(" ", 2)[1]
-                path = line.rsplit("\t", 1)[-1] if "\t" in line else line.rsplit(" ", 1)[-1]
+                path = (
+                    line.rsplit("\t", 1)[-1]
+                    if "\t" in line
+                    else line.rsplit(" ", 1)[-1]
+                )
                 if xy[0] != ".":
                     staged.append(path)
                 if xy[1] != ".":
@@ -93,7 +118,13 @@ class GitService:
 
         logger.debug(
             "git status %s: branch=%s ahead=%d behind=%d staged=%d unstaged=%d untracked=%d",
-            repo, branch, ahead, behind, len(staged), len(unstaged), len(untracked),
+            repo,
+            branch,
+            ahead,
+            behind,
+            len(staged),
+            len(unstaged),
+            len(untracked),
         )
 
         return {
@@ -120,9 +151,13 @@ class GitService:
         return code == 0, (err.strip() or out.strip())
 
     async def push(self, repo: str) -> tuple[bool, str]:
-        code, out, err = await self._run_git(repo, ["push"], timeout=self.NETWORK_TIMEOUT_SECONDS)
+        code, out, err = await self._run_git(
+            repo, ["push"], timeout=self.NETWORK_TIMEOUT_SECONDS
+        )
         return code == 0, (err.strip() or out.strip())
 
     async def pull(self, repo: str) -> tuple[bool, str]:
-        code, out, err = await self._run_git(repo, ["pull"], timeout=self.NETWORK_TIMEOUT_SECONDS)
+        code, out, err = await self._run_git(
+            repo, ["pull"], timeout=self.NETWORK_TIMEOUT_SECONDS
+        )
         return code == 0, (err.strip() or out.strip())

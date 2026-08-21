@@ -27,7 +27,7 @@ class DesktopIntegration:
     def sync_papirus_folders(self, accent_hex: str) -> None:
         """
         Recolors Papirus folder icons to match the current accent color.
-        Uses a nearest-neighbor RGB distance algorithm against the known 
+        Uses a nearest-neighbor RGB distance algorithm against the known
         Papirus folder color palette.
         """
         try:
@@ -53,7 +53,9 @@ class DesktopIntegration:
                 return
 
             # Target RGB from the accent hex
-            target_r, target_g, target_b = (int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+            target_r, target_g, target_b = (
+                int(hex_color[i : i + 2], 16) for i in (0, 2, 4)
+            )
 
             # The exact color palette supported by papirus-folders
             papirus_palette = {
@@ -87,7 +89,11 @@ class DesktopIntegration:
             min_distance = float("inf")
 
             for name, (pr, pg, pb) in papirus_palette.items():
-                distance = ((target_r - pr) ** 2) + ((target_g - pg) ** 2) + ((target_b - pb) ** 2)
+                distance = (
+                    ((target_r - pr) ** 2)
+                    + ((target_g - pg) ** 2)
+                    + ((target_b - pb) ** 2)
+                )
                 if distance < min_distance:
                     min_distance = distance
                     best_color_name = name
@@ -160,7 +166,13 @@ class DesktopIntegration:
 
         try:
             subprocess.run(
-                ["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", gtk_theme],
+                [
+                    "gsettings",
+                    "set",
+                    "org.gnome.desktop.interface",
+                    "gtk-theme",
+                    gtk_theme,
+                ],
                 check=False,
             )
         except Exception as e:
@@ -219,7 +231,7 @@ class DesktopIntegration:
                 logger.debug("Hyprland live cursor updated.")
             except Exception as e:
                 logger.warning("hyprctl setcursor failed (non-fatal): %s", e)
-        
+
         try:
             subprocess.run(["hyprctl", "reload"], check=False)
             logger.debug("Hyprland configuration reloaded.")
@@ -232,18 +244,22 @@ class DesktopIntegration:
         to ensure any stuck daemon is killed/refreshed.
         """
         try:
-            result = subprocess.run(["pgrep", "-x", "thunar"], capture_output=True, check=False)
-            is_running = (result.returncode == 0)
+            result = subprocess.run(
+                ["pgrep", "-x", "thunar"], capture_output=True, check=False
+            )
+            is_running = result.returncode == 0
 
             if is_running:
-                logger.debug("Thunar is running, skipping reload so we don't close user windows.")
+                logger.debug(
+                    "Thunar is running, skipping reload so we don't close user windows."
+                )
             else:
                 logger.debug("Thunar is not running, issuing 'thunar -q' just in case.")
                 subprocess.run(
                     ["thunar", "-q"],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    check=False
+                    check=False,
                 )
         except Exception as e:
             logger.warning("Thunar check/reload failed: %s", e)

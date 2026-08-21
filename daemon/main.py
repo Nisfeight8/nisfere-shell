@@ -4,7 +4,15 @@ import logging
 import signal
 
 from services.socket_manager import DevShellSocket
-from modules import docker_manager, theme_controller, sys_monitor, update_manager, process_manager, git_manager
+from modules import (
+    docker_manager,
+    theme_controller,
+    sys_monitor,
+    update_manager,
+    process_manager,
+    git_manager,
+)
+
 # ── Logging setup ────────────────────────────────────────────────────────────
 
 logging.basicConfig(
@@ -21,7 +29,7 @@ STATS_INTERVAL: float = 2.0
 COMMAND_ROUTER = {
     "docker": docker_manager.handle_command,
     "theme": theme_controller.handle_command,
-    "updates":  update_manager.handle_command,
+    "updates": update_manager.handle_command,
     "processes": process_manager.handle_command,
     "git": git_manager.handle_command,
 }
