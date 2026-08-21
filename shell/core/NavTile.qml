@@ -10,22 +10,30 @@ Rectangle {
     property bool ready: true
     property string subLabel: ""
 
-    // New — same loader-circle + explicit-rotation-reset pattern as
-    // IconButton's own spinning fix (raw icons look wrong mid-
-    // rotation since most have an inherent up/down orientation, and a
-    // RotationAnimator just freezes wherever it was when stopped
-    // otherwise — loader-circle has neither problem). Also disables
-    // interaction while true, same as `ready: false` but visually
-    // distinct (spinner vs. the sublabel-explanation look).
+    // loader-circle glyph + rotation while true, same pattern as
+    // IconButton's own spinning.
     property bool loading: false
+
+    // Whether `loading` also disables interaction (the TapHandler/
+    // HoverHandler) — true by default, matching the original
+    // fire-and-forget-action use case (Docker prune: can't
+    // meaningfully re-trigger mid-flight, so disabling made sense).
+    // Set false for TOGGLE-style actions (start/stop scanning,
+    // start/stop recording) where loading communicates "this is
+    // ongoing" but the tile must stay clickable to actually stop it —
+    // disabling it there meant the stop-click could never fire at all.
+    property bool loadingBlocksInteraction: true
 
     property color hoverColor: Theme.selected
     property color activeColor: Theme.selected
     property bool isActive: false
     property real uiScale: 1.0
 
+    // Shown on hover, same convention as IconButton's tooltipText.
+    property string tooltipText: ""
+
     readonly property bool isHovered: hover.hovered
-    readonly property bool _interactive: root.ready && !root.loading
+    readonly property bool _interactive: root.ready && !(root.loading && root.loadingBlocksInteraction)
 
     signal tapped
 
@@ -73,13 +81,6 @@ Rectangle {
                 duration: 900
                 loops: Animation.Infinite
                 running: root.loading
-                // Same fix as IconButton's spinning — RotationAnimator
-                // runs on the render thread and doesn't reliably
-                // synchronize with a direct GUI-thread property write,
-                // which is what made the icon come back upside-down
-                // sometimes. Plain NumberAnimation + reset in its own
-                // onRunningChanged (guaranteed to fire only after it has
-                // actually stopped) removes that race entirely.
                 onRunningChanged: {
                     if (!running)
                         iconItem.rotation = 0;
@@ -126,5 +127,9 @@ Rectangle {
     TapHandler {
         enabled: root._interactive
         onTapped: root.tapped()
+    }
+    StyledToolTip {
+        visible: root.isHovered && root.tooltipText !== ""
+        text: root.tooltipText
     }
 }

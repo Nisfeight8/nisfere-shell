@@ -15,6 +15,19 @@ Item {
     property string activeSsidPrompt: ""
     property var wifiDevice: NetworkService.wifi.device
 
+    // Connected network always first — the rest keep their existing
+    // relative order. Reads net.connected for each network inside this
+    // binding, so it recomputes correctly whenever any network's
+    // connected state changes (same pattern as NetworkService's own
+    // _connectedNetwork lookup).
+    readonly property var sortedNetworks: {
+        if (!root.wifiDevice || !root.wifiDevice.networks || !root.wifiDevice.networks.values)
+            return [];
+        const nets = root.wifiDevice.networks.values.slice();
+        nets.sort((a, b) => (a.connected === b.connected) ? 0 : (a.connected ? -1 : 1));
+        return nets;
+    }
+
     signal backRequested
 
     ColumnLayout {
@@ -54,13 +67,15 @@ Item {
                 spacing: 6 * root.uiScale
 
                 Repeater {
-                    model: root.wifiDevice ? root.wifiDevice.networks.values : null
+                    // Was root.wifiDevice.networks.values directly —
+                    // now the sorted (connected-first) version.
+                    model: root.wifiDevice ? root.sortedNetworks : null
 
                     delegate: GlassCard {
                         id: netCard
                         Layout.fillWidth: true
 
-                        readonly property bool expanded: root.activeSsidPrompt === model.name
+                        readonly property bool expanded: root.activeSsidPrompt === modelData.name
                         property string localError: ""
                         readonly property bool hasError: localError !== ""
 
@@ -76,7 +91,7 @@ Item {
                         Connections {
                             target: NetworkService.wifi
                             function onErrorOccurred(ssid, errorMessage) {
-                                if (model.name === ssid) {
+                                if (modelData.name === ssid) {
                                     netCard.localError = errorMessage;
                                     errorTimer.restart();
                                 }
@@ -88,6 +103,23 @@ Item {
                             interval: 10000
                             repeat: false
                             onTriggered: netCard.localError = ""
+                        }
+
+                        // Was missing entirely — the password prompt
+                        // (activeSsidPrompt) never closed itself after
+                        // a SUCCESSFUL connection, only on an explicit
+                        // Cancel tap. Collapses back to the compact
+                        // row automatically once this network actually
+                        // becomes connected while its prompt was open.
+                        Connections {
+                            target: modelData
+                            function onConnectedChanged() {
+                                if (modelData.connected && root.activeSsidPrompt === modelData.name) {
+                                    root.activeSsidPrompt = "";
+                                    passwordInput.text = "";
+                                    netCard.localError = "";
+                                }
+                            }
                         }
 
                         // ── Info row ────────────────────────────────
@@ -106,10 +138,10 @@ Item {
 
                             LucideIcon {
                                 Layout.alignment: Qt.AlignVCenter
-                                color: model.connected ? Theme.selected : Theme.foreground
+                                color: modelData.connected ? Theme.selected : Theme.foreground
                                 size: 16 * root.uiScale
-                                opacity: model.connected ? 1.0 : 0.75
-                                icon: Icons.getWifiItemIcon(model.signalStrength)
+                                opacity: modelData.connected ? 1.0 : 0.75
+                                icon: Icons.getWifiItemIcon(modelData.signalStrength)
                             }
 
                             ColumnLayout {
@@ -121,18 +153,32 @@ Item {
                                     Layout.fillWidth: true
                                     color: Theme.foreground
                                     font.pixelSize: 13 * root.uiScale
-                                    font.bold: model.connected
-                                    text: model.name
+                                    font.bold: modelData.connected
+                                    text: modelData.name
                                     elide: Text.ElideRight
                                 }
 
                                 Text {
                                     Layout.fillWidth: true
-                                    color: model.connected ? Theme.selected : (netCard.hasError ? Theme.color1 : Theme.foreground)
+                                    color: modelData.connected ? Theme.selected : (netCard.hasError ? Theme.color1 : Theme.foreground)
                                     font.pixelSize: 11 * root.uiScale
-                                    opacity: (model.connected || netCard.hasError) ? 1.0 : 0.5
-                                    text: netCard.hasError ? "Connection Failed" : (model.connected ? "Connected" : "Saved")
-                                    visible: model.connected || model.known || netCard.hasError
+                                    opacity: (modelData.connected || netCard.hasError) ? 1.0 : 0.5
+                                    // modelData.stateChanging (native, see
+                                    // Quickshell.Networking.Network) is
+                                    // true while connecting/
+                                    // disconnecting — surfaced here so
+                                    // the status text itself says so,
+                                    // not just the button spinner.
+                                    text: {
+                                        if (netCard.hasError)
+                                            return "Connection Failed";
+                                        if (modelData.stateChanging)
+                                            return modelData.connected ? "Disconnecting..." : "Connecting...";
+                                        if (modelData.connected)
+                                            return "Connected";
+                                        return "Saved";
+                                    }
+                                    visible: modelData.connected || modelData.known || netCard.hasError || modelData.stateChanging
                                 }
                             }
 
@@ -142,7 +188,7 @@ Item {
                                 size: 14 * root.uiScale
                                 opacity: 0.3
                                 icon: "lock"
-                                visible: model.security !== WifiSecurityType.Open && !model.connected && !model.known
+                                visible: modelData.security !== WifiSecurityType.Open && !modelData.connected && !modelData.known
                             }
 
                             IconButton {
@@ -152,22 +198,29 @@ Item {
                                 Layout.alignment: Qt.AlignVCenter
                                 hoverSolid: true
                                 alwaysBorder: true
-                                borderColor: (model.connected || netCard.expanded) ? Theme.color1 : Theme.selected
+                                borderColor: (modelData.connected || netCard.expanded) ? Theme.color1 : Theme.selected
                                 contrastColor: Theme.background
-                                icon: Icons.getWifiActionIcon(netCard.expanded, model.connected)
-                                hoverColor: (model.connected || netCard.expanded) ? Theme.color1 : Theme.selected
-                                tooltipText: model.connected ? "Disconnect" : netCard.expanded ? "Cancel" : "Connect"
+                                icon: Icons.getWifiActionIcon(netCard.expanded, modelData.connected)
+                                hoverColor: (modelData.connected || netCard.expanded) ? Theme.color1 : Theme.selected
+                                tooltipText: modelData.connected ? "Disconnect" : netCard.expanded ? "Cancel" : "Connect"
+                                // Native stateChanging drives real
+                                // spin/disable feedback — no custom
+                                // pending-tracking needed, unlike
+                                // Bluetooth (which had no equivalent
+                                // native flag for a plain reconnect).
+                                spinning: modelData.stateChanging
+                                enabled: !modelData.stateChanging
                                 onTapped: {
                                     if (netCard.expanded) {
                                         root.activeSsidPrompt = "";
                                         passwordInput.text = "";
                                         netCard.localError = "";
-                                    } else if (model.connected) {
+                                    } else if (modelData.connected) {
                                         NetworkService.wifi.disconnect();
-                                    } else if (model.known || model.security === WifiSecurityType.Open) {
-                                        NetworkService.wifi.connectTo(model.name);
+                                    } else if (modelData.known || modelData.security === WifiSecurityType.Open) {
+                                        NetworkService.wifi.connectTo(modelData.name);
                                     } else {
-                                        root.activeSsidPrompt = model.name;
+                                        root.activeSsidPrompt = modelData.name;
                                         Qt.callLater(() => passwordInput.forceActiveFocus());
                                     }
                                 }
@@ -206,6 +259,7 @@ Item {
                                 font.pixelSize: 13 * root.uiScale
                                 leftPadding: 10 * root.uiScale
                                 rightPadding: 10 * root.uiScale
+                                enabled: !modelData.stateChanging
 
                                 background: Rectangle {
                                     border.color: netCard.hasError ? Theme.color1 : Theme.selected
@@ -221,7 +275,7 @@ Item {
 
                                 Keys.onReturnPressed: {
                                     netCard.localError = "";
-                                    NetworkService.wifi.connectTo(model.name, text);
+                                    NetworkService.wifi.connectTo(modelData.name, text);
                                 }
                             }
 
@@ -235,9 +289,11 @@ Item {
                                 contrastColor: Theme.background
                                 hoverColor: Theme.selected
                                 tooltipText: "Connect"
+                                spinning: modelData.stateChanging
+                                enabled: !modelData.stateChanging
                                 onTapped: {
                                     netCard.localError = "";
-                                    NetworkService.wifi.connectTo(model.name, passwordInput.text);
+                                    NetworkService.wifi.connectTo(modelData.name, passwordInput.text);
                                 }
                             }
                         }

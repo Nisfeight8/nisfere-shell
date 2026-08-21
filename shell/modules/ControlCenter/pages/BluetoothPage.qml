@@ -45,8 +45,17 @@ Item {
             NavTile {
                 Layout.preferredWidth: 90 * root.uiScale
                 Layout.preferredHeight: 28 * root.uiScale
-                icon: BluetoothService.isScanning ? "refresh-cw" : "search"
+                // loading gives the spin visual back — but
+                // loadingBlocksInteraction: false keeps it clickable
+                // while spinning (NavTile's default would otherwise
+                // disable the tap the instant scanning starts, same
+                // bug as before). Tooltip clarifies what clicking does
+                // in each state.
+                icon: "search"
                 label: BluetoothService.isScanning ? "Scan..." : "Scan"
+                loading: BluetoothService.isScanning
+                loadingBlocksInteraction: false
+                tooltipText: BluetoothService.isScanning ? "Stop scanning" : ""
                 isActive: BluetoothService.isScanning
                 activeColor: Theme.color1
                 uiScale: root.uiScale
@@ -77,8 +86,36 @@ Item {
                     model: Bluetooth.devices.values
 
                     delegate: GlassCard {
+                        id: deviceCard
                         Layout.fillWidth: true
                         implicitHeight: 60 * root.uiScale
+
+                        // model.pairing only reflects the literal
+                        // Bluetooth pairing handshake (first-time
+                        // connection needing a PIN/confirmation) — a
+                        // plain reconnect to an ALREADY-paired device
+                        // (the common case) never sets it at all, so
+                        // spinning/enabled bound to it alone gave zero
+                        // feedback for exactly that case, looking
+                        // stuck. Tracked locally instead: set true the
+                        // instant you tap, cleared once the device's
+                        // own .connected actually changes — with a
+                        // timeout safety net in case the BT stack
+                        // fails silently and that change never comes.
+                        property bool _pending: false
+
+                        Connections {
+                            target: modelData
+                            function onConnectedChanged() {
+                                deviceCard._pending = false;
+                                pendingTimeout.stop();
+                            }
+                        }
+                        Timer {
+                            id: pendingTimeout
+                            interval: 15000
+                            onTriggered: deviceCard._pending = false
+                        }
 
                         RowLayout {
                             anchors.fill: parent
@@ -118,6 +155,8 @@ Item {
                                         font.pixelSize: 11 * root.uiScale
                                         opacity: model.connected ? 1.0 : 0.6
                                         text: {
+                                            if (deviceCard._pending)
+                                                return model.connected ? "Disconnecting..." : "Connecting...";
                                             if (model.connected)
                                                 return "Connected";
                                             if (model.pairing)
@@ -172,9 +211,13 @@ Item {
                                         return "Trust";
                                     return "Connect";
                                 }
-                                icon: model.pairing ? "refresh-cw" : (model.connected ? "x" : "check")
+                                icon: model.connected ? "x" : "check"
+                                spinning: deviceCard._pending || model.pairing
+                                enabled: !deviceCard._pending && !model.pairing
 
                                 onTapped: {
+                                    deviceCard._pending = true;
+                                    pendingTimeout.restart();
                                     if (model.connected)
                                         modelData.connected = false;
                                     else if (model.paired) {
