@@ -12,6 +12,8 @@ Item {
 
     property Component contentComponent
     property bool opened: false
+    property bool preload: false
+
     property bool asynchronousLoad: true
     
     property int unloadDelay: ShellState.drawerDelayInterval
@@ -49,7 +51,7 @@ Item {
 
         Loader {
             id: contentLoader
-            active: root.opened || unloadTimer.running
+            active: root.preload || root.opened || unloadTimer.running
             asynchronous: root.asynchronousLoad
             sourceComponent: root.contentComponent
 

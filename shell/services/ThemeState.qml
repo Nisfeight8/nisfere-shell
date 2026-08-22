@@ -19,6 +19,18 @@ Singleton {
     property string sourceType: "dynamic"
     property string sourceName: ""
 
+    // Which nisfere-<hash>.colorscheme file is currently valid for
+    // the embedded terminal widget — see ThemeManager.
+    // _update_terminal_color_scheme on the daemon side. A genuinely
+    // new hash every time colors actually change is what forces
+    // qmltermwidget's ColorSchemeManager (which caches a scheme's
+    // contents in memory the first time a given name is requested,
+    // and never re-reads it after that) to actually pick up the new
+    // colors — reactive here just like everything else in this file,
+    // so any terminal drawer binding `colorScheme:` to this updates
+    // itself automatically the instant the theme changes.
+    property string terminalColorScheme: ""
+
     // nisfere_chroma.py's own extraction tuning knobs — a separate
     // top-level state.json field, NOT part of style/shared/shell/
     // hyprland (see the daemon's StateManager: these affect HOW
@@ -55,6 +67,7 @@ Singleton {
                 root.sourceType = state.source_type ?? "dynamic";
                 root.sourceName = state.source_name ?? "";
                 root.chromaSettings = state.chroma_settings ?? {};
+                root.terminalColorScheme = state.terminal_color_scheme ?? "";
 
                 const style = state.style ?? {};
                 root.shared = style.shared ?? {};

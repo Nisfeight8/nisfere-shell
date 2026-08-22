@@ -147,17 +147,22 @@ async def handle_command(action: str, payload: dict, sock) -> None:
 
     match action:
         case "check_updates":
-            _cached_updates = await _run_checkupdates()
-            logger.info("Arch updates: %d available", len(_cached_updates))
-            await sock.send(
-                {
-                    "type": "arch_updates",
-                    "payload": {
-                        "updates": _cached_updates,
-                        "count": len(_cached_updates),
-                    },
-                }
-            )
+
+            async def _do_check():
+                global _cached_updates
+                _cached_updates = await _run_checkupdates()
+                logger.info("Arch updates: %d available", len(_cached_updates))
+                await sock.send(
+                    {
+                        "type": "arch_updates",
+                        "payload": {
+                            "updates": _cached_updates,
+                            "count": len(_cached_updates),
+                        },
+                    }
+                )
+
+            asyncio.create_task(_do_check())
 
         case "get_cached_updates":
             await sock.send(
@@ -172,17 +177,22 @@ async def handle_command(action: str, payload: dict, sock) -> None:
             )
 
         case "run_updates":
-            await _run_stream_updates(sock)
-            _cached_updates = await _run_checkupdates()
-            await sock.send(
-                {
-                    "type": "arch_updates",
-                    "payload": {
-                        "updates": _cached_updates,
-                        "count": len(_cached_updates),
-                    },
-                }
-            )
+
+            async def _do_update():
+                global _cached_updates
+                await _run_stream_updates(sock)
+                _cached_updates = await _run_checkupdates()
+                await sock.send(
+                    {
+                        "type": "arch_updates",
+                        "payload": {
+                            "updates": _cached_updates,
+                            "count": len(_cached_updates),
+                        },
+                    }
+                )
+
+            asyncio.create_task(_do_update())
 
         case _:
             logger.warning("Unknown update action: '%s'", action)

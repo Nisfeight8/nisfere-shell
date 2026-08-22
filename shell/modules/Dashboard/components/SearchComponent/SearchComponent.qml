@@ -181,7 +181,7 @@ Item {
             id: dashboardSearchBar
             Layout.fillWidth: true
             uiScale: root.uiScale
-            onEscapePressed: ShellState.closeDashboard()
+            onEscapePressed: ShellState.closeDashboardSearch()
             onKeyPressed: e => {
                 if (e.key !== Qt.Key_Up && e.key !== Qt.Key_Down && e.key !== Qt.Key_Left && e.key !== Qt.Key_Right)
                     return;

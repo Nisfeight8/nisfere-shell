@@ -46,7 +46,6 @@ Item {
         HoverHandler {
             id: topBorderHover
         }
-        
     }
 
     // --- Bottom Bezel ---

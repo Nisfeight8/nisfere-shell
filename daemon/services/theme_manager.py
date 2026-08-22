@@ -10,8 +10,10 @@ It doesn't do any of steps 1-4 itself anymore. See:
   state_manager.py
 """
 
+import hashlib
 import logging
 import threading
+from pathlib import Path
 
 from .config import NisfereConfig
 from .color_source import ColorSource
@@ -55,6 +57,16 @@ _DEFAULT_SETTINGS: dict = {
         "cursorSize": 24,
     },
 }
+
+# Where the qmltermwidget package installs its bundled color-schemes —
+# same directory install.sh chown's to the current user (see chat: no
+# per-user override location exists upstream, so this is the only
+# writable-without-root place ColorSchemeManager actually scans).
+# NOT VERIFIED across all setups — standard Arch Qt6 QML plugin path.
+# If your qmltermwidget installs elsewhere, this needs to match
+# install.sh's own QMLTERMWIDGET_SCHEMES_DIR.
+_QMLTERMWIDGET_SCHEMES_DIR = Path("/usr/lib/qt6/qml/QMLTermWidget/color-schemes")
+_QMLTERMWIDGET_BASE_SCHEME = _QMLTERMWIDGET_SCHEMES_DIR / "nisfere.colorscheme"
 
 
 class ThemeManager:
@@ -258,6 +270,56 @@ class ThemeManager:
 
     # ── Internal ─────────────────────────────────────────────────────────────
 
+    def _update_terminal_color_scheme(self) -> None:
+        """
+        qmltermwidget's ColorSchemeManager caches a scheme's parsed
+        contents in memory the FIRST time a given name is requested,
+        and doesn't re-read the file from disk after that — so simply
+        re-rendering the SAME nisfere.colorscheme on every theme
+        change is invisible to an already-running terminal widget (see
+        chat). Sidesteps this by copying the just-rendered file to a
+        NEW name derived from a hash of its own content — a genuinely
+        new name has never been requested before, so it's always a
+        cache MISS, forcing a fresh disk read every time colors
+        actually change. Re-applying the SAME theme produces the SAME
+        hash (file already exists, no-op), so this doesn't grow
+        unbounded on repeat applies of the same theme — only on
+        genuinely distinct color sets (e.g. many different wallpapers
+        over time for dynamic theming).
+
+        The shell picks up which name is currently valid via
+        state.json's terminal_color_scheme field (see
+        StateManager.set_terminal_color_scheme), which ThemeState.qml
+        already watches reactively like everything else in that file.
+
+        Best-effort: any failure here (missing dir, permissions, no
+        qmltermwidget installed) is logged and swallowed rather than
+        failing the whole theme-apply — the rest of the desktop theme
+        already applied successfully by this point regardless.
+        """
+        try:
+            if not _QMLTERMWIDGET_BASE_SCHEME.exists():
+                logger.debug(
+                    "qmltermwidget base colorscheme not found at %s — skipping "
+                    "(qmltermwidget not installed, or templates.json doesn't "
+                    "include the qmltermwidget.colorscheme template yet)",
+                    _QMLTERMWIDGET_BASE_SCHEME,
+                )
+                return
+
+            content = _QMLTERMWIDGET_BASE_SCHEME.read_bytes()
+            digest = hashlib.md5(content).hexdigest()[:8]
+            name = f"nisfere-{digest}"
+            dst = _QMLTERMWIDGET_SCHEMES_DIR / f"{name}.colorscheme"
+
+            if not dst.exists():
+                dst.write_bytes(content)
+                logger.debug("Wrote new terminal color scheme: %s", dst)
+
+            self.state.set_terminal_color_scheme(name)
+        except Exception as e:
+            logger.error("Failed to update terminal color scheme: %s", e)
+
     def _apply_colors(
         self,
         raw: dict,
@@ -297,6 +359,10 @@ class ThemeManager:
             # theme-apply behind), not the value we just computed.
             state = self.state.set_setting("cursorTheme", cursor_theme, "hyprland")
             self.renderer.render_all(state.style)
+
+            # Must run AFTER render_all() — reads the just-rendered
+            # nisfere.colorscheme file to compute this theme's hash.
+            self._update_terminal_color_scheme()
 
             # All desktop side-effect threading lives here, in one
             # place, instead of scattered across services.

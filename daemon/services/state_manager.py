@@ -147,6 +147,13 @@ class ThemeState:
                  extract_palette() (algorithm, saturation, etc.) — see
                  _DEFAULT_CHROMA_SETTINGS above.
     style:       {"shared": {...}, "shell": {...}, "hyprland": {...}}
+    terminal_color_scheme: which nisfere-<hash>.colorscheme file is
+                 currently valid for the embedded terminal widget (see
+                 ThemeManager._update_terminal_color_scheme) — pure
+                 metadata about the CURRENT state, same tier as
+                 wallpaper/mode/source_type, not a style/template
+                 variable, so it lives at this top level rather than
+                 inside style.shared.
     """
 
     wallpaper: str
@@ -159,6 +166,7 @@ class ThemeState:
     style: dict = field(
         default_factory=lambda: {"shared": {}, "shell": {}, "hyprland": {}}
     )
+    terminal_color_scheme: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -168,6 +176,7 @@ class ThemeState:
             "source_name": self.source_name,
             "chroma_settings": self.chroma_settings,
             "style": self.style,
+            "terminal_color_scheme": self.terminal_color_scheme,
         }
 
     @classmethod
@@ -193,6 +202,7 @@ class ThemeState:
             source_name=data.get("source_name"),
             chroma_settings=chroma_settings,
             style=style,
+            terminal_color_scheme=data.get("terminal_color_scheme", ""),
         )
 
 
@@ -321,6 +331,20 @@ class StateManager:
         self.save(state)
         return state
 
+    def set_terminal_color_scheme(self, name: str) -> ThemeState:
+        """
+        Updates just the terminal_color_scheme metadata field —
+        called after ThemeManager copies the just-rendered
+        nisfere.colorscheme to a hash-named file (see
+        ThemeManager._update_terminal_color_scheme). Same
+        get-or-new/mutate-one-field/save shape as set_setting/
+        set_chroma_setting above, preserving everything else.
+        """
+        state = self._load_or_new()
+        state.terminal_color_scheme = name
+        self.save(state)
+        return state
+
     # ── Bulk color/theme updates (wallpaper change, theme switch) ───────────
 
     def update_shared(
@@ -358,6 +382,7 @@ class StateManager:
                 if existing
                 else dict(_DEFAULT_CHROMA_SETTINGS)
             ),
+            terminal_color_scheme=(existing.terminal_color_scheme if existing else ""),
         )
         self.save(state)
         return state

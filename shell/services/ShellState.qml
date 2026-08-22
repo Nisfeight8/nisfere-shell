@@ -22,6 +22,8 @@ Singleton {
     property bool isLocked: false
     property bool powerMenuOpened: false
 
+    property bool terminalOpened: false
+    
     property bool controlCenterOpened: false
     property int controlCenterPageIndex: 0
     property bool systemDrawerOpened: false
@@ -464,6 +466,15 @@ Singleton {
     }
     function toggleSystemDrawer(screenName) {
         _toggleFlag("systemDrawerOpened", screenName);
+    }
+    function openTerminalDrawer(screenName) {
+        _openFlag("terminalOpened", screenName);
+    }
+    function closeTerminalDrawer() {
+        _closeFlag("terminalOpened");
+    }
+    function toggleTerminalDrawer(screenName) {
+        _toggleFlag("terminalOpened", screenName);
     }
 
     function openOverview(screenName) {

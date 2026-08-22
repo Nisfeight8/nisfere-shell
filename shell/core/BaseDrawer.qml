@@ -41,6 +41,8 @@ Item {
 
     property real screenOffset: 0
     property bool asynchronousLoad: true
+    property bool preload: false
+
     property Component contentComponent
 
     property bool _wasHovered: false
@@ -181,6 +183,7 @@ Item {
             anchors.fill: parent
             contentComponent: root.contentComponent
             opened: root.opened
+            preload: root.preload
             asynchronousLoad: root.asynchronousLoad
 
             marginTop: geometry._mTop

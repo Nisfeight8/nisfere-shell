@@ -131,7 +131,9 @@ Item {
             visible: UpdateService.count > 0 && UpdateService.updateLog.length === 0
             model: UpdateService.updates
             clip: true
-
+            ScrollBar.vertical: CustomScrollBar {
+                uiScale: root.uiScale
+            }
             delegate: RowLayout {
                 width: ListView.view.width
                 height: 26 * root.uiScale

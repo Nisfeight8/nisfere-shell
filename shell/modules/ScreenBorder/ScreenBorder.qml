@@ -6,6 +6,7 @@ import qs.modules.Bar
 import qs.modules.Dashboard
 import qs.modules.ControlCenter
 import qs.modules.SystemDrawer
+import qs.modules.TerminalDrawer
 import qs.modules.Osd
 import qs.modules.NotificationPopup
 import qs.modules.WorkspaceOverview
@@ -84,7 +85,7 @@ Variants {
             // dashboardWantsOnDemandFocus) — mutually exclusive by
             // construction there, so no "!needsExclusiveFocus" guard is
             // needed here anymore.
-            readonly property bool needsExclusiveFocus: _isActiveScreen && (ShellState.overviewOpen || ShellState.dashboardWantsExclusiveFocus)
+            readonly property bool needsExclusiveFocus: _isActiveScreen && (ShellState.overviewOpen || ShellState.terminalOpened || ShellState.dashboardWantsExclusiveFocus)
             readonly property bool needsOnDemandFocus: _isActiveScreen && (ShellState.dashboardWantsOnDemandFocus || ShellState.controlCenterWantsOnDemandFocus)
 
             // ── Fullscreen detection ──────────────────────────────────
@@ -183,7 +184,12 @@ Variants {
                 visible: !visualWindow.hasFullscreen
                 triggerHovered: borderBezels.leftHovered
             }
-
+            TerminalDrawer {
+                id: terminalDrawer
+                screen: visualWindow.screen
+                visible: !visualWindow.hasFullscreen
+                triggerHovered: borderBezels.bottomHovered
+            }
             Loader {
                 id: wallpaperOverlayLoader
                 anchors.fill: parent
@@ -210,7 +216,12 @@ Variants {
                     if (borderBezels.topHovered && !visualWindow.hasMonitorAbove)
                         ShellState.openDashboardTabs(visualWindow.screen.name);
                 }
-                // onBottomHoveredChanged — REMOVED (was QuickActions-only).
+                function onBottomHoveredChanged() {
+                    if (!visualWindow.screen)
+                        return;
+                    if (borderBezels.bottomHovered && terminalDrawer.toggleOnHover && !visualWindow.hasMonitorToBottom)
+                        ShellState.openTerminalDrawer(visualWindow.screen.name);
+                }
                 function onLeftHoveredChanged() {
                     if (!visualWindow.screen)
                         return;
@@ -241,6 +252,9 @@ Variants {
                 }
                 Region {
                     item: systemDrawer.panelItem
+                }
+                Region {
+                    item: terminalDrawer.panelItem
                 }
                 Region {
                     item: osd.panelItem

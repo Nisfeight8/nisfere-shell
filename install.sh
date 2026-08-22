@@ -47,21 +47,12 @@ done
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NISFERE_DIR="$HOME/.config/nisfere"
 
-# How many timestamped .bak-<epoch> copies to keep per destination —
-# was unbounded before (every single re-run of install.sh added one
-# more, forever), which is exactly what made re-running it for updates
-# unpleasant. 3 is enough to recover from "the last update broke
-# something" without accumulating indefinitely.
 MAX_BACKUPS=3
 
 log()  { echo -e "\033[1;34m[nisfere]\033[0m $*"; }
 warn() { echo -e "\033[1;33m[nisfere]\033[0m $*"; }
 err()  { echo -e "\033[1;31m[nisfere]\033[0m $*" >&2; }
 
-# In dry-run mode, print the command instead of running it. Every
-# state-changing operation in this script goes through this — nothing
-# below calls a mutating command directly, so `--dry-run` genuinely
-# touches nothing on disk or on the system.
 run() {
     if [[ $DRY_RUN -eq 1 ]]; then
         echo -e "\033[2m[dry-run]\033[0m $*"
@@ -70,9 +61,6 @@ run() {
     fi
 }
 
-# Deletes all but the newest MAX_BACKUPS backups matching
-# <dst>.bak-<epoch> — called right after copy_backed_up creates a new
-# one, so the pile never grows past the cap.
 prune_backups() {
     local dst="$1"
     local dir base
@@ -92,10 +80,6 @@ prune_backups() {
     fi
 }
 
-# Backs up any existing destination (file, dir, or symlink — never
-# silently overwrites/deletes), then copies src -> dst. Prunes old
-# backups for this destination down to MAX_BACKUPS right after.
-#   copy_backed_up <src> <dst>
 copy_backed_up() {
     local src="$1"
     local dst="$2"
@@ -109,7 +93,6 @@ copy_backed_up() {
     run cp -r "$src" "$dst"
 }
 
-# dots/<name> -> ~/.config/<name>.
 install_dotdir() {
     local name="$1"
     copy_backed_up "$REPO_DIR/dots/$name" "$HOME/.config/$name"
@@ -131,15 +114,7 @@ if [[ $UPDATE_MODE -eq 1 ]]; then
     fi
 fi
 
-# ═══════════════════════════════════════════════════════════════════
-# ONE-TIME SETUP — packages, dotfiles, prompts. Skipped entirely in
-# --update mode: these rarely change between updates, and re-running
-# them risks clobbering edits you've made yourself since the last
-# install (e.g. to ~/.config/hypr) for no benefit.
-# ═══════════════════════════════════════════════════════════════════
 if [[ $UPDATE_MODE -eq 0 ]]; then
-
-# ── 1. AUR helper (yay) ──────────────────────────────────────────────────────
 
 if ! command -v yay >/dev/null 2>&1; then
     log "yay not found — installing it first"
@@ -151,8 +126,6 @@ if ! command -v yay >/dev/null 2>&1; then
 else
     log "yay already installed, skipping"
 fi
-
-# ── 2. Packages ───────────────────────────────────────────────────────────────
 
 log "Installing packages via yay (this will prompt for your password)..."
 
@@ -232,12 +205,33 @@ run sudo systemctl enable --now NetworkManager.service
 log "Enabling bluetooth.service (system-level, not --user)..."
 run sudo systemctl enable --now bluetooth.service || warn "Could not enable bluetooth.service — probably no Bluetooth hardware on this machine, safe to ignore."
 
-# ── 3. XDG user directories ──────────────────────────────────────────────────
+# ── 2a. qmltermwidget — OUR patched fork, not upstream/AUR ───────────────────
+# Fixed a genuine bug in TerminalDisplay::setColorScheme upstream: it
+# gated every lookup on a once-ever-cached availableColorSchemes()
+# list, so a color-scheme file created AFTER the process started (e.g.
+# a live theme change) was silently ignored, falling back to the
+# default scheme, until a full restart forced a fresh scan. The fix
+# calls findColorScheme(name) directly (which already does a correct,
+# uncached, fresh per-name lookup) instead of gating on that cached
+# list. provides/conflicts=qmltermwidget in our PKGBUILD means pacman
+# treats this as a drop-in replacement for the real package — nothing
+# else needs to reference "qmltermwidget" by name anywhere else in
+# this script; it was deliberately REMOVED from the PACKAGES array
+# above, since it's no longer coming from yay/AUR at all.
+log "Building patched qmltermwidget (packaging/qmltermwidget-nisfere)..."
+run bash -c "cd '$REPO_DIR/packaging/qmltermwidget-nisfere' && makepkg -si --noconfirm"
+
+# ── 2b. QMLTermWidget color-schemes dir ownership ────────────────────────────
+QMLTERMWIDGET_SCHEMES_DIR="/usr/lib/qt6/qml/QMLTermWidget/color-schemes"
+if [[ -d "$QMLTERMWIDGET_SCHEMES_DIR" ]]; then
+    log "Handing ownership of $QMLTERMWIDGET_SCHEMES_DIR to $USER (for live terminal theming)..."
+    run sudo chown -R "$USER":"$USER" "$QMLTERMWIDGET_SCHEMES_DIR"
+else
+    warn "$QMLTERMWIDGET_SCHEMES_DIR not found — qmltermwidget may have installed elsewhere on this system. Terminal theming won't work until you locate the real color-schemes dir and chown it yourself (see comment above this step in install.sh)."
+fi
 
 log "Setting up XDG user directories..."
 run xdg-user-dirs-update
-
-# ── 4. Dotfiles from dots/ ───────────────────────────────────────────────────
 
 run mkdir -p "$HOME/.config"
 
@@ -250,8 +244,6 @@ install_dotdir "gtk-4.0"
 install_dotdir "bpytop"
 install_dotdir "alacritty"
 install_dotdir "fastfetch"
-
-# ── 4b. Zsh ───────────────────────────────────────────────────────────────────
 
 install_zsh() {
     log "Configuring Zsh..."
@@ -282,11 +274,6 @@ install_zsh
 
 fi # end one-time setup (UPDATE_MODE -eq 0)
 
-# ═══════════════════════════════════════════════════════════════════
-# 5. Nisfere daemon + shell + templates/themes — the part that
-# actually matters for BOTH fresh installs and updates.
-# ═══════════════════════════════════════════════════════════════════
-
 log "Installing daemon + shell + templates/themes -> $NISFERE_DIR"
 run mkdir -p "$NISFERE_DIR"
 copy_backed_up "$REPO_DIR/daemon" "$NISFERE_DIR/daemon"
@@ -304,16 +291,12 @@ if [[ $UPDATE_MODE -eq 0 ]]; then
     fi
     run ln -s "$NISFERE_DIR/shell" "$QUICKSHELL_DEFAULT_DIR"
 else
-    # The symlink itself never needs touching on update — shell/ was
-    # just re-synced above, and the symlink already points at it.
     if [[ ! -L "$QUICKSHELL_DEFAULT_DIR" ]]; then
         warn "$QUICKSHELL_DEFAULT_DIR isn't a symlink to $NISFERE_DIR/shell — something's unusual about this install. Leaving it alone; check it manually if the shell doesn't pick up the update."
     fi
 fi
 
 if [[ $UPDATE_MODE -eq 0 ]]; then
-
-# ── 6. Cache/data/media directories ──────────────────────────────────────────
 
 log "Creating cache/data directories..."
 run mkdir -p "$HOME/.cache/nisfere"
@@ -335,13 +318,9 @@ create_cache_file() {
     fi
 }
 
-# ── 7. Icon theme + GSettings ─────────────────────────────────────────────────
-
 log "Applying Papirus icon theme (best-effort gsettings, harmless if it no-ops)..."
 run gsettings set org.gnome.desktop.interface icon-theme 'Papirus' || true
 run gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark' || true
-
-# ── 8. Passwordless pacman for in-UI Arch updates (optional) ─────────────────
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the sudoers prompt in dry-run mode."
@@ -349,15 +328,15 @@ else
     echo
     read -r -p "$(echo -e '\033[1;33m[nisfere]\033[0m')  Allow passwordless 'pacman' for in-UI Arch updates? (adds a sudoers rule) [y/N] " allow_nopasswd
     if [[ "$allow_nopasswd" =~ ^[Yy]$ ]]; then
-        echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/pacman" | sudo tee /etc/sudoers.d/nisfere-pacman >/dev/null
+
+        echo "${SUDO_USER:-$USER} ALL=(ALL) NOPASSWD: /usr/bin/pacman --version, /usr/bin/pacman -Syu --noconfirm" | sudo tee /etc/sudoers.d/nisfere-pacman >/dev/null
+
         sudo chmod 0440 /etc/sudoers.d/nisfere-pacman
-        log "Passwordless pacman enabled for in-UI updates."
+        log "Passwordless pacman enabled for strictly in-UI updates (-Syu)."
     else
         warn "Skipped — Arch updates in the UI will fall back to a polkit (pkexec) prompt. Make sure a polkit agent is running (e.g. exec-once in Hyprland: /usr/lib/polkit-kde-authentication-agent-1)."
     fi
 fi
-
-# ── 8b. Docker (optional) ────────────────────────────────────────────────────
 
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the Docker prompt in dry-run mode."
@@ -386,10 +365,7 @@ else
         warn "Skipped — the Docker tab won't have anything to show, but nothing else is affected."
     fi
 fi
-# ── 8c. Display manager (optional) ───────────────────────────────────────────
 
-# Common display managers we might find already active, in case the
-# user set one up manually or via a different tool before running this.
 KNOWN_DMS=(sddm gdm lightdm ly greetd)
 
 detect_active_dm() {
@@ -424,14 +400,6 @@ fi
 
 fi # end one-time setup (UPDATE_MODE -eq 0), part 2
 
-# ═══════════════════════════════════════════════════════════════════
-# 9. Daemon systemd --user service + socket — files always re-synced
-# (they're small and rarely change, and update mode needs the latest
-# copy too in case a unit file itself changed), but the *enable* step
-# only runs on fresh installs — an update should RESTART an already-
-# running daemon (see below), not re-enable something already enabled.
-# ═══════════════════════════════════════════════════════════════════
-
 log "Installing systemd --user service + socket for the daemon..."
 run mkdir -p "$HOME/.config/systemd/user"
 run cp "$REPO_DIR/dots/systemd/nisfere-daemon.service" "$HOME/.config/systemd/user/nisfere-daemon.service"
@@ -439,39 +407,9 @@ run cp "$REPO_DIR/dots/systemd/nisfere-daemon.socket" "$HOME/.config/systemd/use
 run systemctl --user daemon-reload
 
 if [[ $UPDATE_MODE -eq 0 ]]; then
-    # Only the .socket gets enabled/started directly. Enabling the
-    # .service here too would fight with socket activation — it'd try
-    # to bind/create the socket itself independently instead of
-    # receiving the already-open fd systemd hands it on first
-    # connection.
     run systemctl --user enable --now nisfere-daemon.socket
     log "Daemon socket enabled and listening (daemon service itself starts on-demand, on first connection)."
 else
-    # Fresh files are on disk now (see section 5 above) — an already-
-    # running daemon process is still executing the OLD code in memory
-    # until restarted.
-    #
-    # Was `systemctl --user restart nisfere-daemon.service` directly —
-    # exactly the anti-pattern dev-mode.sh's own switch_off() already
-    # warns about: restarting the SERVICE directly starts it without
-    # the LISTEN_FDS/LISTEN_PID env vars systemd only sets when a unit
-    # is triggered THROUGH its socket, so the daemon falls back to
-    # self-managed socket creation (see socket_manager.py) — which, in
-    # practice, unlinked the socket file out from under systemd's own
-    # bookkeeping: `systemctl status nisfere-daemon.socket` kept
-    # reporting "active (listening)" (it just remembers "I successfully
-    # bound this at startup", it doesn't re-verify continuously) while
-    # the actual file at /tmp/nisfere-shell.sock was gone — exactly the
-    # ServerNotFoundError this caused.
-    #
-    # Restarting the SOCKET instead: stops it (cleanly releasing the
-    # path), stops the currently-running service with it (dependency),
-    # then re-listens fresh via systemd, with the service starting on
-    # the NEXT connection — through proper socket activation again,
-    # now running the just-updated code. Only restarted if it was
-    # actually active; if it wasn't running, there's nothing to
-    # restart — the next connection starts it fresh with the new code
-    # automatically either way.
     if [[ $DRY_RUN -eq 0 ]] && systemctl --user is-active --quiet nisfere-daemon.socket; then
         log "Restarting nisfere-daemon.socket to pick up the updated daemon code..."
         run systemctl --user restart nisfere-daemon.socket
@@ -480,24 +418,11 @@ else
     fi
 fi
 
-# ── 10. First-run defaults ───────────────────────────────────────────────────
-# Skipped ENTIRELY in --update mode — applying the tokyo-night default
-# theme here would silently override whatever theme the user has
-# actually chosen since their original install, every single time they
-# update. This section only makes sense once, on a genuinely fresh
-# install.
-
 if [[ $UPDATE_MODE -eq 0 ]]; then
 
 SOCKET_PATH="/tmp/nisfere-shell.sock"
 
 log "Waiting for the daemon socket to come up..."
-# With socket activation (step 9), systemd creates this file the
-# instant nisfere-daemon.socket starts — before the Python process
-# behind it has even run a single line — so this should succeed on the
-# very first check now. The retry loop stays as a cheap safety net
-# (e.g. unusually slow systemd, or this unit somehow not enabled) but
-# shouldn't ever need more than one iteration in practice.
 if [[ $DRY_RUN -eq 0 ]]; then
     for _ in $(seq 1 20); do
         [[ -S "$SOCKET_PATH" ]] && break
@@ -531,8 +456,6 @@ fi
 
 fi # end first-run defaults (UPDATE_MODE -eq 0)
 
-# ── Done ──────────────────────────────────────────────────────────────────────
-
 echo
 if [[ $DRY_RUN -eq 1 ]]; then
     log "Dry run complete — nothing was changed."
@@ -558,27 +481,13 @@ if [[ $UPDATE_MODE -eq 0 ]]; then
     echo "  4. journalctl --user -u nisfere-daemon -f   -> daemon logs, if anything looks off."
 fi
 
-# ═══════════════════════════════════════════════════════════════════
-# 11. Reload Hyprland config + restart Quickshell (both modes) / offer
-# to launch Hyprland now (fresh install only, when not already running
-# inside a session).
-# ═══════════════════════════════════════════════════════════════════
-
 if [[ $DRY_RUN -eq 1 ]]; then
     warn "Skipping the Hyprland reload / launch step in dry-run mode."
 elif [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
-    # Already running inside an active Hyprland session — reload config
-    # and make sure Quickshell is running with the latest shell code.
     log "Detected an active Hyprland session — reloading config."
     run hyprctl reload
 
     if [[ $UPDATE_MODE -eq 1 ]] && pgrep -x quickshell >/dev/null 2>&1; then
-        # Was: leave it running as-is if already up. For an UPDATE that
-        # doesn't help — shell/ was just re-synced above, and an
-        # already-running Quickshell process is still holding the OLD
-        # QML in memory regardless of whether it happens to support
-        # partial hot-reload. Kill and relaunch to guarantee a clean
-        # state on the new code.
         log "Restarting Quickshell to pick up the updated shell..."
         run pkill -x quickshell
         sleep 0.3

@@ -63,6 +63,10 @@ _DEFAULT_TEMPLATE_MAP: dict = {
         "targets": ["~/.config/qtengine/nisfere.colors"],
         "scope": "shared",
     },
+    "qmltermwidget.colorscheme": {
+        "targets": ["/usr/lib/qt6/qml/QMLTermWidget/color-schemes/nisfere.colorscheme"],
+        "scope": "shared",
+    },
 }
 
 
